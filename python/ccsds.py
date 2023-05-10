@@ -3,9 +3,8 @@ import numpy as np
 
 import dwt
 import tests
-
-def bitplane_encoder(data, width, height):
-    v = 1
+import bpe
+import subband
 
 if __name__ == '__main__':
     print("***DWT example***")
@@ -35,38 +34,26 @@ if __name__ == '__main__':
             data = np.vstack((data, last_row))
         height = height + pad_height
 
-    levels = 1
+    levels = 3
     for i in range(levels):
         print("DWT level",i+1)
         dwt.forward_DWT(data, width/(pow(2,i)), height/(pow(2,i)))
 
-    p = 1000
-    l = -1000
-    for i in range(int(height)):
-        for j in range(int(width)):
-            if(i < height/2 and j < width/2):
-                continue
-            v = data[int(i),int(j)]
-            if v > l:
-                l = v
-            if v < p:
-                p = v
+    subband.scale(data, width, height)
+    
+    """
+    for i in reversed(range(levels)):
+        print("IDWT level",i+1)
+        dwt.backward_DWT(data, width/(pow(2,i)), height/(pow(2,i)))
+    """
+    bpe.encode(data, int(width/8), int(height/8))
 
-    print(l,p)
-
-    for i in range(int(height)):
-        for j in range(int(width)):
-            if(i < height/2 and j < width/2):
-                continue
-            v = data[i,j]
-            data[i, j] = ((v-p)/(l-p))*255
-
-    #for i in reversed(range(levels)):
-    #    print("IDWT level",i+1)
-    #    dwt.backward_DWT(data, width/(pow(2,i)), height/(pow(2,i)))
-
-    bitplane_encoder(data, width, height)
-
+    """
+    for i in range(int(height/8)):
+        for j in range(int(width/8)):
+            data[i][j] = 1
+    """
+    
     print("Deleting padded rows and columns")
     data = data[:height-pad_height,:width-pad_width]
 
