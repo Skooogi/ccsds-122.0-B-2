@@ -2,7 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import bitstream
-import encodeDC
+import code
 
 def family(blocks, block_i, data, r, c, index):
 
@@ -48,13 +48,13 @@ def fill_blocks(blocks, data, width, height):
             blocks[block_i][0] = data[r][c]
 
             #Parents for F0 F1 F2
-            blocks[block_i][1] = data[r][2*c] * 8
-            blocks[block_i][2] = data[2*r][c] * 8
-            blocks[block_i][3] = data[2*r][2*c] * 4
-            
-            #Families
-            family(blocks, block_i, data, r, 2*c, 3)
-            family(blocks, block_i, data, 2*r, c, 23)
+            blocks[block_i][1] = data[r][2*c]
+            family(blocks, block_i, data, r, 2*c, 1)
+
+            blocks[block_i][22] = data[2*r][c]
+            family(blocks, block_i, data, 2*r, c, 22)
+
+            blocks[block_i][43] = data[2*r][2*c]
             family(blocks, block_i, data, 2*r, 2*c, 43)
 
 #As in 4-3
@@ -86,120 +86,60 @@ def encode(data, width, height):
 
 
     """
-    blocks = np.zeros((int(width/8)*int(height/8), 64))
+    blocks = np.zeros((int(width/8)*int(height/8), 65))
+    status = np.zeros((int(width/8)*int(height/8), 63))
     print(blocks.shape)
     fill_blocks(blocks, data, int(width/8), int(height/8))
 
     #Currently partitioned as a single segment
     gaggle_size = 16
-    mod = blocks.shape[0] % gaggle_size
-
+    nblocks = blocks.shape[0]
+    mod = nblocks % gaggle_size
 
     #1. Determine AC and DC bitdepths for the segement
 
     #Minimum possible values
     bitDC = 1
-    bitAC = 0
+    bitACGlobal = 0
 
-    for i in range(len(blocks)):
+    for i in range(nblocks):
         #DC value
         dc = blocks[i][0]
-        print(dc)
         if dc < 0:
-            bitDC = max(int(1 + math.log(abs(dc))), bitDC)
+            bitDC = max(1 + int(math.log(abs(dc),2)), bitDC)
         else:
-            bitDC = max(int(1 + math.log(dc+1,2)), bitDC)
+            bitDC = max(1 + int(math.log(dc+1,2)), bitDC)
 
+        bitAC = 0
         #Iterate through AC values
         for j in range(1, 64):
-            temp = int(math.log(abs(blocks[i][j])+1,2))
-            bitAC = max(temp, bitAC)
+            bitAC = max(bitAC, abs(blocks[i][j]))
+        bitAC = int(math.log(bitAC + 1,2))
+        blocks[i][64] = bitAC
+        bitACGlobal = max(bitACGlobal, bitAC)
 
     #TODO segment header
+    print(bitACGlobal)
 
     #Determine q (4.3.1.2)
     q = 0
     if(bitDC <= 3):
         q = 0
-    elif(bitDC - (1 + bitAC/2) <= 1 and bitDC > 3):
+    elif(bitDC - int(1 + bitACGlobal/2) <= 1 and bitDC > 3):
         q = bitDC - 3
-    elif(bitDC - (1 + bitAC/2) > 10 and bitDC > 3):
+    elif(bitDC - int(1 + bitACGlobal/2) > 10 and bitDC > 3):
         q = bitDC - 10
     else:
-        q = 1 + int(bitAC/2)
+        q = 1 + int(bitACGlobal/2)
 
-    q = max(q, 8)
+    q = max(q, 3)
 
-    #code DC coefficients
+    status = np.zeros((len(blocks),64))
+    words = [["" for x in range(16)] for y in range(len(blocks))]
 
-    return
-    for segment in range(0, blocks.shape[0] - mod, segment_size):
-
-
-
-        #Determine q part 4.3.1.2
-
-        #DC coding
-        N = max(bitDC - q, 1)
-        
-        if(N == 1):
-            for i in range(0, segment_size):
-              print("DC",int(blocks[segment + i][0] / pow(2,q)))  
-            
-        else:
-            #First DC coefficient is uncoded
-            last = blocks[segment][0] / pow(2,q)
-            blocks[segment][0] /= pow(2,q)
-            print(int(blocks[segment][0] / pow(2, q)))
-            bitstream.out(int(blocks[segment][0] / pow(2, q)))
-
-
-            #Rest of the DC coefficients
-            for i in range(1, segment_size):
-                sigma = blocks[segment+i][0] / pow(2,q) - last
-                theta = min(last + pow(2,(N-1)), pow(2,(N-1)) - 1 - last)
-                last = blocks[i][0]
-                res = 0
-
-                if sigma >= 0 and sigma <= theta:
-                    res = 2*sigma
-                elif sigma < 0 and sigma >= -theta:
-                    res = 2*abs(sigma)-1
-                else:
-                    res = theta + abs(sigma)
-
-                quantized[i] = int(res)
-                print("DC",int(res))
-
-        #AC coding
-        N = int(math.log(bitAC + 1, 2))
-
-        if(N == 1):
-            for i in range(0, segment_size):
-                for j in range(1, 64):
-                    print("AC",int(blocks[segment + i][j] / pow(2,q)))  
-
-        else:
-
-            quantized = np.zeros(63)
-
-            #Rest of the AC coefficients
-            for i in range(0, segment_size):
-                last = blocks[segment + i][1] / pow(2,q)
-                for j in range(2, 64):
-                    sigma = blocks[segment+i][j] / pow(2,q) - last
-                    theta = min(last, pow(2,N) - 1 - last)
-                    last = blocks[i][0]
-                    res = 0
-
-                    if sigma >= 0 and sigma <= theta:
-                        res = 2*sigma
-                    elif sigma < 0 and sigma >= -theta:
-                        res = 2*abs(sigma)-1
-                    else:
-                        res = theta + abs(sigma)
-
-                    quantized[i] = int(res)
-                    print("AC",int(res))
-
-        print("DC", bitDC, "AC", bitAC, "N", N, "Q", q)
+    #Code DC coefficients
+    code.encode_dc_magnitudes(blocks[:,0], bitDC, q)
+    code.encode_ac_magnitudes(blocks[:,1:], bitACGlobal, q)
+    for b in range(bitACGlobal-1, 0, -1):
+        code.encode_dc_values(blocks, q, b)
+        code.encode_ac_values(status, words, blocks, q, b)

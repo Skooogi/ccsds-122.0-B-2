@@ -9,7 +9,7 @@ import subband
 if __name__ == '__main__':
     print("***DWT example***")
     img = Image.open('7.png')
-    data = np.array(img.split()[0], dtype='float')
+    data = np.array(img.split()[0], dtype='int')
     reference = np.copy(data)
     img.close()
 
@@ -39,14 +39,14 @@ if __name__ == '__main__':
         print("DWT level",i+1)
         dwt.forward_DWT(data, width/(pow(2,i)), height/(pow(2,i)))
 
-    subband.scale(data, width, height)
+    #subband.scale(data, width, height)
     
-    """
+    
     for i in reversed(range(levels)):
         print("IDWT level",i+1)
         dwt.backward_DWT(data, width/(pow(2,i)), height/(pow(2,i)))
-    """
-    bpe.encode(data, int(width/8), int(height/8))
+    
+    #bpe.encode(data, int(width/8), int(height/8))
 
     """
     for i in range(int(height/8)):
