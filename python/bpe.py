@@ -3,38 +3,39 @@ import math
 import matplotlib.pyplot as plt
 import bitstream
 import code
+import rle
 
 def family(blocks, block_i, data, r, c, index):
 
     #Children C_i
-    blocks[block_i][index+1] = data[2*r][2*c]
-    blocks[block_i][index+2] = data[2*r][2*c+1]
-    blocks[block_i][index+3] = data[2*r+1][2*c]
-    blocks[block_i][index+4] = data[2*r+1][2*c+1]
+    blocks[block_i].ac[index+0] = data[2*r][2*c]
+    blocks[block_i].ac[index+1] = data[2*r][2*c+1]
+    blocks[block_i].ac[index+2] = data[2*r+1][2*c]
+    blocks[block_i].ac[index+3] = data[2*r+1][2*c+1]
 
     #Grandchildren H_i0
-    blocks[block_i][index+5] = data[4*r][4*c]
-    blocks[block_i][index+6] = data[4*r][4*c+1]
-    blocks[block_i][index+7] = data[4*r+1][4*c]
-    blocks[block_i][index+8] = data[4*r+1][4*c+1]
+    blocks[block_i].ac[index+4] = data[4*r][4*c]
+    blocks[block_i].ac[index+5] = data[4*r][4*c+1]
+    blocks[block_i].ac[index+6] = data[4*r+1][4*c]
+    blocks[block_i].ac[index+7] = data[4*r+1][4*c+1]
 
     #Grandchildren H_i1
-    blocks[block_i][index+9] = data[4*r][4*c+2]
-    blocks[block_i][index+10] = data[4*r][4*c+3]
-    blocks[block_i][index+11] = data[4*r+1][4*c+2]
-    blocks[block_i][index+12] = data[4*r+1][4*c+3]
+    blocks[block_i].ac[index+8] = data[4*r][4*c+2]
+    blocks[block_i].ac[index+9] = data[4*r][4*c+3]
+    blocks[block_i].ac[index+10] = data[4*r+1][4*c+2]
+    blocks[block_i].ac[index+11] = data[4*r+1][4*c+3]
 
     #Grandchildren H_i2
-    blocks[block_i][index+13] = data[4*r+2][4*c]
-    blocks[block_i][index+14] = data[4*r+2][4*c+1]
-    blocks[block_i][index+15] = data[4*r+3][4*c]
-    blocks[block_i][index+16] = data[4*r+3][4*c+1]
+    blocks[block_i].ac[index+12] = data[4*r+2][4*c]
+    blocks[block_i].ac[index+13] = data[4*r+2][4*c+1]
+    blocks[block_i].ac[index+14] = data[4*r+3][4*c]
+    blocks[block_i].ac[index+15] = data[4*r+3][4*c+1]
 
     #Grandchildren H_i3
-    blocks[block_i][index+17] = data[4*r+2][4*c+2]
-    blocks[block_i][index+18] = data[4*r+2][4*c+3]
-    blocks[block_i][index+19] = data[4*r+3][4*c+2]
-    blocks[block_i][index+20] = data[4*r+3][4*c+3]
+    blocks[block_i].ac[index+16] = data[4*r+2][4*c+2]
+    blocks[block_i].ac[index+17] = data[4*r+2][4*c+3]
+    blocks[block_i].ac[index+18] = data[4*r+3][4*c+2]
+    blocks[block_i].ac[index+19] = data[4*r+3][4*c+3]
 
 
 def fill_blocks(blocks, data, width, height):
@@ -45,16 +46,14 @@ def fill_blocks(blocks, data, width, height):
             block_i = r*width+c
 
             #DC coefficient
-            blocks[block_i][0] = data[r][c]
+            blocks[block_i].dc = data[r][c]
 
             #Parents for F0 F1 F2
-            blocks[block_i][1] = data[r][2*c]
+            blocks[block_i].ac[0] = data[r][2*c]
             family(blocks, block_i, data, r, 2*c, 1)
-
-            blocks[block_i][22] = data[2*r][c]
+            blocks[block_i].ac[21] = data[2*r][c]
             family(blocks, block_i, data, 2*r, c, 22)
-
-            blocks[block_i][43] = data[2*r][2*c]
+            blocks[block_i].ac[42] = data[2*r][2*c]
             family(blocks, block_i, data, 2*r, 2*c, 43)
 
 #As in 4-3
@@ -86,9 +85,15 @@ def encode(data, width, height):
 
 
     """
-    blocks = np.zeros((int(width/8)*int(height/8), 65))
-    status = np.zeros((int(width/8)*int(height/8), 63))
-    print(blocks.shape)
+    blocks = np.empty(int(width/8)*int(height/8), dtype=object)
+
+    for i in range(len(blocks)):
+        blocks[i] = code.Block(0,0,0,0,0,0,0,0,0,-2)
+        blocks[i].ac = np.zeros(63, dtype = 'int')
+        blocks[i].dmax = np.ones(3, dtype='int')*-2
+        blocks[i].tran_h = np.zeros(3, dtype='int')
+
+
     fill_blocks(blocks, data, int(width/8), int(height/8))
 
     #Currently partitioned as a single segment
@@ -98,24 +103,28 @@ def encode(data, width, height):
 
     #1. Determine AC and DC bitdepths for the segement
 
+    #TODO REMOVE THIS
+    #blocks = blocks[-57:-40]
+
     #Minimum possible values
     bitDC = 1
     bitACGlobal = 0
 
-    for i in range(nblocks):
+    for i in range(len(blocks)):
         #DC value
-        dc = blocks[i][0]
+        dc = int(blocks[i].dc)
         if dc < 0:
             bitDC = max(1 + int(math.log(abs(dc),2)), bitDC)
         else:
-            bitDC = max(1 + int(math.log(dc+1,2)), bitDC)
+            bitDC = max(1 + math.ceil(math.log(dc+1,2)), bitDC)
 
         bitAC = 0
         #Iterate through AC values
-        for j in range(1, 64):
-            bitAC = max(bitAC, abs(blocks[i][j]))
-        bitAC = int(math.log(bitAC + 1,2))
-        blocks[i][64] = bitAC
+        for j in range(63):
+            bitAC = max(bitAC, abs(blocks[i].ac[j]))
+
+        bitAC = math.ceil(math.log(bitAC + 1,2))
+        blocks[i].bitAC = bitAC
         bitACGlobal = max(bitACGlobal, bitAC)
 
     #TODO segment header
@@ -134,12 +143,72 @@ def encode(data, width, height):
 
     q = max(q, 3)
 
-    status = np.zeros((len(blocks),64))
-    words = [["" for x in range(16)] for y in range(len(blocks))]
-
     #Code DC coefficients
-    code.encode_dc_magnitudes(blocks[:,0], bitDC, q)
-    code.encode_ac_magnitudes(blocks[:,1:], bitACGlobal, q)
-    for b in range(bitACGlobal-1, 0, -1):
-        code.encode_dc_values(blocks, q, b)
-        code.encode_ac_values(status, words, blocks, q, b)
+
+    bitstream.fp = open("output.cmp", "wb")
+
+    code.encode_dc_magnitudes(blocks, bitDC, q)
+    code.encode_ac_magnitudes(blocks, bitACGlobal, q)
+    num = 0
+    sym_avg = 0
+    total = len(blocks)*(bitACGlobal-1)*4
+    for b in range(bitACGlobal-1, -1, -1):
+
+        for stage in range(4):
+
+            for gaggle in range(0, len(blocks), 16):
+
+                bitstring = ""
+                bitstream.code.num = np.zeros(4)
+                bitstream.code.words = np.array([], dtype='int')
+                bitstream.code.sizes = np.array([], dtype='int')
+                bitstream.code.symbol_option = np.array([], dtype='int')
+                bitstream.code.options = np.array([[0,0],[0,0,0],[0,0,0,0]], dtype=object)
+
+                if(stage == 0):
+                    code.stage_0(blocks[gaggle:gaggle+15], q, b)
+                elif(stage == 1):
+                    code.stage_1(blocks[gaggle:gaggle+15], b)
+                elif(stage == 2):
+                    code.stage_2(blocks[gaggle:gaggle+15], b)
+                elif(stage == 3):
+                    code.stage_3(blocks[gaggle:gaggle+15], b)
+
+                bit2 = np.argmin(bitstream.code.options[0])
+                bit3 = np.argmin(bitstream.code.options[1])
+                bit4 = np.argmin(bitstream.code.options[2]) 
+
+                for idx in range(len(bitstream.code.words)):
+                    word = bitstream.code.words[idx]
+                    size = bitstream.code.sizes[idx]
+                    sym = bitstream.code.symbol_option[idx]
+
+                    if(size == 1):
+                        bitstring += str(int(word))
+                        continue
+                    if(size == 2):
+                        bitstring += bitstream.code.word2bit[bit2][bitstream.code.sym2bit[int(word)]]
+                        continue
+                    if(size == 3):
+                        bitstring += bitstream.code.word3bit[bit3][bitstream.code.sym3bit[sym][int(word)]]
+                        continue
+                    if(size == 4):
+                        bitstring += bitstream.code.word4bit[bit4][bitstream.code.sym4bit[sym][int(word)]]
+                        continue
+
+                if(sum(bitstream.code.sizes) != 0):
+                    bitstream.out_bits(bitstring)
+                    temp = len(bitstring)/sum(bitstream.code.sizes)
+                    sym_avg += temp
+                    num += 1
+                    #if(gaggle/16 % 32 == 0):
+                    #    print(b,"Gaggle:", int(gaggle/16),", sym:", temp)
+        code.stage_4(blocks, b)
+
+        progress = len(blocks)*4*(bitACGlobal-1-b)/total*100
+        print(f'Encoded {progress:3.1f}%',end='\r')
+
+    print()
+    if(num > 0):
+        print("AVG:",sym_avg/num)
+    bitstream.fp.close()

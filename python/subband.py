@@ -32,3 +32,4 @@ def scale(data, width, height):
     for j in range(int(height/8), int(height/4)):
         for i in range(0, int(width/8)):
             data[j][i] = int(data[j][i] * 8) 
+    return data
