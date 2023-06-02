@@ -73,7 +73,7 @@ def select_coding(delta, J, N):
 
 
 #Width and Height for the LL3 band
-def encode(data, width, height):
+def encode(data, width, height, pad_width):
 
     """
     Divide data as follows
@@ -127,7 +127,6 @@ def encode(data, width, height):
         blocks[i].bitAC = bitAC
         bitACGlobal = max(bitACGlobal, bitAC)
 
-    #TODO segment header
     print(bitACGlobal)
 
     #Determine q (4.3.1.2)
@@ -143,9 +142,46 @@ def encode(data, width, height):
 
     q = max(q, 3)
 
-    #Code DC coefficients
-
     bitstream.fp = open("output.cmp", "wb")
+
+    #Headers part 1 (3 + 1 B) and 4 (8 B)
+    header_1  = "1"         #First segment
+    header_1 += "1"         #Last segment
+    header_1 += "00000001"  #Number of segments
+    header_1 += format(bitDC, '05b')
+    header_1 += format(bitACGlobal, '05b')
+    header_1 += '0'         #reserved
+    header_1 += '0'         #Presence of header 2
+    header_1 += '1'         #Presence of header 3
+    header_1 += '1'         #Presence of header 4
+
+    header_1 += format(pad_width, '03b')
+    header_1 += "00000"
+
+    print("header 1", header_1)
+
+    header_3  = format(len(blocks), '020b')
+    header_3 += '0' #Heuristic k for DC
+    header_3 += '0' #Heuristic k for AC
+    header_3 += '00' #reserved
+
+    print("header 3", header_3)
+
+    header_4  = "1" #Integer DWT
+    header_4 += "0" #reserved
+    header_4 += "0" #pixel depth > 16
+    header_4 += "0" #signed
+    header_4 += "0000" #pixel depth % 16
+    header_4 += format(width, '020b')
+    header_4 += "0" #Transpose
+    header_4 += "000" #code word
+    header_4 += "0" #custom weights
+    header_4 += "0"*20 #weights
+    header_4 += "0"*11 #reserved
+
+    print("header 4", header_4)
+
+    bitstream.out_bits(header_1+header_3+header_4)
 
     code.encode_dc_magnitudes(blocks, bitDC, q)
     code.encode_ac_magnitudes(blocks, bitACGlobal, q)
@@ -154,7 +190,7 @@ def encode(data, width, height):
     total = len(blocks)*(bitACGlobal-1)*4
     for b in range(bitACGlobal-1, -1, -1):
 
-        for stage in range(4):
+        for stage in range(1):
 
             for gaggle in range(0, len(blocks), 16):
 
@@ -197,13 +233,13 @@ def encode(data, width, height):
                         continue
 
                 if(sum(bitstream.code.sizes) != 0):
-                    bitstream.out_bits(bitstring)
+                    #bitstream.out_bits(bitstring)
                     temp = len(bitstring)/sum(bitstream.code.sizes)
                     sym_avg += temp
                     num += 1
                     #if(gaggle/16 % 32 == 0):
                     #    print(b,"Gaggle:", int(gaggle/16),", sym:", temp)
-        code.stage_4(blocks, b)
+        #code.stage_4(blocks, b)
 
         progress = len(blocks)*4*(bitACGlobal-1-b)/total*100
         print(f'Encoded {progress:3.1f}%',end='\r')

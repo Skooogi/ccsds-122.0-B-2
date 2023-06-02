@@ -90,8 +90,11 @@ def out_bits(fp, data):
 
 def compress(filein, fileout):
 
+    data = 0
     num = np.array([[x, 0] for x in range(256)])
     with open(filein, "rb") as f:
+        data = f.read()
+        f.seek(0)
         while (byte := f.read(1)):
             num[int.from_bytes(byte, "big")][1] += 1
 
@@ -118,10 +121,10 @@ def compress(filein, fileout):
 
     out_bits(fp, bitstring)
 
-    bitstring = ""
-    with open(filein, "rb") as f:
-        while (byte := f.read(1)):
-            bitstring += encoding[int.from_bytes(byte, "big")]
+    for i in data:
+        #print(encoding[i])
+        #bitstring += encoding[int.from_bytes(data[i], "big")]
+        bitstring += encoding[i]
     padding = format(8-len(bitstring)%8, '08b')
     out_bits(fp,padding+bitstring)
     fp.close()
@@ -129,7 +132,7 @@ def compress(filein, fileout):
 def uncompress(filein, fileout):
 
     #Read file
-    data = 0
+    data = b''
     with open(filein, "rb") as f:
         data = f.read()
     
@@ -156,22 +159,18 @@ def uncompress(filein, fileout):
 
 
     with open(fileout, "wb") as f:
-        with open("output.cmp", "rb") as fp:
 
-            binstr = ''
-            for i in range(len(data)):
-                binstr += format(data[i], '08b')
-                if(i == len(data)-1):
-                    binstr = binstr[:-padding]
+        binstr = ''
+        for i in range(len(data)):
+            binstr += format(data[i], '08b')
+            if(i == len(data)-1):
+                binstr = binstr[:-padding]
 
+            value, skip = read_tree(huffman_tree, binstr)
+            while type(value) == np.int64:
+                binstr = binstr[skip:]
+                f.write(struct.pack('B', value))
                 value, skip = read_tree(huffman_tree, binstr)
-                while type(value) == np.int64:
-                    binstr = binstr[skip:]
-                    if(fp.read(1) != struct.pack('B', value)):
-                        print(value, skip)
-                        print(fp.read(1), struct.pack('B', value), value)
-                    f.write(struct.pack('B', value))
-                    value, skip = read_tree(huffman_tree, binstr)
 
 if __name__ == '__main__':
     args = sys.argv

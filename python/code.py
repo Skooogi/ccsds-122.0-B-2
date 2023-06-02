@@ -34,6 +34,95 @@ def select_coding(delta, J, N):
             k += 1
         return k
 
+def twos(value, bits):
+    if(value & 1 << (bits - 1)):
+        return ~value + 1
+    
+    return value
+
+def split_coding(diffs, first, size, N):
+
+    for i in range(0, int(size/16)+1):
+        gaggle_sum = 0
+        for j in range(1 if i == 0 else 0,16):
+            index = i*16+j
+            if index >= size:
+                break
+            gaggle_sum += diffs[index]
+
+        J = 16
+        if(i == 0):
+            J -= 1
+
+        k = select_coding(gaggle_sum, J, N)
+        bitstream.out(k, math.ceil(math.log(N,2)))
+        if(i == 0):
+            bitstream.out(first, 8)
+
+        for j in range(1 if i==0 else 0,16):
+            index = i*16+j
+            if index >= size:
+                break
+            z = int(diffs[index]/pow(2,k))
+            bitstream.out(0, z)
+            bitstream.out(1, 1)
+        if(k != 0):
+            for j in range(1 if i == 0 else 0,16):
+                index = i*16+j
+                if index >= size:
+                    break
+                bitstream.out(diffs[index] & ((1 << k) -1), k)
+
+def encode_dc_magnitudes(blocks, bitDC, q):
+
+    #DC coding
+    N = max(bitDC - q, 1)
+    quantized = np.zeros(len(blocks))
+
+    #print("Coding DC coefficients with:\n[bitDC]\t", bitDC, "\n[q]\t", q, "\n[N]\t", N)
+    
+    if(N == 1):
+        quantized[0] = int(blocks[0].dc / pow(2,q))
+        temp = int(quantized[0])
+        j = 1
+
+        for i in range(1,len(blocks)):
+            if(j == 7):
+                j = 1
+                temp = 0
+            temp <<= 1
+            j += 1
+            quantized[i] = int(blocks[i].dc / pow(2,q))
+            temp |= int(quantized[i])
+        return
+        
+    #First DC coefficient is uncoded
+    diffs = np.zeros(len(blocks), dtype='int')
+    for i in range(len(blocks)):
+        blocks[i].dc = twos(blocks[i].dc, bitDC)
+    
+    last = int(blocks[0].dc / pow(2, q))
+    first = int(last)
+
+    #Rest of the DC coefficients
+    for i in range(1, len(blocks)):
+
+        sigma = int(blocks[i].dc / pow(2, q)) - last
+        theta = min(last + pow(2, (N-1)), pow(2, (N-1)) - 1 - last)
+        last = int(blocks[i].dc / pow(2, q))
+        res = 0
+
+        if sigma >= 0 and sigma <= theta:
+            res = 2*sigma
+        elif sigma < 0 and sigma >= -theta:
+            res = -2*sigma-1
+        else:
+            res = theta + abs(sigma)
+        
+        diffs[i] = res
+
+    split_coding(diffs, first, len(blocks), N)
+
 def encode_ac_magnitudes(blocks, bitACGlobal, q):
 
     N = int(abs(math.log(1 + bitACGlobal,2)) + 1)
@@ -54,143 +143,30 @@ def encode_ac_magnitudes(blocks, bitACGlobal, q):
             j += 1
             quantized[i] = int(blocks[i])
             temp |= int(quantized[i])
+        return
              
-            #print(int(quantized[i]),end='')  
-        print()
+    diffs = np.zeros(len(blocks), dtype='int')
 
-    else:
-
-        last = abs(blocks[0].bitAC)
-        diffs = np.zeros(len(blocks), dtype='int')
-        diffs[0] = last
-        
-        #Rest of the AC coefficients
-        for i in range(1, len(blocks)):
-            sigma = abs(blocks[i].bitAC) - last
-            theta = min(last, pow(2,N) - 1 - last)
-            last = abs(blocks[i].bitAC)
-            res = 0
-
-            if sigma >= 0 and sigma <= theta:
-                res = 2*sigma
-            elif sigma < 0 and sigma >= -theta:
-                res = 2*abs(sigma)-1
-            else:
-                res = theta + abs(sigma)
-
-            diffs[i] = int(res)
-
-        for i in range(0, int(len(blocks)/16)):
-
-            #print("[",int(res),"]",sep='', end='')
-            gaggle_sum = 0
-            for j in range(16):
-                gaggle_sum += diffs[i*16 + j]
-
-            J = 16
-            if(i == 0):
-                J -= 1
-
-            k = select_coding(gaggle_sum, J, N)
-            #print("[k=",k,"]",sep='',end='')
-            bitstream.out(k, math.ceil(math.log(N,2)))
-            if(i == 0):
-                #print("[",int(diffs[0]),"]",sep='',end='')
-                bitstream.out(diffs[0],N)
-
-            for j in range(0,16):
-                z = int(diffs[i*16+j]/pow(2,k))
-                #print("0"*z,end='')
-                #print('1',end='')
-                bitstream.out(0,z)
-                bitstream.out(1,1)
-            #print("|",end='')
-            if(k != 0):
-                for j in range(16):
-                    #print(bin(int(diffs[i*16+j]) & ((1 << k) - 1))[2:],end='')
-                    bitstream.out(diffs[i*16+j] & ((1 << k) -1), k)
-            #print()
-        #print()
-
-def encode_dc_magnitudes(blocks, bitDC, q):
-
-    #DC coding
-    N = max(bitDC - q, 1)
-    quantized = np.zeros(len(blocks))
-
-    print("Coding DC coefficients with:\n[bitDC]\t", bitDC, "\n[q]\t", q, "\n[N]\t", N)
+    last = abs(blocks[0].bitAC)
+    first = last
+    diffs[0] = first
     
-    if(N == 1):
-        quantized[0] = int(blocks[0].dc / pow(2,q))
-        temp = int(quantized[0])
-        j = 1
+    #Rest of the AC coefficients
+    for i in range(1, len(blocks)):
+        sigma = abs(blocks[i].bitAC) - last
+        theta = min(last, pow(2,N) - 1 - last)
+        last = abs(blocks[i].bitAC)
+        res = 0
 
-        print("DC")
-        for i in range(1,len(blocks)):
-            if(j == 7):
-                print(temp, end='')
-                j = 1
-                temp = 0
-            temp <<= 1
-            j += 1
-            quantized[i] = int(blocks[i].dc / pow(2,q))
-            temp |= int(quantized[i])
-        print()
-        
-    else:
-        #First DC coefficient is uncoded
-        last = int(blocks[0].dc / pow(2, q))
-        #print("DC uncoded",int(blocks[0].dc / pow(2, q)))
-        diffs = np.zeros(len(blocks), dtype='int')
-        diffs[0] = last
+        if sigma >= 0 and sigma <= theta:
+            res = 2*sigma
+        elif sigma < 0 and sigma >= -theta:
+            res = 2*abs(sigma)-1
+        else:
+            res = theta + abs(sigma)
+        diffs[i] = int(res)
 
-        #Rest of the DC coefficients
-        for i in range(1, len(blocks)):
-            sigma = int(blocks[i].dc / pow(2, q)) - last
-            theta = min(last + pow(2, (N-1)), pow(2, (N-1)) - 1 - last)
-            last = int(blocks[i].dc / pow(2, q))
-            res = 0
-
-            if sigma >= 0 and sigma <= theta:
-                res = 2*sigma
-            elif sigma < 0 and sigma >= -theta:
-                res = -2*sigma-1
-            else:
-                res = theta + abs(sigma)
-            
-            diffs[i] = res
-
-        for i in range(0, int(len(blocks)/16)):
-
-            #print("[",int(res),"]",sep='', end='')
-            gaggle_sum = 0
-            for j in range(16):
-                gaggle_sum += diffs[i*16 + j]
-
-            J = 16
-            if(i == 0):
-                J -= 1
-
-            k = select_coding(gaggle_sum, J, N)
-            #print("[k=",k,"]",sep='',end='')
-            bitstream.out(k, math.ceil(math.log(N,2)))
-            if(i == 0):
-                #print("[",int(diffs[0]),"]",sep='',end='')
-                bitstream.out(diffs[0],N)
-
-            for j in range(0,16):
-                z = int(diffs[i*16+j]/pow(2,k))
-                #print("0"*z,end='')
-                #print('1',end='')
-                bitstream.out(0, z)
-                bitstream.out(1, 1)
-            #print("|",end='')
-            if(k != 0):
-                for j in range(16):
-                    bitstream.out(diffs[i*16+j] & ((1 << k) -1), k)
-                    #print(bin(int(diffs[i*16+j]) & ((1 << k) - 1))[2:],end='')
-            #print()
-        #print()
+    split_coding(diffs, first, len(blocks), N)
 
 def subband_lim(j, b):
 

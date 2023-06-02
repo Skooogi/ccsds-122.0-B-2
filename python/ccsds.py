@@ -9,20 +9,25 @@ import rle
 
 if __name__ == '__main__':
     print("***DWT example***")
-    #img = Image.open('7.png')
-    #data = np.array(img.split()[0], dtype='int')
-    sizes = (604, 786)
-    data = np.fromfile("7.raw", dtype=np.uint8).reshape(sizes).astype('int')
+    img = Image.open('checker.bmp')
+    data = np.array(img.split()[0], dtype='int')
+    #sizes = (604, 786)
+    #data = np.fromfile("7.raw", dtype=np.uint8).reshape(sizes).astype('int')
     #sizes = (1024,1024)
     #data = np.fromfile("raw_picture_12_0.raw", dtype=np.uint8).reshape(sizes).astype('int')
     reference = np.copy(data)
     #img.close()
 
     #Padding
-    #width, height = img.size
-    height, width = sizes
+    width, height = img.size
+    #height, width = sizes
     pad_width = 8 - width % 8
+    if pad_width > 7:
+        pad_width = 0
     pad_height = 8 - height % 8
+    if pad_height > 7:
+        pad_height = 0
+
     if pad_width > 0 or pad_height > 0:
         print("Padding image to achieve side lengths that are multiples of 8")
 
@@ -48,14 +53,13 @@ if __name__ == '__main__':
 
     data = subband.scale(data, width, height)
 
-    bpe.encode(data, width, height)
+    bpe.encode(data, width, height, pad_width)
     print("Huffman coding")
-    rle.compress("output.cmp")
+    #rle.compress("output.cmp", "output.cmp")
 
     for i in reversed(range(levels)):
         print("IDWT level",i+1)
         dwt.backward_DWT(data, width/(pow(2,i)), height/(pow(2,i)))
-    
     """
     for i in range(int(height/8)):
         for j in range(int(width/8)):
