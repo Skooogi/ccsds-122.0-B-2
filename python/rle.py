@@ -9,6 +9,12 @@ class NodeTree(object):
         self.left = left
         self.right = right
 
+    def has_left(self):
+        return not self.left == None
+
+    def has_right(self):
+        return not self.right == None
+
     def children(self):
         return self.left, self.right
 
@@ -31,14 +37,19 @@ def read_tree(node, binstr):
 
     bits_traversed = 0
     curr_node = node
-    while type(curr_node) != np.int64 and len(binstr) != 0:
-        if(binstr[0] == '0'):
+    while(type(curr_node) == NodeTree) and len(binstr) != 0:
+        if(binstr[0] == '0' and curr_node.has_left()):
             curr_node = curr_node.left
-        else:
+        elif(binstr[0] == '1' and curr_node.has_right()):
             curr_node = curr_node.right
+        else:
+            return curr_node, -1
 
         bits_traversed += 1
         binstr = binstr[1:]
+
+    if(type(curr_node) == NodeTree):
+        return None, -1
 
     return curr_node, bits_traversed
 
@@ -173,6 +184,7 @@ def uncompress(filein, fileout):
                 value, skip = read_tree(huffman_tree, binstr)
 
 if __name__ == '__main__':
+    
     args = sys.argv
     if(len(args) > 3 and args[1] == "compress"):
         compress(args[2], args[3])
@@ -181,5 +193,3 @@ if __name__ == '__main__':
 
     else:
          print("Input error")
-    
-

@@ -99,7 +99,6 @@ def encode_dc_magnitudes(blocks, bitDC, q):
     #First DC coefficient is uncoded
     diffs = np.zeros(len(blocks), dtype='int')
     for i in range(len(blocks)):
-        print(blocks[i].dc)
         blocks[i].dc = twos(blocks[i].dc, bitDC)
     
     last = int(blocks[0].dc / pow(2, q))
@@ -234,7 +233,9 @@ def stage_1(blocks, b):
         size_s = 0
         size_p = 0
 
-        if(0 <= status_to_int(blocks[i], 0) == 1):
+        #print(status_to_int(blocks[i], 0),status_to_int(blocks[i], 21),status_to_int(blocks[i], 42))
+
+        if(0 <= status_to_int(blocks[i], 0) <= 1):
             types_p |= (abs(blocks[i].ac[0]) >> b) & 1
             size_p += 1
 
@@ -266,7 +267,7 @@ def stage_1(blocks, b):
             #print(b,i,"P",bin(types_p)[2:], size_p, bin(signs_p)[2:], size_s)
             bitstream.code(types_p, size_p, 0)
             if(size_s > 0):
-                bitstream.out(signs_p, size_s)
+                bitstream.code(signs_p, size_s, 0, -1)
   
 
 def stage_2(blocks, b):

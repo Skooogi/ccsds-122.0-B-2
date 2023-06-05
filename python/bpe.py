@@ -188,9 +188,14 @@ def encode(data, width, height, pad_width):
     num = 0
     sym_avg = 0
     total = len(blocks)*(bitACGlobal-1)*4
-    for b in range(bitACGlobal-1, -1, -1):
 
-        for stage in range(1):
+    twobit = 0
+    threebit = 0
+    fourbit = 0
+
+    for b in range(bitACGlobal-1, bitACGlobal-4, -1):
+
+        for stage in range(2):
 
             for gaggle in range(0, len(blocks), 16):
 
@@ -214,40 +219,55 @@ def encode(data, width, height, pad_width):
                 bit3 = np.argmin(bitstream.code.options[1])
                 bit4 = np.argmin(bitstream.code.options[2]) 
 
+                first = 0
+
                 for idx in range(len(bitstream.code.words)):
                     word = bitstream.code.words[idx]
                     size = bitstream.code.sizes[idx]
                     sym = bitstream.code.symbol_option[idx]
 
+                    if(size < 0):
+                        bitstring += format(word, f'0{size*-1}b')
+                        continue
                     if(size == 1):
-                        bitstring += str(int(word))
+                        bitstring += format(word, '01b')
                         continue
                     if(size == 2):
+                        if(not first & 1):
+                            bitstring += format(bit2,'01b')
+                            print("2",format(bit2, '01b'))
+                            first |= 1
                         bitstring += bitstream.code.word2bit[bit2][bitstream.code.sym2bit[int(word)]]
                         continue
                     if(size == 3):
+                        if(not first & 2):
+                            print("3",format(bit3, '02b'))
+                            bitstring += format(bit3,'02b')
+                            first |= 2
                         bitstring += bitstream.code.word3bit[bit3][bitstream.code.sym3bit[sym][int(word)]]
                         continue
                     if(size == 4):
+                        if(not first & 4):
+                            print("4",format(bit4, '02b'))
+                            bitstring += format(bit4,'02b')
+                            first |= 4
                         bitstring += bitstream.code.word4bit[bit4][bitstream.code.sym4bit[sym][int(word)]]
                         continue
 
                 if(sum(bitstream.code.sizes) != 0):
-                    #bitstream.out_bits(bitstring)
+                    print(gaggle, bitstring)
+                    bitstream.out_bits(bitstring)
                     temp = len(bitstring)/sum(bitstream.code.sizes)
                     sym_avg += temp
                     num += 1
                     #if(gaggle/16 % 32 == 0):
                     #    print(b,"Gaggle:", int(gaggle/16),", sym:", temp)
         #code.stage_4(blocks, b)
-
         progress = len(blocks)*4*(bitACGlobal-1-b)/total*100
-        print(f'Encoded {progress:3.1f}%',end='\r')
+        #print(f'Encoded {progress:3.1f}%',end='\r')
 
-    print()
-
-    if(bitstream.out.size != 0):
-        bitstream.out(0, 8-bitstream.out.size)
+    #if(bitstream.out.size != 0):
+        #bitstream.out(0, 8)
 
     if(num > 0):
         print("AVG:",sym_avg/num)
