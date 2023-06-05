@@ -99,6 +99,7 @@ def encode_dc_magnitudes(blocks, bitDC, q):
     #First DC coefficient is uncoded
     diffs = np.zeros(len(blocks), dtype='int')
     for i in range(len(blocks)):
+        print(blocks[i].dc)
         blocks[i].dc = twos(blocks[i].dc, bitDC)
     
     last = int(blocks[0].dc / pow(2, q))

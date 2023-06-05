@@ -202,13 +202,13 @@ def encode(data, width, height, pad_width):
                 bitstream.code.options = np.array([[0,0],[0,0,0],[0,0,0,0]], dtype=object)
 
                 if(stage == 0):
-                    code.stage_0(blocks[gaggle:gaggle+15], q, b)
+                    code.stage_0(blocks[gaggle:gaggle+16], q, b)
                 elif(stage == 1):
-                    code.stage_1(blocks[gaggle:gaggle+15], b)
+                    code.stage_1(blocks[gaggle:gaggle+16], b)
                 elif(stage == 2):
-                    code.stage_2(blocks[gaggle:gaggle+15], b)
+                    code.stage_2(blocks[gaggle:gaggle+16], b)
                 elif(stage == 3):
-                    code.stage_3(blocks[gaggle:gaggle+15], b)
+                    code.stage_3(blocks[gaggle:gaggle+16], b)
 
                 bit2 = np.argmin(bitstream.code.options[0])
                 bit3 = np.argmin(bitstream.code.options[1])
@@ -245,6 +245,10 @@ def encode(data, width, height, pad_width):
         print(f'Encoded {progress:3.1f}%',end='\r')
 
     print()
+
+    if(bitstream.out.size != 0):
+        bitstream.out(0, 8-bitstream.out.size)
+
     if(num > 0):
         print("AVG:",sym_avg/num)
     bitstream.fp.close()

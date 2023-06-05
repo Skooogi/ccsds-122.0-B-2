@@ -19,7 +19,7 @@ class Block:
     ac: np.ndarray = np.zeros(63)
 
 def readb(num):
-    while(len(readb.cache) < num):
+    while(len(readb.cache) < num and readb.i < len(readb.data)):
         readb.cache += format(readb.data[readb.i], '08b')
         readb.i += 1
     
@@ -41,8 +41,8 @@ def twos(value, bits):
 def stage_0(blocks, b, q):
     for i in range(len(blocks)):
         if(3 <= b < q):
-            blocks[i].dc <<= 1
-            blocks[i].dc |= int(readb(1))
+            blocks[i].dc |= int(readb(1)) << b
+
 
 if __name__ == '__main__':
     print("Uncompressing file")
@@ -187,15 +187,13 @@ if __name__ == '__main__':
             diffs[i] = -diffs[i]
             blocks[i].bitAC = diffs[i] + blocks[i-1].bitAC
 
-    """
     #AC coeffs
     print("Decoding AC coeffs")
     for b in range(bitACGlobal-1, -1, -1):
         for stage in range(1):
             for gaggle in range(0, len(blocks), 16):
                 if(stage == 0):
-                    stage_0(blocks[gaggle:gaggle+15], b, q)
+                    stage_0(blocks[gaggle:gaggle+16], b, q)
 
     for i in range(len(blocks)):
         print(blocks[i].dc)
-    """
