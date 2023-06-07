@@ -264,7 +264,8 @@ def stage_1(blocks, b):
                 size_s += 1
 
         if(size_p > 0):
-            #print(b,i,"P",bin(types_p)[2:], size_p, bin(signs_p)[2:], size_s)
+            #if(b == 2):
+                #print(format(blocks[i].tran_p, '03b'), status_to_int(blocks[i], 0), status_to_int(blocks[i], 21), status_to_int(blocks[i], 42))
             bitstream.code(types_p, size_p, 0)
             if(size_s > 0):
                 bitstream.code(signs_p, size_s, 0, -1)

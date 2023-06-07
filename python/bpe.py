@@ -193,7 +193,7 @@ def encode(data, width, height, pad_width):
     threebit = 0
     fourbit = 0
 
-    for b in range(bitACGlobal-1, bitACGlobal-4, -1):
+    for b in range(bitACGlobal-1, -1, -1):
 
         for stage in range(2):
 
@@ -227,36 +227,33 @@ def encode(data, width, height, pad_width):
                     sym = bitstream.code.symbol_option[idx]
 
                     if(size < 0):
-                        bitstring += format(word, f'0{size*-1}b')
+                        bitstring += '{'+format(word, f'0{size*-1}b')+'}'
                         continue
                     if(size == 1):
-                        bitstring += format(word, '01b')
+                        bitstring += "["+format(word, '01b')+"]"
                         continue
                     if(size == 2):
                         if(not first & 1):
-                            bitstring += format(bit2,'01b')
-                            print("2",format(bit2, '01b'))
+                            bitstring += "|"+format(bit2,'01b')+"|"
                             first |= 1
                         bitstring += bitstream.code.word2bit[bit2][bitstream.code.sym2bit[int(word)]]
                         continue
                     if(size == 3):
                         if(not first & 2):
-                            print("3",format(bit3, '02b'))
-                            bitstring += format(bit3,'02b')
+                            bitstring += "|"+format(bit3,'02b')+"|"
                             first |= 2
                         bitstring += bitstream.code.word3bit[bit3][bitstream.code.sym3bit[sym][int(word)]]
                         continue
                     if(size == 4):
                         if(not first & 4):
-                            print("4",format(bit4, '02b'))
-                            bitstring += format(bit4,'02b')
+                            bitstring += "|"+format(bit4,'02b')+"|"
                             first |= 4
                         bitstring += bitstream.code.word4bit[bit4][bitstream.code.sym4bit[sym][int(word)]]
                         continue
 
                 if(sum(bitstream.code.sizes) != 0):
-                    print(gaggle, bitstring)
-                    bitstream.out_bits(bitstring)
+                    print(b, bitstring)
+                    bitstream.out_bits(bitstring.replace('|','').replace('[','').replace(']','').replace('{','').replace('}',''))
                     temp = len(bitstring)/sum(bitstream.code.sizes)
                     sym_avg += temp
                     num += 1
@@ -266,8 +263,8 @@ def encode(data, width, height, pad_width):
         progress = len(blocks)*4*(bitACGlobal-1-b)/total*100
         #print(f'Encoded {progress:3.1f}%',end='\r')
 
-    #if(bitstream.out.size != 0):
-        #bitstream.out(0, 8)
+    if(bitstream.out.size != 0):
+        bitstream.out(0, 8)
 
     if(num > 0):
         print("AVG:",sym_avg/num)

@@ -19,22 +19,21 @@ out.cache = 0
 out.size = 0
 
 def out_bits(data):
-    
-    size = len(data)
-    mod = size%8
-    for i in range(0, len(data)-mod, 8):
-        fp.write(struct.pack('B', int(data[i:i+8],2)))
-    if(mod > 0):
-        fp.write(struct.pack('B', int(data[len(data)-mod:len(data)]+"0"*(8-mod),2)))
 
-def code(word, word_length, sym_option):
+    for i in range(len(data)):
+        out(int(data[i]), 1)
+
+def code(word, word_length, sym_option, uncoded = 1):
 
     if(word_length == 0):
         raise ValueError("WORD LENGTH 0")
     
     code.words = np.append(code.words, word)
-    code.sizes = np.append(code.sizes, word_length)
+    code.sizes = np.append(code.sizes, word_length*uncoded)
     code.symbol_option = np.append(code.symbol_option, sym_option)
+
+    if(uncoded < 0):
+        return
 
     if(word_length == 1):
         code.num[3] += 1

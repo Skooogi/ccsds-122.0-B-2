@@ -25,7 +25,7 @@ def huffman_code_tree(node, binString=''):
     '''
     Function to find Huffman Code
     '''
-    if type(node) is np.int64:
+    if type(node) == np.int64:
         return {node: binString}
     (l, r) = node.children()
     d = dict()
