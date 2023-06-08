@@ -6,7 +6,7 @@ def intify(x):
     else:
         return int(x)
 
-def DWT(data, width):
+def forward_DWT(data, width):
 
     taps = 7
 
@@ -39,7 +39,7 @@ def DWT(data, width):
     for j in range(1, int(width/2)):
         data[j] = cache[2*j] - intify(-sum(data[j-1:j])/4 + 1/2)
 
-def IDWT(data, width):
+def backward_DWT(data, width):
 
     taps = 7
 
@@ -70,25 +70,32 @@ def IDWT(data, width):
     #XN-1
     data[int(width)-1] = cache[int(width) - 1] + intify(9/8*data[int(width)-2]-1/8*data[int(width)-4] + 1/2)
 
+def discrete_wavelet_transform_2D(data, width, height, levels = 3, backward = False) -> None:
 
-def forward_DWT(data, width, height):
+    if(backward):
+        for level in reversed(range(levels)):
 
-    #Horizontal
-    for i in range(int(height)):
-        DWT(data[i, :int(width)], width)
+            sub_width = int(width/pow(2,level))
+            sub_height = int(height/pow(2,level))
 
-    #Vertical
-    for i in range(int(width)):
-        DWT(data[:int(height), i], height)
+            #Vertical
+            for i in range(int(sub_width)):
+                backward_DWT(data[:int(sub_height), i], sub_height)
 
-        
-def backward_DWT(data, width, height):
+            #Horizontal
+            for i in range(int(sub_height)):
+                backward_DWT(data[i, :int(sub_width)], sub_width)
+        return
 
-    #Vertical
-    for i in range(int(width)):
-        IDWT(data[:int(height), i], height)
+    for level in range(levels):
 
-    #Horizontal
-    for i in range(int(height)):
-        IDWT(data[i, :int(width)], width)
+        sub_width = int(width/pow(2,level))
+        sub_height = int(height/pow(2,level))
 
+        #Horizontal
+        for i in range(int(sub_height)):
+            forward_DWT(data[i, :int(sub_width)], sub_width)
+
+        #Vertical
+        for i in range(int(sub_width)):
+            forward_DWT(data[:int(sub_height), i], sub_height)
