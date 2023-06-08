@@ -1,41 +1,62 @@
 from PIL import Image
 import numpy as np
 import math
+import time
 import os
 
 import dwt
 import ccsds
 
-def test_DWT() -> None:
-    
-    bitdepth = 8
+test_data_0 = np.array(Image.open("res/test/test_image_0.bmp").split()[0], dtype=int)
+test_data_1 = np.fromfile("res/test/raw_picture_21_0.raw", dtype=np.uint8).reshape((30, 1024)).astype('int')
+test_data_2 = np.fromfile("res/test/raw_picture_19_0.raw", dtype=np.uint8).reshape((30, 1024)).astype('int')
+test_data_3 = np.array(Image.open("res/test/test_image_1.bmp").split()[0], dtype=int)
+test_data_4 = np.array(Image.open("res/test/test_image_2.bmp").split()[0], dtype=int)
+test_data_5 = np.fromfile("res/test/raw_picture_12_0.raw", dtype=np.uint8).reshape((1024, 1024)).astype('int')
+test_data_6 = np.fromfile("res/test/raw_picture_11_0.raw", dtype=np.uint8).reshape((2048, 2048)).astype('int')
 
-    filein = "res/png/7.png"
-    fileout = "test_output.png"
-    
-    img_in = Image.open(filein)
-    data_a = np.array(img_in.split()[0], dtype=int)
-    width, height = img_in.size
-    img_in.close()
+def test_dwt_0() -> None:
+    single_dwt(test_data_0, 0)
 
-    data_b = np.copy(data_a)
+def test_dwt_1() -> None:
+    single_dwt(test_data_1, 1)
 
-    data_a, pad_width, pad_height = ccsds.pad_image_size(data_a, width, height)
+def test_dwt_2() -> None:
+    single_dwt(test_data_2, 2)
+
+def test_dwt_3() -> None:
+    single_dwt(test_data_3, 3)
+
+def test_dwt_4() -> None:
+    single_dwt(test_data_4, 4)
+
+def test_dwt_5() -> None:
+    single_dwt(test_data_5, 5)
+
+def single_dwt(data, test) -> None:
+
+    data_b = np.copy(data)
+    height, width = np.shape(data)
+
+    data_a, pad_width, pad_height = ccsds.pad_image_size(data, width, height)
     width += pad_width
     height += pad_height
 
     levels = 3
+    #Time transforms
+    forward_start_time = time.time()
     dwt.discrete_wavelet_transform_2D(data_a, width, height, levels)
+    forward_end_time = time.time()
+
+    backward_start_time = time.time()
     dwt.discrete_wavelet_transform_2D(data_a, width, height, levels, True)
+    backward_end_time = time.time()
 
     #Remove padding
     data_a = data_a[:height-pad_height,:width-pad_width]
 
     a_height, a_width = np.shape(data_a)
     b_height, b_width = np.shape(data_b)
-
-    assert a_height == b_height
-    assert a_width == b_width
 
     n = a_height * a_width
     
@@ -54,5 +75,10 @@ def test_DWT() -> None:
     if(mean_squared_error != 0):
         peak_signal_to_noise_ratio = 10*math.log((255*255)/mean_squared_error, 10)
 
-    print("PSNR", peak_signal_to_noise_ratio)
-    assert peak_signal_to_noise_ratio > 40
+    print("Test:", test)
+    print("\tMSE", f'\t{mean_squared_error:3.4f}')
+    print("\tPSNR", f'\t{peak_signal_to_noise_ratio:3.4f} dB')
+    print("\tDWT", f'\t{(forward_end_time-forward_start_time):3.4f} s')
+    print("\tIDWT", f'\t{(backward_end_time-backward_start_time):3.4f} s')
+    
+    assert peak_signal_to_noise_ratio == math.inf and mean_squared_error == 0
