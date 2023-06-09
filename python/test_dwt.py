@@ -1,4 +1,3 @@
-from PIL import Image
 import numpy as np
 import math
 import time
@@ -6,14 +5,15 @@ import os
 
 import dwt
 import ccsds
+from file_io import load_image
 
-test_data_0 = np.array(Image.open("res/test/test_image_0.bmp").split()[0], dtype=int)
-test_data_1 = np.fromfile("res/test/raw_picture_21_0.raw", dtype=np.uint8).reshape((30, 1024)).astype('int')
-test_data_2 = np.fromfile("res/test/raw_picture_19_0.raw", dtype=np.uint8).reshape((30, 1024)).astype('int')
-test_data_3 = np.array(Image.open("res/test/test_image_1.bmp").split()[0], dtype=int)
-test_data_4 = np.array(Image.open("res/test/test_image_2.bmp").split()[0], dtype=int)
-test_data_5 = np.fromfile("res/test/raw_picture_12_0.raw", dtype=np.uint8).reshape((1024, 1024)).astype('int')
-test_data_6 = np.fromfile("res/test/raw_picture_11_0.raw", dtype=np.uint8).reshape((2048, 2048)).astype('int')
+test_data_0 = load_image("test/test_image_0.bmp")[0]
+test_data_1 = load_image("test/raw_picture_21_0.raw", 30, 1024)[0]
+test_data_2 = load_image("test/raw_picture_19_0.raw", 30, 1024)[0]
+test_data_3 = load_image("test/test_image_1.bmp")[0]
+test_data_4 = load_image("test/test_image_2.bmp")[0]
+test_data_5 = load_image("test/raw_picture_12_0.raw", 1024, 1024)[0]
+test_data_6 = load_image("test/raw_picture_11_0.raw", 2048, 2048)[0]
 
 def test_dwt_0() -> None:
     single_dwt(test_data_0, 0)

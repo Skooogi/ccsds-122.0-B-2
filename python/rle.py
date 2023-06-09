@@ -2,7 +2,7 @@ import numpy as np
 import math
 import struct
 import sys
-import filecmp
+import file_io
 
 class NodeTree(object):
     def __init__(self, left=None, right=None):
@@ -19,7 +19,7 @@ class NodeTree(object):
         return self.left, self.right
 
     def __str__(self):
-        return self.left, self.right
+        return 'L(' + str(self.left) + ')' + '\nR(' + str(self.right) + ')'
 
 def huffman_code_tree(node, binString=''):
     '''
@@ -58,7 +58,7 @@ def regen_tree(node, value, binstr):
 
     curr_node = node
 
-    while len(binstr) != 1:
+    while len(binstr) > 1:
         if(binstr[0] == '1'):
             if(curr_node.right == None):
                 curr_node.right = NodeTree()
@@ -69,11 +69,10 @@ def regen_tree(node, value, binstr):
             curr_node = curr_node.left
         binstr = binstr[1:]
 
-    if(binstr == '0'):
-        curr_node.left = value
-
-    else:
+    if(binstr[0] == '1'):
         curr_node.right = value
+    else:
+        curr_node.left = value
 
 def make_tree(nodes):
     '''
@@ -99,15 +98,11 @@ def out_bits(fp, data):
     if(mod > 0):
         fp.write(struct.pack('B', int(data[len(data)-mod:len(data)]+"0"*(8-mod),2)))
 
-def compress(filein, fileout):
+def compress(data):
 
-    data = 0
     num = np.array([[x, 0] for x in range(256)])
-    with open(filein, "rb") as f:
-        data = f.read()
-        f.seek(0)
-        while (byte := f.read(1)):
-            num[int.from_bytes(byte, "big")][1] += 1
+    for value in data:
+        num[value][1] += 1
 
     freq = dict(num)
     freq = sorted(freq.items(), key=lambda x: x[1], reverse=True)
@@ -118,7 +113,6 @@ def compress(filein, fileout):
     encoding = dict(encoding)
 
     bitstring = ""
-    fp = open(fileout, "wb")
     curr = '-1'
     for i in encoding:
         length = len(encoding[i])
@@ -128,33 +122,27 @@ def compress(filein, fileout):
         encoding.update({int(i): curr})
 
     for i in range(256):
-        bitstring += format(len(encoding[i]), '04b')
-
-    out_bits(fp, bitstring)
+        bitstring += format(len(encoding[i]), '08b')
 
     for i in data:
-        #print(encoding[i])
         #bitstring += encoding[int.from_bytes(data[i], "big")]
         bitstring += encoding[i]
-    padding = format(8-len(bitstring)%8, '08b')
-    out_bits(fp,padding+bitstring)
-    fp.close()
+    padding = (8 - len(bitstring) % 8) * '0'
+    padding = 0 if padding == 8 else padding
 
-def uncompress(filein, fileout):
+    return format(len(padding), '08b') + bitstring + padding
 
-    #Read file
-    data = b''
-    with open(filein, "rb") as f:
-        data = f.read()
-    
+def uncompress(data_in):
+
     encoding = np.array([[x, 0] for x in range(256)])
-    for i in range(0, 256, 2):
-        byte = data[int(i/2)]
-        encoding[i][1] = (byte >> 4) & 0xf
-        encoding[i+1][1] = byte & 0xf
-    data = data[128:]
+    data = data_in
     padding = data[0]
     data = data[1:]
+
+    for i in range(256):
+        byte = data[i]
+        encoding[i][1] = byte
+    data = data[256:]
     
     encoding = dict(sorted(encoding, key=lambda x: (x[1], x[0]), reverse=False))
     curr = '-1'
@@ -166,30 +154,18 @@ def uncompress(filein, fileout):
            curr += '0'*(length - len(curr))
         encoding.update({int(i): curr})
         regen_tree(huffman_tree, i, encoding[i])
-        #print(i, encoding[i])
 
+    binstr = ''
+    output = []
+    for i in range(len(data)):
+        binstr += format(data[i], '08b')
+        if(i == len(data)-1):
+            binstr = binstr[:-padding]
 
-    with open(fileout, "wb") as f:
-
-        binstr = ''
-        for i in range(len(data)):
-            binstr += format(data[i], '08b')
-            if(i == len(data)-1):
-                binstr = binstr[:-padding]
-
+        value, skip = read_tree(huffman_tree, binstr)
+        while skip != -1:
+            output.append(value)
+            binstr = binstr[skip:]
             value, skip = read_tree(huffman_tree, binstr)
-            while type(value) == np.int64:
-                binstr = binstr[skip:]
-                f.write(struct.pack('B', value))
-                value, skip = read_tree(huffman_tree, binstr)
 
-if __name__ == '__main__':
-    
-    args = sys.argv
-    if(len(args) > 3 and args[1] == "compress"):
-        compress(args[2], args[3])
-    elif(len(args) > 3 and args[1] == "uncompress"):
-         uncompress(args[2], args[3])
-
-    else:
-         print("Input error")
+    return output

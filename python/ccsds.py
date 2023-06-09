@@ -13,6 +13,9 @@ def pad_image_size(data, width, height):
     pad_width = 8 - width % 8
     pad_height = 8 - height % 8
 
+    pad_width = 0 if pad_width == 8 else pad_width
+    pad_height = 0 if pad_height == 8 else pad_height
+
     if 0 < pad_width < 8:
         last_column = data[:,width - 1]
         last_column = last_column.reshape(height, 1)
@@ -29,10 +32,6 @@ def pad_image_size(data, width, height):
 
 def compress(filein, fileout):
 
-    img = Image.open(filein)
-    data = np.array(img.split()[0], dtype='int')
-    width, height = img.size
-    img.close()
     #sizes = (604, 786)
     #data = np.fromfile("7.raw", dtype=np.uint8).reshape(sizes).astype('int')
 
