@@ -3,8 +3,8 @@ import numpy as np
 
 import discrete_wavelet_transform as dwt
 import bitplane_encoder as bpe
+import file_io
 import run_length_encoding as rle
-from file_io import load_image, save_image
 from subband_scaling import scale, rescale
 
 #Pad image width and height to multiples of 8
@@ -30,57 +30,36 @@ def pad_image_size(data, width, height):
 
     return data, pad_width, pad_height
 
-def compress(filein="test/test_image_0.bmp", fileout='output.bmp'):
+def compress(filein="test/test_image_2.bmp", fileout='output.bmp'):
 
-    data, width, height = load_image(filein)
+    data, width, height = file_io.load_image(filein)
     data, pad_width, pad_height = pad_image_size(data, width, height)
     width += pad_width
     height += pad_height
 
     levels = 3
 
-    print("DWT")
     dwt.discrete_wavelet_transform_2D(data, width, height, levels)
-    print("Scaling")
     scale(data, width, height)
 
-    print("Bitplane encoding")
+    file_io.fp = open(fileout[:-3]+"cmp", "wb")
     bpe.encode(data, width, height, pad_width)
-
-    """
-    print("Run length encoding")
+    file_io.cleanup()
+    
     fp = open("output.cmp", 'rb')  
     temp = fp.read()
     fp.close()
     temp = rle.compress(temp)
     new_size = int(len(temp)/8)
-    print(new_size/len(temp))
+
     fp = open("output.cmp", 'wb')  
     fp.write(int(temp, 2).to_bytes(new_size, 'big'))
     fp.close()
 
-    print("Run length decoding")
-    fp = open("output.cmp", 'rb')  
-    temp = fp.read()
-    fp.close()
-    temp = rle.uncompress(temp)
-    new_size = int(len(temp)/8)
-    print(new_size/len(temp))
-    fp = open("output.cmp", 'wb')  
-    for byte in temp:
-        fp.write(int(byte).to_bytes(1, 'big'))
-    fp.close()
-    """
-
-    #TODO Remove below this line
-    print("Rescaling")
     rescale(data, width, height)
-    print("IDWT")
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
-
-    #Remove padding
-    data = data[:height-pad_height,:width-pad_width]
-    save_image(fileout, data, width, height)
+    data = data[:height-pad_height][:width-pad_width]
+    file_io.save_image(fileout, data, width-pad_width, height-pad_height)
 
 if __name__ == '__main__':
     compress()

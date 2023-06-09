@@ -1,5 +1,6 @@
 from PIL import Image
 import numpy as np
+import struct
 
 def load_image(filein, raw_width = 0, raw_height = 0):
     
@@ -20,11 +21,12 @@ def save_image(fileout, data, width, height, img_format='BMP'):
     img_out.save(fileout, format=img_format)
     img_out.close()
 
+fp = ''
 cache = 0
 size = 0
-def write_bits(data, bits):
-
-    global cache, size
+def out(data, bits): 
+    
+    global size, cache
 
     for i in range(bits-1, -1, -1):
         cache <<= 1
@@ -36,8 +38,16 @@ def write_bits(data, bits):
             cache = 0
             size = 0
 
+
+def out_bits(data):
+
+    for i in range(len(data)):
+        out(int(data[i]), 1)
+
+
 def cleanup():
-    global size
+    global size, fp
     if(size != 0):
-        write.out(0, 8)
+        out(0, 8)
+    fp.close()
 

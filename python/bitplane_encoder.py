@@ -2,8 +2,9 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-import bitstream
-import code
+import word_mapping
+import file_io
+import encode_stages
 import run_length_encoding as rle
 from segment_header import SegmentHeader
 
@@ -86,21 +87,19 @@ def encode(data, width, height, pad_width):
     [              s             ][              s             ] | s = segment = n gaggles, 16 <= n <= 2^20
 
     """
+
+    #Initialize block array
     blocks = np.empty(int(width/8)*int(height/8), dtype=object)
 
     for i in range(len(blocks)):
-        blocks[i] = code.Block()
+        blocks[i] = encode_stages.Block()
         blocks[i].dmax = np.ones(3, dtype=int)*-2
         blocks[i].tran_h = np.zeros(3, dtype=int)
         blocks[i].ac = np.zeros(63, dtype=int)
 
     fill_blocks(blocks, data, int(width/8), int(height/8))
 
-    #Currently partitioned as a single segment
-    gaggle_size = 16
-    nblocks = blocks.shape[0]
-    mod = nblocks % gaggle_size
-
+    #Currently entire image partitioned as a single segment
     #1. Determine AC and DC bitdepths for the segement
 
     #Minimum possible values
@@ -124,22 +123,18 @@ def encode(data, width, height, pad_width):
         blocks[i].bitAC = bitAC
         bitACGlobal = max(bitACGlobal, bitAC)
 
-    print(bitACGlobal)
-
     #Determine q (4.3.1.2)
-    q = 0
+    q_prime = 0
     if(bitDC <= 3):
-        q = 0
+        q_prime = 0
     elif(bitDC - int(1 + bitACGlobal/2) <= 1 and bitDC > 3):
-        q = bitDC - 3
+        q_prime = bitDC - 3
     elif(bitDC - int(1 + bitACGlobal/2) > 10 and bitDC > 3):
-        q = bitDC - 10
+        q_prime = bitDC - 10
     else:
-        q = 1 + int(bitACGlobal/2)
+        q_prime = 1 + int(bitACGlobal/2)
 
-    q = max(q, 3)
-
-    bitstream.fp = open("output.cmp", "wb")
+    q = max(q_prime, 3)
 
     header = SegmentHeader()
     header.first_segment    = 1
@@ -156,89 +151,69 @@ def encode(data, width, height, pad_width):
     header.header_4.pixel_bitdepth = 8
     header.header_4.image_width = width
 
-    bitstream.out_bits(str(header))
+    file_io.out_bits(str(header))
 
-    code.encode_dc_magnitudes(blocks, bitDC, q)
-    code.encode_ac_magnitudes(blocks, bitACGlobal, q)
-    num = 0
-    sym_avg = 0
-    total = len(blocks)*(bitACGlobal-1)*4
-
-    print(blocks[1])
-
-    twobit = 0
-    threebit = 0
-    fourbit = 0
+    encode_stages.encode_dc_magnitudes(blocks, bitDC, q)
+    encode_stages.encode_ac_magnitudes(blocks, bitACGlobal, q)
 
     for b in range(bitACGlobal-1, -1, -1):
 
-        #print("\tbitplane:",b,"  ",end='\r')
-        for stage in range(2):
+        print("processing bitplane", b)
+        for stage in range(4):
 
             for gaggle in range(0, len(blocks), 16):
 
                 bitstring = ""
-                bitstream.code.num = np.zeros(4)
-                bitstream.code.words = np.array([], dtype='int')
-                bitstream.code.sizes = np.array([], dtype='int')
-                bitstream.code.symbol_option = np.array([], dtype='int')
-                bitstream.code.options = np.array([[0,0],[0,0,0],[0,0,0,0]], dtype=object)
+                word_mapping.words = np.array([], dtype='int')
+                word_mapping.sizes = np.array([], dtype='int')
+                word_mapping.symbol_option = np.array([], dtype='int')
+                word_mapping.options = np.array([[0,0],[0,0,0],[0,0,0,0]], dtype=object)
 
                 if(stage == 0):
-                    code.stage_0(blocks[gaggle:gaggle+16], q, b)
+                    encode_stages.stage_0(blocks[gaggle:gaggle+16], q, b)
                 elif(stage == 1):
-                    code.stage_1(blocks[gaggle:gaggle+16], b)
+                    encode_stages.stage_1(blocks[gaggle:gaggle+16], b)
                 elif(stage == 2):
-                    code.stage_2(blocks[gaggle:gaggle+16], b)
+                    encode_stages.stage_2(blocks[gaggle:gaggle+16], b)
                 elif(stage == 3):
-                    code.stage_3(blocks[gaggle:gaggle+16], b)
+                    encode_stages.stage_3(blocks[gaggle:gaggle+16], b)
 
-                bit2 = np.argmin(bitstream.code.options[0])
-                bit3 = np.argmin(bitstream.code.options[1])
-                bit4 = np.argmin(bitstream.code.options[2]) 
+                bit2 = np.argmin(word_mapping.options[0])
+                bit3 = np.argmin(word_mapping.options[1])
+                bit4 = np.argmin(word_mapping.options[2]) 
 
                 first = 0
 
-                for idx in range(len(bitstream.code.words)):
-                    word = bitstream.code.words[idx]
-                    size = bitstream.code.sizes[idx]
-                    sym = bitstream.code.symbol_option[idx]
+                for idx in range(len(word_mapping.words)):
+                    word = word_mapping.words[idx]
+                    size = word_mapping.sizes[idx]
+                    sym = word_mapping.symbol_option[idx]
 
                     if(size < 0):
-                        bitstring += '{'+format(word, f'0{size*-1}b')+'}'
+                        bitstring += format(word, f'0{size*-1}b')
                         continue
                     if(size == 1):
-                        bitstring += "["+format(word, '01b')+"]"
+                        bitstring += format(word, '01b')
                         continue
                     if(size == 2):
                         if(not first & 1):
-                            bitstring += "|"+format(bit2,'01b')+"|"
+                            bitstring += format(bit2,'01b')
                             first |= 1
-                        bitstring += bitstream.code.word2bit[bit2][bitstream.code.sym2bit[int(word)]]
+                        bitstring += word_mapping.word2bit[bit2][word_mapping.sym2bit[int(word)]]
                         continue
                     if(size == 3):
                         if(not first & 2):
-                            bitstring += "|"+format(bit3,'02b')+"|"
+                            bitstring += format(bit3,'02b')
                             first |= 2
-                        bitstring += bitstream.code.word3bit[bit3][bitstream.code.sym3bit[sym][int(word)]]
+                        bitstring += word_mapping.word3bit[bit3][word_mapping.sym3bit[sym][int(word)]]
                         continue
                     if(size == 4):
                         if(not first & 4):
-                            bitstring += "|"+format(bit4,'02b')+"|"
+                            bitstring += format(bit4,'02b')
                             first |= 4
-                        bitstring += bitstream.code.word4bit[bit4][bitstream.code.sym4bit[sym][int(word)]]
+                        bitstring += word_mapping.word4bit[bit4][word_mapping.sym4bit[sym][int(word)]]
                         continue
 
-                print(b, stage, bitstring)
-                if(stage == 2):
-                    print()
-                if(sum(bitstream.code.sizes) != 0):
-                    bitstream.out_bits(bitstring.replace('|','').replace('[','').replace(']','').replace('{','').replace('}',''))
-        code.stage_4(blocks, b)
-
-    if(bitstream.size != 0):
-        bitstream.out(0, 8)
-
-    if(num > 0):
-        print("AVG:",sym_avg/num)
-    bitstream.fp.close()
+                if(sum(word_mapping.sizes) != 0):
+                    file_io.out_bits(bitstring)
+        encode_stages.stage_4(blocks, b)

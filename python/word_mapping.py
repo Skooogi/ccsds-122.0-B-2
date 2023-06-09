@@ -1,7 +1,4 @@
-import struct
 import numpy as np
-
-fp = ""
 
 sym2bit = np.array([0, 2, 1, 3])
 sym3bit = np.array([[1, 4, 0, 5, 2, 6, 3, 7], [-1, 3, 0, 4, 1, 5, 2, 6]])
@@ -24,27 +21,6 @@ word4bit = np.array([["1", "01", "001", "0001", "0000000", "0000001", "0000010",
                             "1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"]])
 
 
-cache = 0
-size = 0
-def out(data, bits): 
-    
-    global size, cache
-
-    for i in range(bits-1, -1, -1):
-        cache <<= 1
-        cache |= (data >> i) & 1
-        size += 1
-
-        if(size >= 8):
-            fp.write(struct.pack('B',cache))
-            cache = 0
-            size = 0
-
-
-def out_bits(data):
-
-    for i in range(len(data)):
-        out(int(data[i]), 1)
 
 words = np.array([], dtype='int')
 sizes = np.array([], dtype='int')

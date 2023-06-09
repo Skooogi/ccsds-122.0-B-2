@@ -1,6 +1,7 @@
 import numpy as np
 import math
-import bitstream
+import word_mapping
+import file_io
 import run_length_encoding as rle
 
 from dataclasses import dataclass
@@ -64,23 +65,23 @@ def split_coding(diffs, first, size, N):
             J -= 1
 
         k = select_coding(gaggle_sum, J, N)
-        bitstream.out(k, math.ceil(math.log(N,2)))
+        file_io.out(k, math.ceil(math.log(N,2)))
         if(i == 0):
-            bitstream.out(first, 8)
+            file_io.out(first, 8)
 
         for j in range(1 if i==0 else 0,16):
             index = i*16+j
             if index >= size:
                 break
             z = int(diffs[index]/pow(2,k))
-            bitstream.out(0, z)
-            bitstream.out(1, 1)
+            file_io.out(0, z)
+            file_io.out(1, 1)
         if(k != 0):
             for j in range(1 if i == 0 else 0,16):
                 index = i*16+j
                 if index >= size:
                     break
-                bitstream.out(diffs[index] & ((1 << k) -1), k)
+                file_io.out(diffs[index] & ((1 << k) -1), k)
 
 def encode_dc_magnitudes(blocks, bitDC, q):
 
@@ -88,8 +89,6 @@ def encode_dc_magnitudes(blocks, bitDC, q):
     N = max(bitDC - q, 1)
     quantized = np.zeros(len(blocks))
 
-    #print("Coding DC coefficients with:\n[bitDC]\t", bitDC, "\n[q]\t", q, "\n[N]\t", N)
-    
     if(N == 1):
         quantized[0] = int(blocks[0].dc / pow(2,q))
         temp = int(quantized[0])
@@ -135,7 +134,6 @@ def encode_dc_magnitudes(blocks, bitDC, q):
 def encode_ac_magnitudes(blocks, bitACGlobal, q):
 
     N = int(abs(math.log(1 + bitACGlobal,2)) + 1)
-    print("Coding AC coefficients with:\n[bitAC]\t", bitACGlobal, "\n[q]\t", q, "\n[N]\t", N)
 
     if(N == 1):
         quantized[0] = int(blocks[0])
@@ -211,7 +209,7 @@ def stage_0(blocks, q, b):
 
     for i in range(len(blocks)):
         if(3 <= b < q):
-            bitstream.out((blocks[i].dc >> b) & 1, 1)
+            file_io.out((blocks[i].dc >> b) & 1, 1)
 
 def stage_1(blocks, b):
 
@@ -233,16 +231,12 @@ def stage_1(blocks, b):
                 int_to_status(blocks[i], j, 1)
             elif(pow(2,b+1) <= abs(blocks[i].ac[j])):
                 int_to_status(blocks[i], j, 2)
-            #print(b,status_to_int(blocks[i], j), j)
-        #print()
         
         #types_p and signs_p
         types_p = 0
         signs_p = 0
         size_s = 0
         size_p = 0
-
-        #print(status_to_int(blocks[i], 0),status_to_int(blocks[i], 21),status_to_int(blocks[i], 42))
 
         if(0 <= status_to_int(blocks[i], 0) <= 1):
             types_p |= (abs(blocks[i].ac[0]) >> b) & 1
@@ -273,11 +267,9 @@ def stage_1(blocks, b):
                 size_s += 1
 
         if(size_p > 0):
-            #if(b == 2):
-                #print(format(blocks[i].tran_p, '03b'), status_to_int(blocks[i], 0), status_to_int(blocks[i], 21), status_to_int(blocks[i], 42))
-            bitstream.code(types_p, size_p, 0)
+            word_mapping.code(types_p, size_p, 0)
             if(size_s > 0):
-                bitstream.code(signs_p, size_s, 0, -1)
+                word_mapping.code(signs_p, size_s, 0, -1)
   
 
 def stage_2(blocks, b):
@@ -296,10 +288,7 @@ def stage_2(blocks, b):
 
         if(blocks[i].tran_b != 1):
             blocks[i].tran_b = blocks[i].bmax
-            #print("[",i,"]","B",blocks[i].bmax)
-            bitstream.code(blocks[i].bmax, 1, 0)
-
-        continue
+            word_mapping.code(blocks[i].bmax, 1, 0)
 
         #TRAND
         dmax = [[-1,-1],[-1,-1],[-1,-1]]
@@ -338,8 +327,7 @@ def stage_2(blocks, b):
             blocks[i].dmax[1] = max(blocks[i].dmax[1], dmax[1][1])
             blocks[i].dmax[2] = max(blocks[i].dmax[2], dmax[2][1])
             if(size != 0):
-                #print("[",b,"]","D",bin(tran_d)[2:], size)
-                bitstream.code(tran_d, size, 1)
+                word_mapping.code(tran_d, size, 1)
         
         #types_c and signs_c
         for ci in range(3):
@@ -359,12 +347,10 @@ def stage_2(blocks, b):
                         signs_c <<= 1
                         size_s += 1
                         signs_c |= 1 if blocks[i].ac[index] < 0 else 0
-                    #print(blocks[i].ac[index],index)
             if(size_c != 0):
-                #print("C",bin(types_c)[2:], size_c, bin(signs_c)[2:], size_s)
-                bitstream.code(types_c, size_c, 0)
+                word_mapping.code(types_c, size_c, 0)
                 if(size_s != 0):
-                    bitstream.out(signs_c, size_s)
+                    word_mapping.code(signs_c, size_s, 0, -1)
 
 def stage_3(blocks, b):
 
@@ -412,8 +398,7 @@ def stage_3(blocks, b):
             size += 1
         
         if(size != 0):
-            #print("[",i,"]","G",bin(tran_g)[2:], size)
-            bitstream.code(tran_g, size, 0)
+            word_mapping.code(tran_g, size, 0)
 
         #TRANH
         hmax = np.ones(12, dtype='int')*-2
@@ -424,15 +409,11 @@ def stage_3(blocks, b):
             for hj in range(4):
                 for j in range(4):
                     index = 5+hi*21+hj*4+j
-                    #print(status_to_int(blocks[i], index), end=' ')
                     hmax[hi*4+hj] = max(hmax[hi*4+hj], status_to_int(blocks[i],index))
-                #print()
-                        
 
             temp = ''.join(map(str, hmax[hi*4:hi*4+4])).replace("-2",'').replace("2",'')
-            #print("[",i,"]","H", temp, hi)
             if(len(temp) != 0):
-                bitstream.code(int(temp, 2), len(temp), 0 if len(temp) < 4 else 1)
+                word_mapping.code(int(temp, 2), len(temp), 0 if len(temp) < 4 else 1)
 
         #types_h and signs_h
         for hi in range(3):
@@ -458,10 +439,9 @@ def stage_3(blocks, b):
                             signs_h |= 1 if blocks[i].ac[index] < 0 else 0
                             size_s += 1
                 if(size_h > 0):
-                    #print("H",bin(types_h)[2:],size_h, bin(signs_h)[2:], size_s)
-                    bitstream.code(types_h, size_h, 0 if size_h < 4 else 1)
+                    word_mapping.code(types_h, size_h, 0 if size_h < 4 else 1)
                     if(size_s > 0):
-                        bitstream.out(signs_h, size_s)
+                        word_mapping.code(signs_h, size_s, 0, -1)
 
 def stage_4(blocks, b):
 
@@ -491,5 +471,4 @@ def stage_4(blocks, b):
                         bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
 
     if(len(bitstring) > 0):
-        #bitstream.out_bits(rle.compress(bitstring))
-        bitstream.out_bits(bitstring)
+        file_io.out_bits(bitstring)
