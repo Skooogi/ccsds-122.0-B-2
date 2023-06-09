@@ -2,7 +2,7 @@ from file_io import load_image
 import numpy as np
 import time
 
-import rle
+import run_length_encoding as rle
 
 test_data_0 = load_image("test/test_image_0.bmp")[0]
 test_data_1 = load_image("test/raw_picture_21_0.raw", 30, 1024)[0]

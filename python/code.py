@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import bitstream
-import rle
+import run_length_encoding as rle
 
 from dataclasses import dataclass
 

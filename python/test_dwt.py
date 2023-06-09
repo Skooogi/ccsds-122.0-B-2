@@ -3,7 +3,7 @@ import math
 import time
 import os
 
-import dwt
+import discrete_wavelet_transform as dwt
 import ccsds
 from file_io import load_image
 

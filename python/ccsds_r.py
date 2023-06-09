@@ -1,6 +1,6 @@
 import numpy as np
 import math
-import rle
+import run_length_encoding as rle
 import bitstream
 from dataclasses import dataclass
 
@@ -210,7 +210,7 @@ if __name__ == '__main__':
 
         for j in range(1 if i == 0 else 0, 16):
             index = i*16+j
-            if(index >= len(blocks)):
+            if(k == 0 or index >= len(blocks)):
                break
             diffs[index] |= int(readb(k), 2)
 
@@ -262,7 +262,7 @@ if __name__ == '__main__':
 
         for j in range(1 if i == 0 else 0, 16):
             index = i*16+j
-            if(index >= len(blocks)):
+            if(k == 0 or index >= len(blocks)):
                break
             diffs[index] |= int(readb(k), 2)
 

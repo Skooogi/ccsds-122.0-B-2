@@ -1,11 +1,11 @@
 from PIL import Image
 import numpy as np
 
-import dwt
-import bpe
+import discrete_wavelet_transform as dwt
+import bitplane_encoder as bpe
 import subband
-import rle
-
+import run_length_encoding as rle
+from file_io import load_image, save_image
 
 #Pad image width and height to multiples of 8
 def pad_image_size(data, width, height):
@@ -30,29 +30,57 @@ def pad_image_size(data, width, height):
 
     return data, pad_width, pad_height
 
-def compress(filein, fileout):
+def compress(filein="test/test_image_0.bmp", fileout='output.bmp'):
 
-    #sizes = (604, 786)
-    #data = np.fromfile("7.raw", dtype=np.uint8).reshape(sizes).astype('int')
-
+    data, width, height = load_image(filein)
     data, pad_width, pad_height = pad_image_size(data, width, height)
     width += pad_width
     height += pad_height
 
-    levels = 1
+    levels = 3
 
+    print("DWT")
     dwt.discrete_wavelet_transform_2D(data, width, height, levels)
-    #subband.scale(data, width, height)
+    print("Scaling")
+    subband.scale(data, width, height)
+
+    print("Bitplane encoding")
+    bpe.encode(data, width, height, pad_width)
+
+    """
+    print("Run length encoding")
+    fp = open("output.cmp", 'rb')  
+    temp = fp.read()
+    fp.close()
+    temp = rle.compress(temp)
+    new_size = int(len(temp)/8)
+    print(new_size/len(temp))
+    fp = open("output.cmp", 'wb')  
+    fp.write(int(temp, 2).to_bytes(new_size, 'big'))
+    fp.close()
+
+    print("Run length decoding")
+    fp = open("output.cmp", 'rb')  
+    temp = fp.read()
+    fp.close()
+    temp = rle.uncompress(temp)
+    new_size = int(len(temp)/8)
+    print(new_size/len(temp))
+    fp = open("output.cmp", 'wb')  
+    for byte in temp:
+        fp.write(int(byte).to_bytes(1, 'big'))
+    fp.close()
+    """
 
     #TODO Remove below this line
-    #subband.rescale(data, width, height)
+    print("Rescaling")
+    subband.rescale(data, width, height)
+    print("IDWT")
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
 
     #Remove padding
     data = data[:height-pad_height,:width-pad_width]
-    img_out = Image.fromarray(data.astype('uint8'))
-    img_out.save(fileout, format="PNG")
-    img_out.close()
+    save_image(fileout, data, width, height)
 
 if __name__ == '__main__':
-    compress("res/png/7.png", "output.png")
+    compress()
