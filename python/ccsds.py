@@ -3,9 +3,9 @@ import numpy as np
 
 import discrete_wavelet_transform as dwt
 import bitplane_encoder as bpe
-import subband
 import run_length_encoding as rle
 from file_io import load_image, save_image
+from subband_scaling import scale, rescale
 
 #Pad image width and height to multiples of 8
 def pad_image_size(data, width, height):
@@ -42,7 +42,7 @@ def compress(filein="test/test_image_0.bmp", fileout='output.bmp'):
     print("DWT")
     dwt.discrete_wavelet_transform_2D(data, width, height, levels)
     print("Scaling")
-    subband.scale(data, width, height)
+    scale(data, width, height)
 
     print("Bitplane encoding")
     bpe.encode(data, width, height, pad_width)
@@ -74,7 +74,7 @@ def compress(filein="test/test_image_0.bmp", fileout='output.bmp'):
 
     #TODO Remove below this line
     print("Rescaling")
-    subband.rescale(data, width, height)
+    rescale(data, width, height)
     print("IDWT")
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
 

@@ -4,20 +4,32 @@ import run_length_encoding as rle
 import bitstream
 from dataclasses import dataclass
 
-@dataclass
-class Block:
-    bitAC: int
-    dc: int
-    status1: np.ulonglong
-    status2: np.ulonglong
-    tran_p: int
-    tran_b: int
-    tran_d: int
-    tran_g: int
-    bmax: int
-    dmax: np.ndarray = np.zeros(3, dtype='int')
-    tran_h: np.ndarray = np.zeros(3, dtype='int')
-    ac: np.ndarray = np.zeros(63)
+raster_order = [0, 1, 2, 5, 6, 9, 10]
+
+class Block(object):
+    def __init__(self):
+        self.bitAC = 0
+        self.dc = 0
+        self.status1 = 0
+        self.status2 = 0
+        self.tran_p = 0
+        self.tran_b = 0
+        self.tran_d = 0
+        self.tran_g = 0
+        self.bmax = -2
+        self.dmax = np.ones(3, dtype=int)*-2
+        self.tran_h = np.zeros(3, dtype=int)
+        self.ac = np.zeros(63, dtype=int)
+
+    def p(self, i):
+        return ' ' + format(self.ac[i], '04d')
+
+    def __str__(self):
+        output  = '| ' + format(self.dc, '04d') + self.p(0) + ' |\n'
+        output += '|' + self.p(21) + self.p(42) + ' |\n'
+
+        return output
+
 
 decode_trees = []
 
@@ -84,13 +96,12 @@ def stage_0(blocks, b, q):
         if(3 <= b < q):
             blocks[i].dc |= int(readb(1)) << b
 
-def stage_1(blocks, b, q, code_words):
+def stage_1(blocks, b, code_words):
 
     for i in range(len(blocks)):
         if blocks[i].bitAC < b:
             continue
-        #if(i == 6):
-            #print(format(blocks[i].tran_p, '03b'), blocks[i].bitAC, i)
+
         #Expected length of types(P)
         num_parents = 3
         for k in range(2, -1, -1):
@@ -135,14 +146,48 @@ def stage_1(blocks, b, q, code_words):
             if(blocks[i].tran_p & 1 << j):
                 offset += 1
             blocks[i].tran_p |= bit << (j + offset)
+            blocks[i].ac[(num_parents-1-j-offset)*21] |= bit << b
             
         #print("p", format(blocks[i].tran_p, '03b'))
         print(bitstring, end='')
         if(num_signs):
             print('{',readb(num_signs), '}',sep='',end='')
-    print()
 
+def stage_2(data, b, code_words):
 
+    for i in range(len(blocks)):
+        if blocks[i].bitAC < b:
+            continue
+
+        if(blocks[i].tran_b == 0):
+            blocks[i].tran_b = readb(1)
+            print('[',blocks[i].tran_b,']',sep='',end='')
+
+        continue
+
+        num_families = 3
+        for k in range(2, -1, -1):
+            if(blocks[i].tran_d >> k & 1):
+                num_families -= 1
+        if(num_families == 0):
+            continue
+
+        #Save 3bit codeword for gaggle
+        if(code_words[1] == -1 and num_families == 3):
+            code_words[1] = int(readb(2), 2)
+            print("|",format(code_words[1], '02b'),"|",sep='', end='')
+        #Save 2bit codeword for gaggle
+        elif(code_words[0] == -1 and num_families == 2):
+            code_words[0] = int(readb(1), 2)
+            print("|",format(code_words[0], '01b'),"|",sep='', end='')
+
+        elif(num_families == 1):
+            decoded = int(readb(1), 2)
+            print("[",decoded,"]",sep='',end='')
+            if(decoded == 1):
+                blocks[i].tran_p = 7
+                print("{",readb(1),"}", sep='', end='')
+            continue
 
 if __name__ == '__main__':
     print("Uncompressing file")
@@ -181,10 +226,10 @@ if __name__ == '__main__':
 
     blocks = np.empty(num_blocks, dtype=object)
     for i in range(len(blocks)):
-        blocks[i] = Block(0,0,0,0,0,0,0,0,0,-2)
-        blocks[i].ac = np.zeros(63, dtype = 'int')
-        blocks[i].dmax = np.ones(3, dtype='int')*-2
-        blocks[i].tran_h = np.zeros(3, dtype='int')
+        blocks[i] = Block()
+        blocks[i].dmax = np.ones(3, dtype=int)*-2
+        blocks[i].tran_h = np.zeros(3, dtype=int)
+        blocks[i].ac = np.zeros(63, dtype=int)
 
     print("Decoding DC magnitudes")
     #DC Magnitudes
@@ -328,8 +373,15 @@ if __name__ == '__main__':
                 
                 code_words = [-1, -1, -1]
 
+                print(b, stage, end=' ')
                 if(stage == 0):
                     stage_0(blocks[gaggle:gaggle+16], b, q)
                 if(stage == 1):
-                    print(b,end='')
-                    stage_1(blocks[gaggle:gaggle+16], b, q, code_words)
+                    stage_1(blocks[gaggle:gaggle+16], b, code_words)
+                if(stage == 2):
+                    stage_2(blocks[gaggle:gaggle+16], b, code_words)
+                    print()
+                print()
+
+    print(blocks[1])
+    print()

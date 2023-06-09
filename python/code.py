@@ -5,20 +5,29 @@ import run_length_encoding as rle
 
 from dataclasses import dataclass
 
-@dataclass
-class Block:
-    bitAC: int
-    dc: int
-    status1: np.ulonglong
-    status2: np.ulonglong
-    tran_p: int
-    tran_b: int
-    tran_d: int
-    tran_g: int
-    bmax: int
-    dmax: np.ndarray = np.zeros(3, dtype='int')
-    tran_h: np.ndarray = np.zeros(3, dtype='int')
-    ac: np.ndarray = np.zeros(63)
+class Block(object):
+    def __init__(self):
+        self.bitAC = 0
+        self.dc = 0
+        self.status1 = 0
+        self.status2 = 0
+        self.tran_p = 0
+        self.tran_b = 0
+        self.tran_d = 0
+        self.tran_g = 0
+        self.bmax = -2
+        self.dmax = np.ones(3, dtype=int)*-2
+        self.tran_h = np.zeros(3, dtype=int)
+        self.ac = np.zeros(63, dtype=int)
+
+    def __str__(self):
+        output = '| ' + format(int(self.dc),'04d')
+        for i in range(63):
+            output += ' ' + format(int(self.ac[i]),'04d')
+            if((i + 2) % 8 == 0):
+                output += ' |\n|'
+        return output[:-2]
+
 
 def select_coding(delta, J, N):
 
@@ -287,8 +296,10 @@ def stage_2(blocks, b):
 
         if(blocks[i].tran_b != 1):
             blocks[i].tran_b = blocks[i].bmax
-            #print("[",i,"]","B",tmax)
+            #print("[",i,"]","B",blocks[i].bmax)
             bitstream.code(blocks[i].bmax, 1, 0)
+
+        continue
 
         #TRAND
         dmax = [[-1,-1],[-1,-1],[-1,-1]]

@@ -89,11 +89,10 @@ def encode(data, width, height, pad_width):
     blocks = np.empty(int(width/8)*int(height/8), dtype=object)
 
     for i in range(len(blocks)):
-        blocks[i] = code.Block(0,0,0,0,0,0,0,0,0,-2)
-        blocks[i].ac = np.zeros(63, dtype = 'int')
-        blocks[i].dmax = np.ones(3, dtype='int')*-2
-        blocks[i].tran_h = np.zeros(3, dtype='int')
-
+        blocks[i] = code.Block()
+        blocks[i].dmax = np.ones(3, dtype=int)*-2
+        blocks[i].tran_h = np.zeros(3, dtype=int)
+        blocks[i].ac = np.zeros(63, dtype=int)
 
     fill_blocks(blocks, data, int(width/8), int(height/8))
 
@@ -103,9 +102,6 @@ def encode(data, width, height, pad_width):
     mod = nblocks % gaggle_size
 
     #1. Determine AC and DC bitdepths for the segement
-
-    #TODO REMOVE THIS
-    #blocks = blocks[-57:-40]
 
     #Minimum possible values
     bitDC = 1
@@ -168,13 +164,15 @@ def encode(data, width, height, pad_width):
     sym_avg = 0
     total = len(blocks)*(bitACGlobal-1)*4
 
+    print(blocks[1])
+
     twobit = 0
     threebit = 0
     fourbit = 0
 
     for b in range(bitACGlobal-1, -1, -1):
 
-        print("\tbitplane:",b,"  ",end='\r')
+        #print("\tbitplane:",b,"  ",end='\r')
         for stage in range(2):
 
             for gaggle in range(0, len(blocks), 16):
@@ -231,19 +229,14 @@ def encode(data, width, height, pad_width):
                         bitstring += bitstream.code.word4bit[bit4][bitstream.code.sym4bit[sym][int(word)]]
                         continue
 
+                print(b, stage, bitstring)
+                if(stage == 2):
+                    print()
                 if(sum(bitstream.code.sizes) != 0):
-                    print(b, bitstring)
                     bitstream.out_bits(bitstring.replace('|','').replace('[','').replace(']','').replace('{','').replace('}',''))
-                    temp = len(bitstring)/sum(bitstream.code.sizes)
-                    sym_avg += temp
-                    num += 1
-                    #if(gaggle/16 % 32 == 0):
-                    #    print(b,"Gaggle:", int(gaggle/16),", sym:", temp)
-        #code.stage_4(blocks, b)
-        #progress = len(blocks)*4*(bitACGlobal-1-b)/total*100
-        #print(f'Encoded {progress:3.1f}%',end='\r')
+        code.stage_4(blocks, b)
 
-    if(bitstream.out.size != 0):
+    if(bitstream.size != 0):
         bitstream.out(0, 8)
 
     if(num > 0):
