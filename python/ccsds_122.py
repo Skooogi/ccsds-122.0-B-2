@@ -30,7 +30,7 @@ def pad_image_size(data, width, height):
 
     return data, pad_width, pad_height
 
-def compress(filein="test/test_image_2.bmp", fileout='output.bmp'):
+def compress(filein="test/test_image_1.bmp", fileout='output.bmp'):
 
     data, width, height = file_io.load_image(filein)
     data, pad_width, pad_height = pad_image_size(data, width, height)
@@ -58,7 +58,7 @@ def compress(filein="test/test_image_2.bmp", fileout='output.bmp'):
 
     rescale(data, width, height)
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
-    data = data[:height-pad_height][:width-pad_width]
+    data = data[:height-pad_height,:width-pad_width]
     file_io.save_image(fileout, data, width-pad_width, height-pad_height)
 
 if __name__ == '__main__':

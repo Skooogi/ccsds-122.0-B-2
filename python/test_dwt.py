@@ -4,7 +4,7 @@ import time
 import os
 
 import discrete_wavelet_transform as dwt
-import ccsds
+import ccsds_122
 from file_io import load_image
 
 test_data_0 = load_image("test/test_image_0.bmp")[0]
@@ -38,7 +38,7 @@ def single_dwt(data, test) -> None:
     data_b = np.copy(data)
     height, width = np.shape(data)
 
-    data_a, pad_width, pad_height = ccsds.pad_image_size(data, width, height)
+    data_a, pad_width, pad_height = ccsds_122.pad_image_size(data, width, height)
     width += pad_width
     height += pad_height
 
