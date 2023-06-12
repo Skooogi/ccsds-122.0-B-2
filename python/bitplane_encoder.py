@@ -140,12 +140,15 @@ def encode(data, width, height, pad_width):
     encode_stages.encode_dc_initial(blocks, bitDC, q)
     encode_stages.encode_ac_magnitudes(blocks, bitACGlobal, q)
 
+    for i in range(len(blocks)):
+        print(blocks[i].dc)
+
     #process every bitplane and stage gaggle by gaggle
     #Figure 4-2
     for b in range(bitACGlobal-1, -1, -1):
 
         print("processing bitplane", b)
-        for stage in range(4):
+        for stage in range(1):
 
             for gaggle in range(0, len(blocks), 16):
 

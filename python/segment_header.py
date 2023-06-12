@@ -56,7 +56,7 @@ class Header_2():
         output  = format(self.seg_byte_limit, '027b')
         output += str(self.dc_stop)
         output += format(self.bitplane_stop, '05b')
-        output += format(self.bitplane_stop, '02b')
+        output += format(self.stage_stop, '02b')
         output += str(self.use_fill)
         output += '0000' #reserved
         return output
