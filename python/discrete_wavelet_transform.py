@@ -7,6 +7,8 @@ def intify(x):
         return int(x)
 
 def forward_DWT(data, width):
+    
+    #Follows the integer transform given in 3.3.2
 
     x = np.copy(data)
     N = int(width/2)
@@ -31,6 +33,8 @@ def forward_DWT(data, width):
 
 def backward_DWT(data, width):
     
+    #Follows the inverse integer transform given in 3.4.2
+
     N = int(width/2)
     C = np.copy(data)[:N]
     D = np.copy(data)[N:]

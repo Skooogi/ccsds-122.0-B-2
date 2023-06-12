@@ -11,9 +11,11 @@ test_data_0 = load_image("test/test_image_0.bmp")[0]
 test_data_1 = load_image("test/raw_picture_21_0.raw", 30, 1024)[0]
 test_data_2 = load_image("test/raw_picture_19_0.raw", 30, 1024)[0]
 test_data_3 = load_image("test/test_image_1.bmp")[0]
-test_data_4 = load_image("test/test_image_2.bmp")[0]
-test_data_5 = load_image("test/raw_picture_12_0.raw", 1024, 1024)[0]
-test_data_6 = load_image("test/raw_picture_11_0.raw", 2048, 2048)[0]
+test_data_4 = load_image("test/raw_picture_12_0.raw", 1024, 1024)[0]
+test_data_5 = load_image("test/raw_picture_11_0.raw", 2048, 2048)[0]
+test_data_6 = load_image("test/test_image_2.bmp")[0]
+test_data_7 = load_image("test/test_image_3.bmp")[0]
+test_data_8 = load_image("test/test_image_4.bmp")[0]
 
 def test_dwt_0() -> None:
     single_dwt(test_data_0, 0)
@@ -32,6 +34,15 @@ def test_dwt_4() -> None:
 
 def test_dwt_5() -> None:
     single_dwt(test_data_5, 5)
+
+def test_dwt_6() -> None:
+    single_dwt(test_data_6, 6)
+
+def test_dwt_7() -> None:
+    single_dwt(test_data_7, 7)
+
+def test_dwt_8_pure_noise() -> None:
+    single_dwt(test_data_8, 8)
 
 def single_dwt(data, test) -> None:
 

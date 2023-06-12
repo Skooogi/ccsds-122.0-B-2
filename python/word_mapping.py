@@ -29,6 +29,11 @@ options = np.array([[0,0],[0,0,0],[0,0,0,0]], dtype=object)
 num = np.zeros(4)
 def code(word, word_length, sym_option, uncoded = 1):
 
+    #A word is mapped according to 4.5.3.3 with each code option
+    #the size of the generated word is added to the sum for that code option
+    #After an entire gaggle is processed, 'options' holds these recorded sums
+    #Negative sizes denote uncoded bits for which no word mapping is performed
+
     if(word_length == 0):
         raise ValueError("WORD LENGTH 0")
 

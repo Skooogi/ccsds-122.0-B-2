@@ -6,6 +6,7 @@ import word_mapping
 import file_io
 import encode_stages
 import run_length_encoding as rle
+import common
 from segment_header import SegmentHeader
 
 def family(blocks, block_i, data, r, c, index):
@@ -59,40 +60,20 @@ def fill_blocks(blocks, data, width, height):
             blocks[block_i].ac[42] = data[2*r][2*c]
             family(blocks, block_i, data, 2*r, 2*c, 43)
 
-#As in 4-3
-def select_coding(delta, J, N):
-
-    if(64*delta > 23*J*pow(2, N)):
-        return -1
-    elif(207*J > 128*delta):
-        return 0
-    elif(J*pow(2,N+5) <= 128*delta + 49*J):
-        return N-2
-    else:
-        k = 1
-        while(J*pow(2,k+7) <= 128*delta + 49):
-            k += 1
-        return k
-
-
-#Width and Height for the LL3 band
 def encode(data, width, height, pad_width):
 
-    """
-    Divide data as follows
-    
-    [-----------------------coefficients-----------------------] | WIDTH * HEIGHT DWT transformed pixel values
-    [ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ] | b = block = 1 DC and 63 AC coefficients
-    [    g   ][    g   ][    g   ][    g   ][    g   ][    g   ] | g = gaggle = 16 blocks
-    [              s             ][              s             ] | s = segment = n gaggles, 16 <= n <= 2^20
+    # [-----------------------coefficients-----------------------] | WIDTH * HEIGHT DWT transformed pixel values
+    # [ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ] | b = block = 1 DC and 63 AC coefficients
+    # [    g   ][    g   ][    g   ][    g   ][    g   ][    g   ] | g = gaggle = 16 blocks
+    # [              s             ][              s             ] | s = segment = n gaggles, 16 <= n <= 2^20
+    # 4.1
 
-    """
 
     #Initialize block array
     blocks = np.empty(int(width/8)*int(height/8), dtype=object)
 
     for i in range(len(blocks)):
-        blocks[i] = encode_stages.Block()
+        blocks[i] = common.Block()
         blocks[i].dmax = np.ones(3, dtype=int)*-2
         blocks[i].tran_h = np.zeros(3, dtype=int)
         blocks[i].ac = np.zeros(63, dtype=int)
@@ -100,7 +81,7 @@ def encode(data, width, height, pad_width):
     fill_blocks(blocks, data, int(width/8), int(height/8))
 
     #Currently entire image partitioned as a single segment
-    #1. Determine AC and DC bitdepths for the segement
+    #4.1 Determine AC and DC bitdepths for the segement
 
     #Minimum possible values
     bitDC = 1
@@ -136,16 +117,18 @@ def encode(data, width, height, pad_width):
 
     q = max(q_prime, 3)
 
+
+    #TODO: Separate segment header generation
     header = SegmentHeader()
     header.first_segment    = 1
     header.last_segment     = 1
     header.num_segments     = 1
-    header.bitDC = bitDC
-    header.bitAC = bitACGlobal
-    header.has_header_3 = 1
-    header.has_header_4 = 1
-    header.pad_width = pad_width
-    
+    header.bitDC            = bitDC
+    header.bitAC            = bitACGlobal
+    header.has_header_3     = 1
+    header.has_header_4     = 1
+    header.pad_width        = pad_width
+
     header.header_3.segment_size = len(blocks)
     
     header.header_4.pixel_bitdepth = 8
@@ -153,9 +136,12 @@ def encode(data, width, height, pad_width):
 
     file_io.out_bits(str(header))
 
-    encode_stages.encode_dc_magnitudes(blocks, bitDC, q)
+    #Encode all coefficients
+    encode_stages.encode_dc_initial(blocks, bitDC, q)
     encode_stages.encode_ac_magnitudes(blocks, bitACGlobal, q)
 
+    #process every bitplane and stage gaggle by gaggle
+    #Figure 4-2
     for b in range(bitACGlobal-1, -1, -1):
 
         print("processing bitplane", b)
@@ -178,42 +164,53 @@ def encode(data, width, height, pad_width):
                 elif(stage == 3):
                     encode_stages.stage_3(blocks[gaggle:gaggle+16], b)
 
+                #Choose the coding option that minimizes the bitstring length for this gaggle
+                #Each word length has a separate coding option
+                #4.5.3.3.5
+                #Code word is written if the current word is the first of its length in this gaggle.
                 bit2 = np.argmin(word_mapping.options[0])
                 bit3 = np.argmin(word_mapping.options[1])
                 bit4 = np.argmin(word_mapping.options[2]) 
 
-                first = 0
+                written_code_option = 0
 
+                #Each word is mapped using the optimal coding option and written to file
                 for idx in range(len(word_mapping.words)):
                     word = word_mapping.words[idx]
                     size = word_mapping.sizes[idx]
                     sym = word_mapping.symbol_option[idx]
 
                     if(size < 0):
+                        #Negative sizes denote uncoded bits for which no word mapping is performed
                         bitstring += format(word, f'0{size*-1}b')
                         continue
+
                     if(size == 1):
                         bitstring += format(word, '01b')
                         continue
+
                     if(size == 2):
-                        if(not first & 1):
+                        if(not written_code_option & 1):
                             bitstring += format(bit2,'01b')
-                            first |= 1
+                            written_code_option |= 1
                         bitstring += word_mapping.word2bit[bit2][word_mapping.sym2bit[int(word)]]
                         continue
+
                     if(size == 3):
-                        if(not first & 2):
+                        if(not written_code_option & 2):
                             bitstring += format(bit3,'02b')
-                            first |= 2
+                            written_code_option |= 2
                         bitstring += word_mapping.word3bit[bit3][word_mapping.sym3bit[sym][int(word)]]
                         continue
+
                     if(size == 4):
-                        if(not first & 4):
+                        if(not written_code_option & 4):
                             bitstring += format(bit4,'02b')
-                            first |= 4
+                            written_code_option |= 4
                         bitstring += word_mapping.word4bit[bit4][word_mapping.sym4bit[sym][int(word)]]
                         continue
 
                 if(sum(word_mapping.sizes) != 0):
                     file_io.out_bits(bitstring)
+
         encode_stages.stage_4(blocks, b)

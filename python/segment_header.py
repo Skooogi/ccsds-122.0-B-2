@@ -1,5 +1,8 @@
 class SegmentHeader():
 
+    #Holds all data about a segment
+    #4.2
+
     def __init__(self):
         self.first_segment  = 0
         self.last_segment   = 0 

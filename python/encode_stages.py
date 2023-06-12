@@ -3,34 +3,10 @@ import math
 import word_mapping
 import file_io
 import run_length_encoding as rle
-
-from dataclasses import dataclass
-
-class Block(object):
-    def __init__(self):
-        self.bitAC = 0
-        self.dc = 0
-        self.status1 = 0
-        self.status2 = 0
-        self.tran_p = 0
-        self.tran_b = 0
-        self.tran_d = 0
-        self.tran_g = 0
-        self.bmax = -2
-        self.dmax = np.ones(3, dtype=int)*-2
-        self.tran_h = np.zeros(3, dtype=int)
-        self.ac = np.zeros(63, dtype=int)
-
-    def __str__(self):
-        output = '| ' + format(int(self.dc),'04d')
-        for i in range(63):
-            output += ' ' + format(int(self.ac[i]),'04d')
-            if((i + 2) % 8 == 0):
-                output += ' |\n|'
-        return output[:-2]
-
+from common import twos_complement, subband_lim, int_to_status, status_to_int
 
 def select_coding(delta, J, N):
+    #Heuristic way of selecting coding option k as in figure 4-10
 
     if(64*delta > 23*J*pow(2, N)):
         return -1
@@ -44,13 +20,11 @@ def select_coding(delta, J, N):
             k += 1
         return k
 
-def twos(value, bits):
-    if(value & 1 << (bits - 1)):
-        return ~value + 1
-    
-    return value
-
 def split_coding(diffs, first, size, N):
+
+    #Encodes the given values in 'diffs' with
+    #value/(2^k) zeros followed by a 1 and k least significant bits of value
+    #4.3.2.9
 
     for i in range(0, int(size/16)+1):
         gaggle_sum = 0
@@ -83,36 +57,38 @@ def split_coding(diffs, first, size, N):
                     break
                 file_io.out(diffs[index] & ((1 << k) -1), k)
 
-def encode_dc_magnitudes(blocks, bitDC, q):
+def encode_dc_initial(blocks, bitDC, q):
+
 
     #DC coding
     N = max(bitDC - q, 1)
     quantized = np.zeros(len(blocks))
 
     if(N == 1):
-        quantized[0] = int(blocks[0].dc / pow(2,q))
-        temp = int(quantized[0])
+        #Coefficients are 1 bit long and no further coding is required
+        temp = int(blocks[0].dc / pow(2, q))
         j = 1
 
         for i in range(1,len(blocks)):
             if(j == 7):
-                j = 1
+                j = 0
+                file_io.out(temp, 8)
                 temp = 0
             temp <<= 1
             j += 1
-            quantized[i] = int(blocks[i].dc / pow(2,q))
-            temp |= int(quantized[i])
+            temp = int(blocks[i].dc / pow(2, q))
         return
         
     #First DC coefficient is uncoded
     diffs = np.zeros(len(blocks), dtype='int')
     for i in range(len(blocks)):
-        blocks[i].dc = twos(blocks[i].dc, bitDC)
+        blocks[i].dc = twos_complement(blocks[i].dc, bitDC)
     
     last = int(blocks[0].dc / pow(2, q))
     first = int(last)
 
     #Rest of the DC coefficients
+    #4.3.2.4
     for i in range(1, len(blocks)):
 
         sigma = int(blocks[i].dc / pow(2, q)) - last
@@ -136,20 +112,18 @@ def encode_ac_magnitudes(blocks, bitACGlobal, q):
     N = int(abs(math.log(1 + bitACGlobal,2)) + 1)
 
     if(N == 1):
-        quantized[0] = int(blocks[0])
-        temp = int(quantized[0])
+        #Coefficients are 1 bit long and no further coding is required
+        temp = int(blocks[0].bitAC)
         j = 1
 
-        print("AC")
         for i in range(1,len(blocks)):
             if(j == 7):
-                print(temp, end='')
-                j = 1
+                file_io.out(temp, 8)
+                j = 0
                 temp = 0
             temp <<= 1
             j += 1
-            quantized[i] = int(blocks[i])
-            temp |= int(quantized[i])
+            temp |= blocks[i].bitAC
         return
              
     diffs = np.zeros(len(blocks), dtype='int')
@@ -159,6 +133,7 @@ def encode_ac_magnitudes(blocks, bitACGlobal, q):
     diffs[0] = first
     
     #Rest of the AC coefficients
+    #4.3.2.4
     for i in range(1, len(blocks)):
         sigma = abs(blocks[i].bitAC) - last
         theta = min(last, pow(2,N) - 1 - last)
@@ -175,42 +150,16 @@ def encode_ac_magnitudes(blocks, bitACGlobal, q):
 
     split_coding(diffs, first, len(blocks), N)
 
-def subband_lim(j, b):
-
-    if(j == 0 or j == 21) and b < 3:
-        return True
-    elif((1 <= j <= 4) or (22 <= j <= 25) or j == 42) and b < 2:
-        return True
-    elif((5 <= j <= 20) or (26 <= j <= 41) or (43 <= j <= 46)) and b < 1:
-        return True
-    else:
-        return False
-
-"""
-
-    00 = 0
-    01 = 1
-    10 = 2
-    11 = -1
-
-"""
-
-def status_to_int(block, i):
-    temp = (((block.status1 >> i) & 1) << 1) | ((block.status2 >> i) & 1)
-    return temp if temp < 3 else -1
-
-def int_to_status(block, i, temp):
-    val = 3 if temp == -1 else temp
-
-    block.status1 |= ((val >> 1) & 1) << i
-    block.status2 |= (val & 1) << i
 
 def stage_0(blocks, q, b):
 
+    #Any remaining DC bits
     for i in range(len(blocks)):
         if(3 <= b < q):
             file_io.out((blocks[i].dc >> b) & 1, 1)
 
+#NOTE: Stages 1 to 3 are not optimal and should be simplified
+#They follow steps given in section 4.5.3
 def stage_1(blocks, b):
 
     for i in range(len(blocks)):
@@ -218,7 +167,7 @@ def stage_1(blocks, b):
         if(blocks[i].bitAC < b):
             continue
 
-        #Initialization
+        #Set each coefficient state
         blocks[i].status1 = 0
         blocks[i].status2 = 0
 
@@ -444,7 +393,7 @@ def stage_3(blocks, b):
                         word_mapping.code(signs_h, size_s, 0, -1)
 
 def stage_4(blocks, b):
-
+    #Adds all bits of bitplane b from coefficients of type 2
     bitstring = ""
 
     for i in range(len(blocks)):

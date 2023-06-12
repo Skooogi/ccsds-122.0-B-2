@@ -4,6 +4,7 @@ import struct
 
 def load_image(filein, raw_width = 0, raw_height = 0):
     
+    #NOTE assumes 8 bits
     if filein[-3:] == 'raw':
         data = np.fromfile(filein, dtype=np.uint8).reshape((raw_height, raw_width)).astype(int)
         return data, raw_width, raw_height
@@ -26,6 +27,9 @@ cache = 0
 size = 0
 def out(data, bits): 
     
+    #Packs given number of bits to bytes that are directly written to file
+    #Left over bits are cached
+    
     global size, cache
 
     for i in range(bits-1, -1, -1):
@@ -41,13 +45,14 @@ def out(data, bits):
 
 def out_bits(data):
 
+    #Helper for large bitstrings
     for i in range(len(data)):
         out(int(data[i]), 1)
 
 
 def cleanup():
+    #Writes any cached bits
     global size, fp
     if(size != 0):
         out(0, 8)
     fp.close()
-

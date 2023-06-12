@@ -1,6 +1,9 @@
 import numpy as np
 
 def scale(data, width, height):
+    #Scales the subbands according to their individual weights
+    #Figure 3-4
+    #TODO: custom weights
 
     #Scaling HL_1 LH_1
     for j in range(0, int(height/2)):

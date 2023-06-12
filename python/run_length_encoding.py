@@ -4,7 +4,11 @@ import struct
 import sys
 import file_io
 
+#Performs basic Huffman coding for data.
+#Canonical Huffman tree is used for reduced space required by the coded tree.
+
 class NodeTree(object):
+
     def __init__(self, left=None, right=None):
         self.left = left
         self.right = right
@@ -18,13 +22,8 @@ class NodeTree(object):
     def children(self):
         return self.left, self.right
 
-    def __str__(self):
-        return 'L(' + str(self.left) + ')' + '\nR(' + str(self.right) + ')'
-
 def huffman_code_tree(node, binString=''):
-    '''
-    Function to find Huffman Code
-    '''
+
     if type(node) == np.int64:
         return {node: binString}
     (l, r) = node.children()
@@ -75,11 +74,7 @@ def regen_tree(node, value, binstr):
         curr_node.left = value
 
 def make_tree(nodes):
-    '''
-    Function to make tree
-    :param nodes: Nodes
-    :return: Root of the tree
-    '''
+
     while len(nodes) > 1:
         (key1, c1) = nodes[-1]
         (key2, c2) = nodes[-2]
@@ -88,15 +83,6 @@ def make_tree(nodes):
         nodes.append((node, c1 + c2))
         nodes = sorted(nodes, key=lambda x: x[1], reverse=True)
     return nodes[0][0]
-
-def out_bits(fp, data):
-    
-    size = len(data)
-    mod = size%8
-    for i in range(0, len(data)-mod, 8):
-        fp.write(struct.pack('B', int(data[i:i+8],2)))
-    if(mod > 0):
-        fp.write(struct.pack('B', int(data[len(data)-mod:len(data)]+"0"*(8-mod),2)))
 
 def compress(data):
 
@@ -125,7 +111,6 @@ def compress(data):
         bitstring += format(len(encoding[i]), '08b')
 
     for i in data:
-        #bitstring += encoding[int.from_bytes(data[i], "big")]
         bitstring += encoding[i]
     padding = (8 - len(bitstring) % 8) * '0'
     padding = 0 if padding == 8 else padding
@@ -157,6 +142,8 @@ def uncompress(data_in):
 
     binstr = ''
     output = []
+    #NOTE:This section is extremely slow due to appending to a list
+    #process is fast if writing straight into a file
     for i in range(len(data)):
         binstr += format(data[i], '08b')
         if(i == len(data)-1):
