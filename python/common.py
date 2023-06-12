@@ -27,23 +27,52 @@ class Block(object):
 
     def __str__(self):
         #TODO: print in correct raster order
-        output = '| ' + format(int(self.dc),'04d')
-        for i in range(63):
-            output += ' ' + format(int(self.ac[i]),'04d')
-            if((i + 2) % 8 == 0):
-                output += ' |\n|'
-        return output[:-2]
+        output = 'BLOCK:\nDC\t' + format(int(self.dc),'04d')+'\n'
+        output += f'bitDC\t{self.bitAC}\nbitAC\t{self.bitAC}\n'
+        for family in range(3):
+            output += 'Family '+str(family) + '\n'
+            output += '\tp\t' + format(self.ac[family*21+0], '04d') + '\n'
+            output += '\tc\t' + format(self.ac[family*21+1], '04d')
+            output += ' ' + format(self.ac[family*21+2], '04d')
+            output += ' ' + format(self.ac[family*21+3], '04d')
+            output += ' ' + format(self.ac[family*21+4], '04d') + '\n'
+
+            output += f'\tH{family}0\t' + format(self.ac[family*21+5], '04d')
+            output += ' ' + format(self.ac[family*21+6], '04d')
+            output += ' ' + format(self.ac[family*21+7], '04d')
+            output += ' ' + format(self.ac[family*21+8], '04d') + '\n'
+
+            output += f'\tH{family}1\t' + format(self.ac[family*21+9], '04d')
+            output += ' ' + format(self.ac[family*21+10], '04d')
+            output += ' ' + format(self.ac[family*21+11], '04d')
+            output += ' ' + format(self.ac[family*21+12], '04d') + '\n'
+
+            output += f'\tH{family}2\t' + format(self.ac[family*21+13], '04d')
+            output += ' ' + format(self.ac[family*21+14], '04d')
+            output += ' ' + format(self.ac[family*21+15], '04d')
+            output += ' ' + format(self.ac[family*21+16], '04d') + '\n'
+
+            output += f'\tH{family}3\t' + format(self.ac[family*21+17], '04d')
+            output += ' ' + format(self.ac[family*21+18], '04d')
+            output += ' ' + format(self.ac[family*21+19], '04d')
+            output += ' ' + format(self.ac[family*21+20], '04d') + '\n'
+
+        return output
 
 
 def status_to_int(block, i):
     temp = (((block.status1 >> i) & 1) << 1) | ((block.status2 >> i) & 1)
     return temp if temp < 3 else -1
 
-def int_to_status(block, i, temp):
+def int_to_status(block, ac_index, temp):
     val = 3 if temp == -1 else temp
 
-    block.status1 |= ((val >> 1) & 1) << i
-    block.status2 |= (val & 1) << i
+    reset = ~(1 << ac_index)
+    block.status1 &= reset
+    block.status2 &= reset
+
+    block.status1 |= ((val >> 1) & 1) << ac_index
+    block.status2 |= (val & 1) << ac_index
 
 
 def subband_lim(ac_index, current_bitplane):

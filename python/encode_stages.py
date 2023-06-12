@@ -156,7 +156,7 @@ def stage_0(blocks, q, b):
     #Any remaining DC bits
     for i in range(len(blocks)):
         if(3 <= b < q):
-            file_io.out((blocks[i].dc >> b) & 1, 1)
+            word_mapping.code((blocks[i].dc >> b) & 1, 1, 0)
 
 #NOTE: Stages 1 to 3 are not optimal and should be simplified
 #They follow steps given in section 4.5.3
@@ -406,6 +406,7 @@ def stage_4(blocks, b):
             if(status_to_int(blocks[i], index) == 2):
                 bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
 
+        continue
         for ci in range(3):
             for j in range(4):
                 index = 1 + ci*21 + j
@@ -420,4 +421,5 @@ def stage_4(blocks, b):
                         bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
 
     if(len(bitstring) > 0):
+        print(bitstring)
         file_io.out_bits(bitstring)

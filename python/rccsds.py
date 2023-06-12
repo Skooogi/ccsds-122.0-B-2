@@ -186,6 +186,9 @@ def decode_ac_magnitudes(blocks, bitACGlobal, q):
             blocks[i].bitAC = diffs[i] + blocks[i-1].bitAC
 
 def initialize_binary_trees():
+    
+    global decode_trees
+
     #Setup binary trees
     word2bit = np.array([["1", "01", "001", "000"], 
                         ["00", "01", "10", "11"]])
@@ -220,6 +223,9 @@ def initialize_binary_trees():
 
 def decode_bits(bitstring, size, symbol_option, code_option):
 
+    if(size == 1):
+        return bitstring
+
     sym2bit = np.array([0, 2, 1, 3])
     sym3bit = np.array([[1, 4, 0, 5, 2, 6, 3, 7], [-1, 3, 0, 4, 1, 5, 2, 6]])
     sym4bit = np.array([[10, 1, 3, 6, 2, 5, 9, 12, 0, 8, 7, 13, 4, 14, 11, 15], [-1, 1, 3, 6, 2, 5, 9, 11, 0, 8, 7, 12, 4, 13, 10, 14]])
@@ -246,64 +252,84 @@ def stage_0(blocks, b, q):
         if(3 <= b < q):
             blocks[i].dc |= int(readb(1)) << b
 
+        for j in range(63):
+            if(common.subband_lim(j, b)):
+                common.int_to_status(blocks[i], j, -1)
+            elif(common.status_to_int(blocks[i], j) == 1):
+                common.int_to_status(blocks[i], j, 2)
+
+def get_ones(word, bits):
+    ones = 0
+    for i in reversed(range(bits)):
+        ones += (word >> i) & 1
+    return ones
+
+def update_code_words(code_words, length):
+    if(length == 1):
+        return 0
+    index = length - 2 #code_words[0] = 2bit codeword etc
+
+    if(code_words[index] != -1):
+        return code_words[index]
+    
+    code_words[index] = int(readb(1 if length < 3 else 2), 2)
+    return code_words[index]
+
 def stage_1(blocks, b, code_words):
 
     for i in range(len(blocks)):
         if blocks[i].bitAC < b:
             continue
 
-        #Expected length of types(P)
-        num_parents = 3
-        for k in range(2, -1, -1):
-            if(blocks[i].tran_p >> k & 1) or common.subband_lim((2-k)*21, b):
-                num_parents -= 1
-        if(num_parents == 0):
+        subband_mask  = 4 if common.status_to_int(blocks[i], 0) == -1 else 0
+        subband_mask |= 2 if common.status_to_int(blocks[i], 21) == -1 else 0
+        subband_mask |= 1 if common.status_to_int(blocks[i], 42) == -1 else 0
+        blocks[i].tran_p |= subband_mask
+
+        unchosen = 3 - get_ones(blocks[i].tran_p, 3)
+        if(unchosen == 0):
             continue
 
-        #Save 3bit codeword for gaggle
-        if(code_words[1] == -1 and num_parents == 3):
-            code_words[1] = int(readb(2), 2)
-            print("|",format(code_words[1], '02b'),"|",sep='', end='')
-        #Save 2bit codeword for gaggle
-        elif(code_words[0] == -1 and num_parents == 2):
-            code_words[0] = int(readb(1), 2)
-            print("|",format(code_words[0], '01b'),"|",sep='', end='')
+        code_word = update_code_words(code_words, unchosen)
 
-        elif(num_parents == 1):
-            decoded = int(readb(1), 2)
-            print("[",decoded,"]",sep='',end='')
-            if(decoded == 1):
-                blocks[i].tran_p = 7
-                print("{",readb(1),"}", sep='', end='')
-            continue
-
-        #Read bits until code matches
         bitstring = readb(1)
-        decoded = decode_bits(bitstring, num_parents, 0, code_words[num_parents - 2])
-        while(decoded == ''):
+        decoded = decode_bits(bitstring, unchosen, 0, code_word)
+        while decoded == '':
             bitstring += readb(1)
-            decoded = decode_bits(bitstring, num_parents, 0, code_words[num_parents - 2])
+            decoded = decode_bits(bitstring, unchosen, 0, code_word)
+        
         decoded_value = int(decoded, 2)
+        signs = ''
+        if(decoded_value):
+            signs = readb(get_ones(decoded_value, unchosen))
 
-        num_signs = 0
-        #print("d",decoded, num_parents, format(blocks[i].tran_p,'03b'))
-        offset = 0
-        for j in range(num_parents):
-            bit = decoded_value >> j & 1
-            if(bit):
-                num_signs += 1
+        #Update block values
+        for j in reversed(range(3)):
+            if(decoded == ''):
+                break 
 
-            if(blocks[i].tran_p & 1 << j):
-                offset += 1
-            blocks[i].tran_p |= bit << (j + offset)
-            blocks[i].ac[(num_parents-1-j-offset)*21] |= bit << b
-            
-        #print("p", format(blocks[i].tran_p, '03b'))
-        print(bitstring, end='')
-        if(num_signs):
-            print('{',readb(num_signs), '}',sep='',end='')
+            if(blocks[i].tran_p >> j) & 1:
+                continue
+
+            bit = int(decoded[0])
+            decoded = decoded[1:]
+
+            index = 21*(2-j)
+            blocks[i].tran_p |= bit << j
+            blocks[i].ac[index] |= bit << b
+
+            sign = 1
+            if bit == 1:
+                common.int_to_status(blocks[i], index, 1)
+                sign = int(signs[0])
+                signs = signs[1:]
+
+                if(sign == 1):
+                    blocks[i].ac[index] *= -1
 
 def stage_2(data, b, code_words):
+
+    return
 
     for i in range(len(blocks)):
         if blocks[i].bitAC < b:
@@ -313,8 +339,8 @@ def stage_2(data, b, code_words):
             blocks[i].tran_b = readb(1)
             print('[',blocks[i].tran_b,']',sep='',end='')
 
-        continue
 
+        continue
         num_families = 3
         for k in range(2, -1, -1):
             if(blocks[i].tran_d >> k & 1):
@@ -338,6 +364,23 @@ def stage_2(data, b, code_words):
                 blocks[i].tran_p = 7
                 print("{",readb(1),"}", sep='', end='')
             continue
+
+def stage_4(blocks, b):
+
+    for i in range(len(blocks)):
+        if(blocks[i].bitAC < b):
+            continue
+
+        for pi in range(3):
+            index = pi * 21
+            if(common.status_to_int(blocks[i], index) == 2):
+                temp = readb(1)
+                print(temp, end='')
+                blocks[i].ac[index] |= int(temp) << b
+
+        continue
+
+    print()
 
 if __name__ == '__main__':
     print("Uncompressing file")
@@ -377,21 +420,25 @@ if __name__ == '__main__':
     decode_dc_initial(blocks, bitDC, q)
     decode_ac_magnitudes(blocks, bitACGlobal, q)
 
+    initialize_binary_trees()
+
     for b in range(bitACGlobal-1, -1, -1):
         print("processing bitplane", b)
-        for stage in range(1):
+        for stage in range(2):
 
             for gaggle in range(0, len(blocks), 16):
 
                 code_words = [-1, -1, -1]
                 if(stage == 0):
-                    print(len(blocks[gaggle:gaggle+16]))
-                    stage_0(blocks[gaggle:gaggle+16], q, b)
+                    stage_0(blocks[gaggle:gaggle+16], b, q)
                 elif(stage == 1):
                     stage_1(blocks[gaggle:gaggle+16], b, code_words)
                 elif(stage == 2):
                     stage_2(blocks[gaggle:gaggle+16], b, code_words)
 
+        stage_4(blocks, b)
+
 
     for i in range(len(blocks)):
-        print(blocks[i].dc)
+        if(i == 4):
+            print(blocks[i])
