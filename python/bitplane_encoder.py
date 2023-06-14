@@ -140,7 +140,7 @@ def encode(data, width, height, pad_width):
     encode_stages.encode_dc_initial(blocks, bitDC, q)
     encode_stages.encode_ac_magnitudes(blocks, bitACGlobal, q)
 
-    print(blocks[4])
+    print(blocks[0])
 
     #process every bitplane and stage gaggle by gaggle
     #Figure 4-2
@@ -158,12 +158,16 @@ def encode(data, width, height, pad_width):
                 word_mapping.options = np.array([[0,0],[0,0,0],[0,0,0,0]], dtype=object)
 
                 if(stage == 0):
+                    print("S0")
                     encode_stages.stage_0(blocks[gaggle:gaggle+16], q, b)
                 elif(stage == 1):
+                    print("S1")
                     encode_stages.stage_1(blocks[gaggle:gaggle+16], b)
                 elif(stage == 2):
+                    print("S2")
                     encode_stages.stage_2(blocks[gaggle:gaggle+16], b)
                 elif(stage == 3):
+                    print("S3")
                     encode_stages.stage_3(blocks[gaggle:gaggle+16], b)
 
                 #Choose the coding option that minimizes the bitstring length for this gaggle
@@ -184,36 +188,37 @@ def encode(data, width, height, pad_width):
 
                     if(size < 0):
                         #Negative sizes denote uncoded bits for which no word mapping is performed
-                        bitstring += format(word, f'0{size*-1}b')
+                        bitstring += '{'+format(word, f'0{size*-1}b')+'}'
                         continue
 
                     if(size == 1):
-                        bitstring += format(word, '01b')
+                        bitstring += ''+format(word, '01b')+''
                         continue
 
                     if(size == 2):
                         if(not written_code_option & 1):
-                            bitstring += format(bit2,'01b')
+                            bitstring += '|'+format(bit2,'01b')+'|'
                             written_code_option |= 1
                         bitstring += word_mapping.word2bit[bit2][word_mapping.sym2bit[int(word)]]
                         continue
 
                     if(size == 3):
                         if(not written_code_option & 2):
-                            bitstring += format(bit3,'02b')
+                            bitstring += '|'+format(bit3,'02b')+'|'
                             written_code_option |= 2
                         bitstring += word_mapping.word3bit[bit3][word_mapping.sym3bit[sym][int(word)]]
                         continue
 
                     if(size == 4):
                         if(not written_code_option & 4):
-                            bitstring += format(bit4,'02b')
+                            bitstring += '|'+format(bit4,'02b')+'|'
                             written_code_option |= 4
                         bitstring += word_mapping.word4bit[bit4][word_mapping.sym4bit[sym][int(word)]]
                         continue
 
                 if(len(bitstring)):
-                    #print(bitstring)
-                    file_io.out_bits(bitstring)
+                    print(bitstring)
+                    file_io.out_bits(bitstring.replace('|','').replace('{','').replace('}','').replace('[','').replace(']',''))
 
-        encode_stages.stage_4(blocks, b)
+        #encode_stages.stage_4(blocks, b)
+        print(blocks[0])

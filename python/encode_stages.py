@@ -3,7 +3,7 @@ import math
 import word_mapping
 import file_io
 import run_length_encoding as rle
-from common import twos_complement, subband_lim, int_to_status, status_to_int
+from common import twos_complement, subband_lim
 
 def select_coding(delta, J, N):
     #Heuristic way of selecting coding option k as in figure 4-10
@@ -173,13 +173,13 @@ def stage_1(blocks, b):
 
         for j in range(63):
             if(subband_lim(j, b)):
-                int_to_status(blocks[i], j, -1)
+                blocks[i].set_status(j, -1)
             elif(abs(blocks[i].ac[j]) < pow(2,b)):
-                int_to_status(blocks[i], j, 0)
+                blocks[i].set_status(j, 0)
             elif(pow(2,b) <= abs(blocks[i].ac[j]) < pow(2,b+1)):
-                int_to_status(blocks[i], j, 1)
+                blocks[i].set_status(j, 1)
             elif(pow(2,b+1) <= abs(blocks[i].ac[j])):
-                int_to_status(blocks[i], j, 2)
+                blocks[i].set_status(j, 2)
         
         #types_p and signs_p
         types_p = 0
@@ -187,30 +187,30 @@ def stage_1(blocks, b):
         size_s = 0
         size_p = 0
 
-        if(0 <= status_to_int(blocks[i], 0) <= 1):
+        if(0 <= blocks[i].get_status(0) <= 1):
             types_p |= (abs(blocks[i].ac[0]) >> b) & 1
             size_p += 1
 
-            if(status_to_int(blocks[i], 0) == 1):
+            if(blocks[i].get_status(0) == 1):
                 signs_p |= 1 if blocks[i].ac[0] < 0 else 0
                 size_s += 1
 
-        if(0 <= status_to_int(blocks[i], 21) <= 1):
+        if(0 <= blocks[i].get_status(21) <= 1):
             types_p <<= 1
             types_p |= (abs(blocks[i].ac[21]) >> b) & 1
             size_p += 1
 
-            if(status_to_int(blocks[i], 21) == 1):
+            if(blocks[i].get_status(21) == 1):
                 signs_p <<= 1
                 signs_p |= 1 if blocks[i].ac[21] < 0 else 0
                 size_s += 1
 
-        if(0 <= status_to_int(blocks[i], 42) <= 1):
+        if(0 <= blocks[i].get_status(42) <= 1):
             types_p <<= 1
             types_p |= (abs(blocks[i].ac[42]) >> b) & 1
             size_p += 1
 
-            if(status_to_int(blocks[i], 42) == 1):
+            if(blocks[i].get_status(42) == 1):
                 signs_p <<= 1
                 signs_p |= 1 if blocks[i].ac[42] < 0 else 0
                 size_s += 1
@@ -233,7 +233,7 @@ def stage_2(blocks, b):
         for j in range(1,63):
             if(j == 21 or j == 42):
                 continue
-            blocks[i].bmax = max(blocks[i].bmax, status_to_int(blocks[i], j))
+            blocks[i].bmax = max(blocks[i].bmax, blocks[i].get_status(j))
 
         if(blocks[i].tran_b != 1):
             blocks[i].tran_b = blocks[i].bmax
@@ -246,17 +246,17 @@ def stage_2(blocks, b):
             size = 0
             for j in range(20):
 
-                dmax[0][0] = max(dmax[0][0], status_to_int(blocks[i], 1+j))
-                if(0 <= status_to_int(blocks[i], 1+j) <= 1):
-                    dmax[0][1] = max(dmax[0][1], status_to_int(blocks[i], 1+j))
+                dmax[0][0] = max(dmax[0][0], blocks[i].get_status(1+j))
+                if(0 <= blocks[i].get_status(1+j) <= 1):
+                    dmax[0][1] = max(dmax[0][1], blocks[i].get_status(1+j))
 
-                dmax[1][0] = max(dmax[1][0], status_to_int(blocks[i], 22+j))
-                if(0 <= status_to_int(blocks[i], 22+j) <= 1):
-                    dmax[1][1] = max(dmax[1][1], status_to_int(blocks[i], 22+j))
+                dmax[1][0] = max(dmax[1][0], blocks[i].get_status(22+j))
+                if(0 <= blocks[i].get_status(22+j) <= 1):
+                    dmax[1][1] = max(dmax[1][1], blocks[i].get_status(22+j))
 
-                dmax[2][0] = max(dmax[2][0], status_to_int(blocks[i], 43+j))
-                if(0 <= status_to_int(blocks[i], 43+j) <= 1):
-                    dmax[2][1] = max(dmax[2][1], status_to_int(blocks[i], 43+j))
+                dmax[2][0] = max(dmax[2][0], blocks[i].get_status(43+j))
+                if(0 <= blocks[i].get_status(43+j) <= 1):
+                    dmax[2][1] = max(dmax[2][1], blocks[i].get_status(43+j))
 
             if((blocks[i].dmax[0]) != 1 and 0 <= dmax[0][1] <= 1):
                 tran_d |= dmax[0][1]
@@ -288,10 +288,10 @@ def stage_2(blocks, b):
             size_c = 0
             for cj in range(4):
                 index = 1+ci*21+cj
-                if(0 <= status_to_int(blocks[i], index) <= 1):
+                if(0 <= blocks[i].get_status(index) <= 1):
                     types_c <<= 1
                     size_c += 1
-                    types_c |= status_to_int(blocks[i], index)
+                    types_c |= blocks[i].get_status(index)
                     if(types_c & 1):
                         signs_c <<= 1
                         size_s += 1
@@ -315,17 +315,17 @@ def stage_3(blocks, b):
         size = 0
         tran_g = 0
         for j in range(16):
-            gmax[0][0] = max(gmax[0][0], status_to_int(blocks[i], 5+j))
-            if(0 <= status_to_int(blocks[i], 5+j) <= 1):
-                gmax[0][1] = max(gmax[0][0], status_to_int(blocks[i], 5+j))
+            gmax[0][0] = max(gmax[0][0], blocks[i].get_status(5+j))
+            if(0 <= blocks[i].get_status(5+j) <= 1):
+                gmax[0][1] = max(gmax[0][0], blocks[i].get_status(5+j))
 
-            gmax[1][0] = max(gmax[1][0], status_to_int(blocks[i], 26+j))
-            if(0 <= status_to_int(blocks[i], 26+j) <= 1):
-                gmax[1][1] = max(gmax[1][0], status_to_int(blocks[i], 26+j))
+            gmax[1][0] = max(gmax[1][0], blocks[i].get_status(26+j))
+            if(0 <= blocks[i].get_status(26+j) <= 1):
+                gmax[1][1] = max(gmax[1][0], blocks[i].get_status(26+j))
 
-            gmax[2][0] = max(gmax[2][0], status_to_int(blocks[i], 47+j))
-            if(0 <= status_to_int(blocks[i], 47+j) <= 1):
-                gmax[2][1] = max(gmax[2][0], status_to_int(blocks[i], 47+j))
+            gmax[2][0] = max(gmax[2][0], blocks[i].get_status(47+j))
+            if(0 <= blocks[i].get_status(47+j) <= 1):
+                gmax[2][1] = max(gmax[2][0], blocks[i].get_status(47+j))
 
         if((blocks[i].dmax[0]) > 0 and 0 <= gmax[0][1] <= 1):
             blocks[i].tran_g |= gmax[0][1]
@@ -379,7 +379,7 @@ def stage_3(blocks, b):
                 signs_h = 0
                 for j in range(4):
                     index = 5+hi*21+hj*4+j
-                    if(0 <= status_to_int(blocks[i], index) <= 1):
+                    if(0 <= blocks[i].get_status(index) <= 1):
                         types_h <<= 1
                         size_h += 1
                         types_h |= ((abs(blocks[i].ac[index]) >> b) & 1)
@@ -403,23 +403,26 @@ def stage_4(blocks, b):
 
         for pi in range(3):
             index = pi * 21
-            if(status_to_int(blocks[i], index) == 2):
+            if(blocks[i].get_status(index) == 2):
                 bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
 
         continue
         for ci in range(3):
             for j in range(4):
                 index = 1 + ci*21 + j
-                if(status_to_int(blocks[i], index) == 2):
+                if(blocks[i].get_status(index) == 2):
                     bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
+                    if(b == 1 and i == 0):
+                        print(bin(abs(blocks[i].ac[index])))
+
 
         for hi in range(3):
             for hj in range(4):
                 for j in range(4):
                     index = 5+hi*21+hj*4+j
-                    if(status_to_int(blocks[i], index) == 2):
+                    if(blocks[i].get_status(index) == 2):
                         bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
 
     if(len(bitstring) > 0):
-        print(bitstring)
+        print("4:"+bitstring)
         file_io.out_bits(bitstring)
