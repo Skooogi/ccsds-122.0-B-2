@@ -246,18 +246,6 @@ def decode_bits(bitstring, size, symbol_option, code_option):
         word = [i for i, x in enumerate(sym4bit[symbol_option]) if x == index][0]
         return format(word, '04b')
 
-
-def stage_0(blocks, b, q):
-    for i in range(len(blocks)):
-        if(3 <= b < q):
-            blocks[i].dc |= int(readb(1)) << b
-
-        for j in range(63):
-            if(common.subband_lim(j, b)):
-                common.int_to_status(blocks[i], j, -1)
-            elif(common.status_to_int(blocks[i], j) == 1):
-                common.int_to_status(blocks[i], j, 2)
-
 def get_ones(word, bits):
     ones = 0
     for i in reversed(range(bits)):
@@ -275,15 +263,28 @@ def update_code_words(code_words, length):
     code_words[index] = int(readb(1 if length < 3 else 2), 2)
     return code_words[index]
 
+def stage_0(blocks, bitplane, q):
+    for i in range(len(blocks)):
+        if(3 <= b < q):
+            blocks[i].dc |= int(readb(1)) << bitplane
+
+        for j in range(63):
+            if(common.subband_lim(j, bitplane)):
+                blocks[i].set_status(j, -1)
+            elif(blocks[i].get_status(j) == 1 or blocks[i].get_status(j) == 2):
+                blocks[i].set_status(j, 2)
+            else:
+                blocks[i].set_status(j, 0)
+
 def stage_1(blocks, b, code_words):
 
     for i in range(len(blocks)):
         if blocks[i].bitAC < b:
             continue
 
-        subband_mask  = 4 if common.status_to_int(blocks[i], 0) == -1 else 0
-        subband_mask |= 2 if common.status_to_int(blocks[i], 21) == -1 else 0
-        subband_mask |= 1 if common.status_to_int(blocks[i], 42) == -1 else 0
+        subband_mask  = 4 if blocks[i].get_status(0) == -1 else 0
+        subband_mask |= 2 if blocks[i].get_status(21) == -1 else 0
+        subband_mask |= 1 if blocks[i].get_status(42) == -1 else 0
         blocks[i].tran_p |= subband_mask
 
         unchosen = 3 - get_ones(blocks[i].tran_p, 3)
@@ -320,50 +321,17 @@ def stage_1(blocks, b, code_words):
 
             sign = 1
             if bit == 1:
-                common.int_to_status(blocks[i], index, 1)
+                blocks[i].set_status(index, 1)
                 sign = int(signs[0])
                 signs = signs[1:]
 
                 if(sign == 1):
                     blocks[i].ac[index] *= -1
 
+
 def stage_2(data, b, code_words):
 
-    return
-
-    for i in range(len(blocks)):
-        if blocks[i].bitAC < b:
-            continue
-
-        if(blocks[i].tran_b == 0):
-            blocks[i].tran_b = readb(1)
-            print('[',blocks[i].tran_b,']',sep='',end='')
-
-
-        continue
-        num_families = 3
-        for k in range(2, -1, -1):
-            if(blocks[i].tran_d >> k & 1):
-                num_families -= 1
-        if(num_families == 0):
-            continue
-
-        #Save 3bit codeword for gaggle
-        if(code_words[1] == -1 and num_families == 3):
-            code_words[1] = int(readb(2), 2)
-            print("|",format(code_words[1], '02b'),"|",sep='', end='')
-        #Save 2bit codeword for gaggle
-        elif(code_words[0] == -1 and num_families == 2):
-            code_words[0] = int(readb(1), 2)
-            print("|",format(code_words[0], '01b'),"|",sep='', end='')
-
-        elif(num_families == 1):
-            decoded = int(readb(1), 2)
-            print("[",decoded,"]",sep='',end='')
-            if(decoded == 1):
-                blocks[i].tran_p = 7
-                print("{",readb(1),"}", sep='', end='')
-            continue
+    print()
 
 def stage_4(blocks, b):
 
@@ -373,7 +341,7 @@ def stage_4(blocks, b):
 
         for pi in range(3):
             index = pi * 21
-            if(common.status_to_int(blocks[i], index) == 2):
+            if(blocks[i].get_status(index) == 2):
                 temp = readb(1)
                 print(temp, end='')
                 blocks[i].ac[index] |= int(temp) << b
@@ -437,8 +405,4 @@ if __name__ == '__main__':
                     stage_2(blocks[gaggle:gaggle+16], b, code_words)
 
         stage_4(blocks, b)
-
-
-    for i in range(len(blocks)):
-        if(i == 4):
-            print(blocks[i])
+        print(blocks[0])
