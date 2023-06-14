@@ -263,9 +263,51 @@ def update_code_words(code_words, length):
     code_words[index] = int(readb(1 if length < 3 else 2), 2)
     return code_words[index]
 
+def decode_word(num_zeros, symbol_option, code_words):
+
+    code_word = update_code_words(code_words, num_zeros)
+
+    bitstring = readb(1)
+    decoded = decode_bits(bitstring, num_zeros, symbol_option, code_word)
+    while decoded == '':
+        bitstring += readb(1)
+        decoded = decode_bits(bitstring, num_zeros, symbol_option, code_word)
+    
+    decoded_value = int(decoded, 2)
+    signs = ''
+    if(decoded_value):
+        signs = readb(get_ones(decoded_value, num_zeros))
+
+    return decoded, signs
+
+def update_ac_values(bitplane, block, offset, span, decoded, signs):
+
+    for family in range(3):
+        start_index = family*21+offset
+        for i in range(span):
+            if(decoded == ''):
+                break 
+
+            if block.get_status(start_index + i) != 0:
+                continue
+
+            bit = int(decoded[0])
+            decoded = decoded[1:]
+
+            block.ac[start_index + i] |= bit << bitplane
+
+            sign = 1
+            if bit == 1:
+                block.set_status(start_index + i, 1)
+                sign = int(signs[0])
+                signs = signs[1:]
+
+                if(sign == 1):
+                    block.ac[start_index + i] *= -1
+
 def stage_0(blocks, bitplane, q):
     for i in range(len(blocks)):
-        if(3 <= b < q):
+        if(3 <= bitplane < q):
             blocks[i].dc |= int(readb(1)) << bitplane
 
         for j in range(63):
@@ -276,62 +318,27 @@ def stage_0(blocks, bitplane, q):
             else:
                 blocks[i].set_status(j, 0)
 
-def stage_1(blocks, b, code_words):
+def stage_1(blocks, bitplane, code_words):
 
     for i in range(len(blocks)):
         if blocks[i].bitAC < b:
             continue
 
-        subband_mask  = 4 if blocks[i].get_status(0) == -1 else 0
-        subband_mask |= 2 if blocks[i].get_status(21) == -1 else 0
-        subband_mask |= 1 if blocks[i].get_status(42) == -1 else 0
-        blocks[i].tran_p |= subband_mask
-
-        unchosen = 3 - get_ones(blocks[i].tran_p, 3)
-        if(unchosen == 0):
+        num_zeros  = 1 if blocks[i].get_status(0) == 0 else 0
+        num_zeros += 1 if blocks[i].get_status(21) == 0 else 0
+        num_zeros += 1 if blocks[i].get_status(42) == 0 else 0
+        if(num_zeros == 0):
             continue
 
-        code_word = update_code_words(code_words, unchosen)
+        symbol_option = 0
+        decoded, signs = decode_word(num_zeros, symbol_option, code_words)
 
-        bitstring = readb(1)
-        decoded = decode_bits(bitstring, unchosen, 0, code_word)
-        while decoded == '':
-            bitstring += readb(1)
-            decoded = decode_bits(bitstring, unchosen, 0, code_word)
-        
-        decoded_value = int(decoded, 2)
-        signs = ''
-        if(decoded_value):
-            signs = readb(get_ones(decoded_value, unchosen))
-
-        #Update block values
-        for j in reversed(range(3)):
-            if(decoded == ''):
-                break 
-
-            if(blocks[i].tran_p >> j) & 1:
-                continue
-
-            bit = int(decoded[0])
-            decoded = decoded[1:]
-
-            index = 21*(2-j)
-            blocks[i].tran_p |= bit << j
-            blocks[i].ac[index] |= bit << b
-
-            sign = 1
-            if bit == 1:
-                blocks[i].set_status(index, 1)
-                sign = int(signs[0])
-                signs = signs[1:]
-
-                if(sign == 1):
-                    blocks[i].ac[index] *= -1
-
+        offset = 0
+        span = 1
+        update_ac_values(bitplane, blocks[i], offset, span, decoded, signs)
 
 def stage_2(data, b, code_words):
 
-    print()
 
 def stage_4(blocks, b):
 
