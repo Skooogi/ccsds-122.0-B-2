@@ -220,5 +220,5 @@ def encode(data, width, height, pad_width):
                     print(bitstring)
                     file_io.out_bits(bitstring.replace('|','').replace('{','').replace('}','').replace('[','').replace(']',''))
 
-        #encode_stages.stage_4(blocks, b)
+        encode_stages.stage_4(blocks, b)
         print(blocks[0])
