@@ -302,9 +302,9 @@ def update_tran_word(word, size, decoded):
         raise ValueError(f'decoding lengh mismatch {decoded}')
     return word
 
-def update_ac_values(bitplane, block, offset, span, decoded, signs):
+def update_ac_values(bitplane, block, offset, span, decoded, signs, families = range(3)):
 
-    for family in range(3):
+    for family in families:
         start_index = family*21+offset
         for i in range(span):
             if(decoded == ''):
@@ -325,12 +325,14 @@ def update_ac_values(bitplane, block, offset, span, decoded, signs):
                 signs = signs[1:]
 
                 if(sign == 1):
-                    block.ac[start_index + i] *= -1
+                    block.ac[start_index + i] |= 1 << block.bitAC
 
 def stage_0(blocks, bitplane, q):
     for i in range(len(blocks)):
         if(3 <= bitplane < q):
-            blocks[i].dc |= int(readb(1)) << bitplane
+            temp = int(readb(1))
+            blocks[i].dc |= temp << bitplane
+            print(temp, end='')
 
         for j in range(63):
             if(common.subband_lim(j, bitplane)):
@@ -339,6 +341,8 @@ def stage_0(blocks, bitplane, q):
                 blocks[i].set_status(j, 2)
             else:
                 blocks[i].set_status(j, 0)
+
+    print()
 
 def stage_1(blocks, bitplane, code_words):
 
@@ -360,7 +364,7 @@ def stage_1(blocks, bitplane, code_words):
         update_ac_values(bitplane, blocks[i], offset, span, decoded, signs)
     print()
 
-def stage_2(data, bitplane, code_words):
+def stage_2(blocks, bitplane, code_words):
 
     for i in range(len(blocks)):
         if blocks[i].bitAC < bitplane:
@@ -384,31 +388,32 @@ def stage_2(data, bitplane, code_words):
             blocks[i].tran_d = update_tran_word(blocks[i].tran_d, size_tran_d, decoded)
         
         for family in range(3):
-            if(blocks[i].get_dmax(family) > 0):
+
+            if((blocks[i].tran_d >> family) & 1) != 1:
                 continue
             
             first_child_index = 21*family + 1
-            num_zeros  = 1 if blocks[i].get_status(first_child_index+0) == 0 else 0
+            num_zeros = 0
+            num_zeros  += 1 if blocks[i].get_status(first_child_index+0) == 0 else 0
             num_zeros  += 1 if blocks[i].get_status(first_child_index+1) == 0 else 0
             num_zeros  += 1 if blocks[i].get_status(first_child_index+2) == 0 else 0
             num_zeros  += 1 if blocks[i].get_status(first_child_index+3) == 0 else 0
+
             if(num_zeros == 0):
                 continue
 
             symbol_option = 0
             decoded, signs = decode_word(num_zeros, symbol_option, code_words)
-
             offset = 1
             span = 4
-            update_ac_values(bitplane, blocks[i], offset, span, decoded, signs)
-
+            update_ac_values(bitplane, blocks[i], offset, span, decoded, signs, families = [family])
     print()
 
-def stage_4(blocks, bitstring):
+def stage_4(blocks, bitplane):
 
     print("S4:")
     for i in range(len(blocks)):
-        if(blocks[i].bitAC < bitstring):
+        if(blocks[i].bitAC < bitplane):
             continue
 
         for pi in range(3):
@@ -416,7 +421,7 @@ def stage_4(blocks, bitstring):
             if(blocks[i].get_status(index) == 2):
                 temp = readb(1)
                 print(temp, end='')
-                blocks[i].ac[index] |= int(temp) << bitstring
+                blocks[i].ac[index] |= int(temp) << bitplane
 
         for ci in range(3):
             for j in range(4):
@@ -424,7 +429,7 @@ def stage_4(blocks, bitstring):
                 if(blocks[i].get_status(index) == 2):
                     temp = readb(1)
                     print(temp, end='')
-                    blocks[i].ac[index] |= int(temp) << bitstring
+                    blocks[i].ac[index] |= int(temp) << bitplane
     print()
 
 if __name__ == '__main__':
@@ -468,8 +473,8 @@ if __name__ == '__main__':
     initialize_binary_trees()
 
     for bitplane in range(bitACGlobal-1, -1, -1):
-        print("processing bitplaneitplane", bitplane)
-        for stage in range(2):
+        print("processing bitplane", bitplane)
+        for stage in range(3):
 
             for gaggle in range(0, len(blocks), 16):
 
@@ -485,4 +490,11 @@ if __name__ == '__main__':
                     stage_2(blocks[gaggle:gaggle+16], bitplane, code_words)
 
         stage_4(blocks, bitplane)
-        print(blocks[0])
+        print(blocks[3])
+
+    for i in range(len(blocks)):
+        for j in range(63):
+            if blocks[i].ac[j] & (1 << blocks[i].bitAC) > 0:
+                blocks[i].ac[j] &= ~(1 << blocks[i].bitAC)
+                blocks[i].ac[j] *= -1
+    print(blocks[3])

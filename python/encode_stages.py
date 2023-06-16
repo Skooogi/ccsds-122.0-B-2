@@ -275,9 +275,12 @@ def stage_2(blocks, b):
             blocks[i].dmax[0] = max(blocks[i].dmax[0], dmax[0][1])
             blocks[i].dmax[1] = max(blocks[i].dmax[1], dmax[1][1])
             blocks[i].dmax[2] = max(blocks[i].dmax[2], dmax[2][1])
+
             if(size != 0):
-                word_mapping.code(tran_d, size, 1)
+                word_mapping.code(tran_d, size, 1 if size == 3 else 0)
         
+        if((b == 5 or b == 9) and i == 3):
+            print("HERE", size,format(blocks[i].tran_d, f'03b'), blocks[i].dmax[0], blocks[i].dmax[1], blocks[i].dmax[2])
         #types_c and signs_c
         for ci in range(3):
             if(blocks[i].dmax[ci] <= 0):
@@ -406,15 +409,13 @@ def stage_4(blocks, b):
             if(blocks[i].get_status(index) == 2):
                 bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
 
-        continue
         for ci in range(3):
             for j in range(4):
                 index = 1 + ci*21 + j
                 if(blocks[i].get_status(index) == 2):
                     bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
-                    if(b == 1 and i == 0):
-                        print(bin(abs(blocks[i].ac[index])))
 
+        continue
 
         for hi in range(3):
             for hj in range(4):
