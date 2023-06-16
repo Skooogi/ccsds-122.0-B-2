@@ -260,16 +260,19 @@ def stage_2(blocks, b):
 
             if((blocks[i].dmax[0]) != 1 and 0 <= dmax[0][1] <= 1):
                 tran_d |= dmax[0][1]
+                blocks[i].tran_d |= 4 * dmax[0][1]
                 size += 1
 
             if((blocks[i].dmax[1]) != 1 and 0 <= dmax[1][1] <= 1):
                 tran_d <<= 1
+                blocks[i].tran_d |= 2 * dmax[1][1]
                 tran_d |= dmax[1][1]
                 size += 1
 
             if((blocks[i].dmax[2]) != 1 and 0 <= dmax[2][1] <= 1):
                 tran_d <<= 1
                 tran_d |= dmax[2][1]
+                blocks[i].tran_d |= 1 * dmax[2][1]
                 size += 1
 
             blocks[i].dmax[0] = max(blocks[i].dmax[0], dmax[0][1])
@@ -279,8 +282,6 @@ def stage_2(blocks, b):
             if(size != 0):
                 word_mapping.code(tran_d, size, 1 if size == 3 else 0)
         
-        if((b == 5 or b == 9) and i == 3):
-            print("HERE", size,format(blocks[i].tran_d, f'03b'), blocks[i].dmax[0], blocks[i].dmax[1], blocks[i].dmax[2])
         #types_c and signs_c
         for ci in range(3):
             if(blocks[i].dmax[ci] <= 0):
@@ -317,18 +318,19 @@ def stage_3(blocks, b):
         gmax = [[-2,-2], [-2,-2], [-2,-2]]
         size = 0
         tran_g = 0
+        """
         for j in range(16):
             gmax[0][0] = max(gmax[0][0], blocks[i].get_status(5+j))
             if(0 <= blocks[i].get_status(5+j) <= 1):
-                gmax[0][1] = max(gmax[0][0], blocks[i].get_status(5+j))
+                gmax[0][1] = max(gmax[0][1], blocks[i].get_status(5+j))
 
             gmax[1][0] = max(gmax[1][0], blocks[i].get_status(26+j))
             if(0 <= blocks[i].get_status(26+j) <= 1):
-                gmax[1][1] = max(gmax[1][0], blocks[i].get_status(26+j))
+                gmax[1][1] = max(gmax[1][1], blocks[i].get_status(26+j))
 
             gmax[2][0] = max(gmax[2][0], blocks[i].get_status(47+j))
             if(0 <= blocks[i].get_status(47+j) <= 1):
-                gmax[2][1] = max(gmax[2][0], blocks[i].get_status(47+j))
+                gmax[2][1] = max(gmax[2][1], blocks[i].get_status(47+j))
 
         if((blocks[i].dmax[0]) > 0 and 0 <= gmax[0][1] <= 1):
             blocks[i].tran_g |= gmax[0][1]
@@ -348,10 +350,30 @@ def stage_3(blocks, b):
             tran_g <<= 1
             tran_g |= gmax[2][1]
             size += 1
-        
+        """
+
+        if blocks[i].dmax[0] == 1 and blocks[i].tran_g & 4 == 0:
+            blocks[i].tran_g |= 4 * blocks[i].get_gmax(0)
+            tran_g |= blocks[i].get_gmax(0)
+            size += 1
+
+        if blocks[i].dmax[1] == 1 and blocks[i].tran_g & 2 == 0:
+            blocks[i].tran_g |= 2 * blocks[i].get_gmax(1)
+            tran_g <<= 1
+            tran_g |= blocks[i].get_gmax(1)
+            size += 1
+
+        if blocks[i].dmax[2] == 1 and blocks[i].tran_g & 1 == 0:
+            blocks[i].tran_g |= 1 * blocks[i].get_gmax(2)
+            tran_g <<= 1
+            tran_g |= blocks[i].get_gmax(2)
+            size += 1
+
         if(size != 0):
+            print(i, format(tran_g, f'0{size}b'), "tg", format(blocks[i].tran_g, f'03b'), format(blocks[i].tran_d, f'03b'))
             word_mapping.code(tran_g, size, 0)
 
+        continue
         #TRANH
         hmax = np.ones(12, dtype='int')*-2
         for hi in range(3):
@@ -361,7 +383,7 @@ def stage_3(blocks, b):
             for hj in range(4):
                 for j in range(4):
                     index = 5+hi*21+hj*4+j
-                    hmax[hi*4+hj] = max(hmax[hi*4+hj], status_to_int(blocks[i],index))
+                    hmax[hi*4+hj] = max(hmax[hi*4+hj], blocks[i].get_status(index))
 
             temp = ''.join(map(str, hmax[hi*4:hi*4+4])).replace("-2",'').replace("2",'')
             if(len(temp) != 0):
@@ -414,8 +436,6 @@ def stage_4(blocks, b):
                 index = 1 + ci*21 + j
                 if(blocks[i].get_status(index) == 2):
                     bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
-
-        continue
 
         for hi in range(3):
             for hj in range(4):

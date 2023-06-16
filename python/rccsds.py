@@ -409,6 +409,71 @@ def stage_2(blocks, bitplane, code_words):
             update_ac_values(bitplane, blocks[i], offset, span, decoded, signs, families = [family])
     print()
 
+def stage_3(blocks, bitplane, code_words):
+
+    for i in range(len(blocks)):
+        if blocks[i].bitAC < bitplane:
+            continue
+
+        if blocks[i].tran_b == 0 or blocks[i].get_bmax() == -1:
+            continue
+
+        #TRANG 
+        num_zeros = get_ones(blocks[i].tran_d, 3) - get_ones(blocks[i].tran_g, 3)
+        if num_zeros != 0:
+
+            symbol_option = 0
+            not_tran = False
+            decoded, signs = decode_word(num_zeros, symbol_option, code_words, not_tran)
+
+            size_tran_g = 3
+            blocks[i].tran_g = update_tran_word(blocks[i].tran_g, size_tran_g, decoded)
+
+        continue
+        #TRANH
+        for family in range(3):
+
+            if((blocks[i].tran_g >> family) & 1) != 1:
+                continue
+
+            num_zeros = 4 - get_ones(blocks[i].tran_h[family], 4)
+            if num_zeros == 0:
+                continue
+
+            symbol_option = 1 if size == 4 else 0
+            not_tran = False
+            decoded, signs = decode_word(num_zeros, symbol_option, code_words, not_tran)
+
+            size_tran_h = 4
+            blocks[i].tran_h[family] = update_tran_word(blocks[i].tran_h[family], size_tran_h, decoded)
+
+        #types_h and signs_h
+        for family in range(3):
+            if((blocks[i].tran_g >> family) & 1) != 1:
+                continue
+
+            for tran_hj in range(4):
+                if((blocks[i].tran_h[family] >> tran_hj) & 1) != 1:
+                    continue
+            
+                first_grandchild_index = 21*family + 5 + 4 * tran_hj
+                num_zeros = 0
+                num_zeros  += 1 if blocks[i].get_status(first_grandchild_index+0) == 0 else 0
+                num_zeros  += 1 if blocks[i].get_status(first_grandchild_index+1) == 0 else 0
+                num_zeros  += 1 if blocks[i].get_status(first_grandchild_index+2) == 0 else 0
+                num_zeros  += 1 if blocks[i].get_status(first_grandchild_index+3) == 0 else 0
+
+                if(num_zeros == 0):
+                    raiseValueError("types Hij 0000")
+
+                symbol_option = 0
+                decoded, signs = decode_word(num_zeros, symbol_option, code_words)
+                offset = 5 + 4*tran_hj
+                span = 4
+                update_ac_values(bitplane, blocks[i], offset, span, decoded, signs, families = [family])
+            
+    print()
+
 def stage_4(blocks, bitplane):
 
     print("S4:")
@@ -430,6 +495,15 @@ def stage_4(blocks, bitplane):
                     temp = readb(1)
                     print(temp, end='')
                     blocks[i].ac[index] |= int(temp) << bitplane
+
+        for hi in range(3):
+            for hj in range(4):
+                for j in range(4):
+                    index = 5+hi*21+hj*4+j
+                    if(blocks[i].get_status(index) == 2):
+                        temp = readb(1)
+                        print(temp, end='')
+                        blocks[i].ac[index] |= int(temp) << bitplane
     print()
 
 if __name__ == '__main__':
@@ -474,7 +548,7 @@ if __name__ == '__main__':
 
     for bitplane in range(bitACGlobal-1, -1, -1):
         print("processing bitplane", bitplane)
-        for stage in range(3):
+        for stage in range(4):
 
             for gaggle in range(0, len(blocks), 16):
 
@@ -488,8 +562,11 @@ if __name__ == '__main__':
                 elif(stage == 2):
                     print("S2")
                     stage_2(blocks[gaggle:gaggle+16], bitplane, code_words)
+                elif(stage == 3):
+                    print("S3")
+                    stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
 
-        stage_4(blocks, bitplane)
+        #stage_4(blocks, bitplane)
         print(blocks[3])
 
     for i in range(len(blocks)):
