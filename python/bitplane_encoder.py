@@ -53,12 +53,12 @@ def fill_blocks(blocks, data, width, height):
             blocks[block_i].dc = data[r][c]
 
             #Parents for F0 F1 F2
-            blocks[block_i].ac[0] = data[r][2*c]
-            family(blocks, block_i, data, r, 2*c, 1)
-            blocks[block_i].ac[21] = data[2*r][c]
-            family(blocks, block_i, data, 2*r, c, 22)
-            blocks[block_i].ac[42] = data[2*r][2*c]
-            family(blocks, block_i, data, 2*r, 2*c, 43)
+            blocks[block_i].ac[0] = data[r][c + width]
+            family(blocks, block_i, data, r, c + width, 1)
+            blocks[block_i].ac[21] = data[r+height][c]
+            family(blocks, block_i, data, r+height, c, 22)
+            blocks[block_i].ac[42] = data[r+height][c+width]
+            family(blocks, block_i, data, r+height, c+width, 43)
 
 def encode(data, width, height, pad_width):
 
@@ -221,4 +221,4 @@ def encode(data, width, height, pad_width):
                     file_io.out_bits(bitstring.replace('|','').replace('{','').replace('}','').replace('[','').replace(']',''))
 
         #encode_stages.stage_4(blocks, b)
-        print(blocks[3])
+        print(blocks[0])

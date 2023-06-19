@@ -25,7 +25,7 @@ def compress(filein="test/test_image_gradient.bmp", fileout='output'):
     file_io.fp = open(fileout+".cmp", "wb")
     bpe.encode(data, width, height, pad_width)
     file_io.cleanup()
-    
+
     """
     fp = open(fileout+".cmp", 'rb')  
     temp = fp.read()

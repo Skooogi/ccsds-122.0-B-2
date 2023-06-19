@@ -5,7 +5,10 @@ import word_mapping
 import common
 import sys
 import segment_header
+import file_io
+import discrete_wavelet_transform as dwt
 from dataclasses import dataclass
+from subband_scaling import rescale
 
 decode_trees = []
 
@@ -270,7 +273,11 @@ def decode_word(num_zeros, symbol_option, code_words, not_tran = True):
 
     bitstring = readb(1)
     decoded = decode_bits(bitstring, num_zeros, symbol_option, code_word)
+    i = 0
     while decoded == '':
+        i += 1
+        if(i == 10000):
+            raise ValueError("Invalid bitstring: "+bitstring)
         bitstring += readb(1)
         decoded = decode_bits(bitstring, num_zeros, symbol_option, code_word)
     
@@ -377,6 +384,12 @@ def stage_2(blocks, bitplane, code_words):
         if blocks[i].tran_b == 0 or blocks[i].get_bmax() == -1:
             continue
 
+        subband_mask = 0
+        subband_mask |= 1 if blocks[i].get_dmax(0) == -1 else 0
+        subband_mask |= 2 if blocks[i].get_dmax(1) == -1 else 0
+        subband_mask |= 4 if blocks[i].get_dmax(2) == -1 else 0
+
+        blocks[i].tran_d |= subband_mask
         num_zeros = 3 - get_ones(blocks[i].tran_d, 3)
         if num_zeros != 0:
 
@@ -386,6 +399,7 @@ def stage_2(blocks, bitplane, code_words):
 
             size_tran_d = 3
             blocks[i].tran_d = update_tran_word(blocks[i].tran_d, size_tran_d, decoded)
+            print(" "+decoded)
         
         for family in range(3):
 
@@ -429,7 +443,6 @@ def stage_3(blocks, bitplane, code_words):
             size_tran_g = 3
             blocks[i].tran_g = update_tran_word(blocks[i].tran_g, size_tran_g, decoded)
 
-        continue
         #TRANH
         for family in range(3):
 
@@ -440,13 +453,15 @@ def stage_3(blocks, bitplane, code_words):
             if num_zeros == 0:
                 continue
 
-            symbol_option = 1 if size == 4 else 0
+            symbol_option = 1 if num_zeros == 4 else 0
             not_tran = False
             decoded, signs = decode_word(num_zeros, symbol_option, code_words, not_tran)
 
             size_tran_h = 4
             blocks[i].tran_h[family] = update_tran_word(blocks[i].tran_h[family], size_tran_h, decoded)
+            print(i, family, decoded, format(blocks[i].tran_h[family], '04b'), format(blocks[i].tran_g, '03b'), format(blocks[i].tran_d, '03b'))
 
+        continue
         #types_h and signs_h
         for family in range(3):
             if((blocks[i].tran_g >> family) & 1) != 1:
@@ -496,6 +511,7 @@ def stage_4(blocks, bitplane):
                     print(temp, end='')
                     blocks[i].ac[index] |= int(temp) << bitplane
 
+        continue
         for hi in range(3):
             for hj in range(4):
                 for j in range(4):
@@ -505,6 +521,55 @@ def stage_4(blocks, bitplane):
                         print(temp, end='')
                         blocks[i].ac[index] |= int(temp) << bitplane
     print()
+
+def unpack_blocks(blocks, width, height):
+
+    data = np.ones([height*8, width*8])
+
+    for row in range(height):
+        for column in range(width):
+            block_i = row*width+column
+            data[row][column] = blocks[block_i].dc
+            for family in range(3):
+                r = row if family == 0 else row + height
+                c = column if family == 1 else column + width
+                index = 21 * family
+
+                #P_i
+                data[r][c] = blocks[block_i].ac[family]
+                index += 1
+
+                #Children C_i
+                data[2*r][2*c]     = blocks[block_i].ac[index+0]
+                data[2*r][2*c+1]   = blocks[block_i].ac[index+1]
+                data[2*r+1][2*c]   = blocks[block_i].ac[index+2]
+                data[2*r+1][2*c+1] = blocks[block_i].ac[index+3]
+
+                #Grandchildren H_i0
+                data[4*r][4*c]     = blocks[block_i].ac[index+4]
+                data[4*r][4*c+1]   = blocks[block_i].ac[index+5]
+                data[4*r+1][4*c]   = blocks[block_i].ac[index+6]
+                data[4*r+1][4*c+1] = blocks[block_i].ac[index+7]
+
+                #Grandchildren H_i1
+                data[4*r][4*c+2]   = blocks[block_i].ac[index+8]
+                data[4*r][4*c+3]   = blocks[block_i].ac[index+9]
+                data[4*r+1][4*c+2] = blocks[block_i].ac[index+10]
+                data[4*r+1][4*c+3] = blocks[block_i].ac[index+11]
+
+                #Grandchildren H_i2
+                data[4*r+2][4*c]   = blocks[block_i].ac[index+12]
+                data[4*r+2][4*c+1] = blocks[block_i].ac[index+13]
+                data[4*r+3][4*c]   = blocks[block_i].ac[index+14]
+                data[4*r+3][4*c+1] = blocks[block_i].ac[index+15]
+
+                #Grandchildren H_i3
+                data[4*r+2][4*c+2] = blocks[block_i].ac[index+16]
+                data[4*r+2][4*c+3] = blocks[block_i].ac[index+17]
+                data[4*r+3][4*c+2] = blocks[block_i].ac[index+18]
+                data[4*r+3][4*c+3] = blocks[block_i].ac[index+19]
+
+    return data
 
 if __name__ == '__main__':
     print("Uncompressing file")
@@ -528,6 +593,7 @@ if __name__ == '__main__':
         blocks[i].tran_h = np.zeros(3, dtype=int)
         blocks[i].ac = np.zeros(63, dtype=int)
     print("Blocks:",len(blocks))
+    height = int(len(blocks) / int(width/8))*8
 
     #determine q and N for DC
     q = 0
@@ -567,11 +633,23 @@ if __name__ == '__main__':
                     stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
 
         #stage_4(blocks, bitplane)
-        print(blocks[3])
+        print(blocks[0])
 
+    print("Fixing negatives")
     for i in range(len(blocks)):
         for j in range(63):
             if blocks[i].ac[j] & (1 << blocks[i].bitAC) > 0:
                 blocks[i].ac[j] &= ~(1 << blocks[i].bitAC)
                 blocks[i].ac[j] *= -1
-    print(blocks[3])
+    print(blocks[0])
+
+    print("rescaling")
+    data = unpack_blocks(blocks, int(width/8), int(height/8))
+    rescale(data, width, height)
+
+    print("IDWT")
+    levels = 3
+    dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
+    print("Saving image")
+    file_io.save_image("reconstructed.bmp", data, width, height)
+

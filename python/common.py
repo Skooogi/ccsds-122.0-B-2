@@ -67,6 +67,7 @@ class Block(object):
     def __str__(self):
         output = 'BLOCK:\nDC\t' + format(int(self.dc),'04d')+'\n'
         output += f'bitDC\t{self.bitAC}\nbitAC\t{self.bitAC}\n'
+        output += f'bmax\t{self.get_bmax()}\n'
         for family in range(3):
             output += 'Family '+str(family) + '\n'
             output += '\tp\t' + format(self.ac[family*21+0], '04d')

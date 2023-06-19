@@ -229,17 +229,49 @@ def stage_2(blocks, b):
             continue
 
         #TRANB
-        blocks[i].bmax = -2
-        for j in range(1,63):
-            if(j == 21 or j == 42):
-                continue
-            blocks[i].bmax = max(blocks[i].bmax, blocks[i].get_status(j))
+        bmax = blocks[i].get_bmax()
 
-        if(blocks[i].tran_b != 1):
-            blocks[i].tran_b = blocks[i].bmax
-            word_mapping.code(blocks[i].bmax, 1, 0)
+        if(blocks[i].tran_b != 1 and bmax >= 0):
+            blocks[i].tran_b = bmax
+            word_mapping.code(blocks[i].tran_b, 1, 0)
 
         #TRAND
+        if(blocks[i].tran_b != 0 and bmax != -1):
+            tran_d = 0
+            size = 0
+
+            status_f0 = blocks[i].get_dmax(0)
+            status_f1 = blocks[i].get_dmax(1)
+            status_f2 = blocks[i].get_dmax(2)
+            
+            subband_mask = 0
+            subband_mask |= 4 if blocks[i].get_dmax(0) == -1 else 0
+            subband_mask |= 2 if blocks[i].get_dmax(1) == -1 else 0
+            subband_mask |= 1 if blocks[i].get_dmax(2) == -1 else 0
+
+            blocks[i].tran_d |= subband_mask
+
+            if(blocks[i].tran_d & 4 != 4 and status_f0 >= 0):
+                tran_d |= status_f0
+                blocks[i].tran_d |= 4*status_f0
+                size += 1
+
+            if(blocks[i].tran_d & 2 != 2 and status_f1 >= 0):
+                tran_d <<= 1
+                tran_d |= status_f1
+                blocks[i].tran_d |= 2*status_f1
+                size += 1
+
+            if(blocks[i].tran_d & 1 != 1 and status_f2 >= 0):
+                tran_d <<= 1
+                tran_d |= status_f2
+                blocks[i].tran_d |= status_f2
+                size += 1
+            
+            if(size != 0):
+                word_mapping.code(tran_d, size, 1 if size == 3 else 0)
+
+        """
         dmax = [[-1,-1],[-1,-1],[-1,-1]]
         tran_d = 0
         if(blocks[i].tran_b != 0 and blocks[i].bmax != -1):
@@ -281,10 +313,10 @@ def stage_2(blocks, b):
 
             if(size != 0):
                 word_mapping.code(tran_d, size, 1 if size == 3 else 0)
-        
+        """
         #types_c and signs_c
         for ci in range(3):
-            if(blocks[i].dmax[ci] <= 0):
+            if(blocks[i].tran_d >> (2-ci) & 1 != 1):
                 continue
             types_c = 0
             signs_c = 0
@@ -315,42 +347,8 @@ def stage_3(blocks, b):
             continue
 
         #TRANG
-        gmax = [[-2,-2], [-2,-2], [-2,-2]]
         size = 0
         tran_g = 0
-        """
-        for j in range(16):
-            gmax[0][0] = max(gmax[0][0], blocks[i].get_status(5+j))
-            if(0 <= blocks[i].get_status(5+j) <= 1):
-                gmax[0][1] = max(gmax[0][1], blocks[i].get_status(5+j))
-
-            gmax[1][0] = max(gmax[1][0], blocks[i].get_status(26+j))
-            if(0 <= blocks[i].get_status(26+j) <= 1):
-                gmax[1][1] = max(gmax[1][1], blocks[i].get_status(26+j))
-
-            gmax[2][0] = max(gmax[2][0], blocks[i].get_status(47+j))
-            if(0 <= blocks[i].get_status(47+j) <= 1):
-                gmax[2][1] = max(gmax[2][1], blocks[i].get_status(47+j))
-
-        if((blocks[i].dmax[0]) > 0 and 0 <= gmax[0][1] <= 1):
-            blocks[i].tran_g |= gmax[0][1]
-            tran_g |= gmax[0][1]
-            size += 1
-
-        if((blocks[i].dmax[1]) > 0 and 0 <= gmax[1][1] <= 1):
-            blocks[i].tran_g <<= 1
-            blocks[i].tran_g |= gmax[1][1]
-            tran_g <<= 1
-            tran_g |= gmax[1][1]
-            size += 1
-
-        if((blocks[i].dmax[2]) > 0 and 0 <= gmax[2][1] <= 1):
-            blocks[i].tran_g <<= 1
-            blocks[i].tran_g |= gmax[2][1]
-            tran_g <<= 1
-            tran_g |= gmax[2][1]
-            size += 1
-        """
 
         if blocks[i].dmax[0] == 1 and blocks[i].tran_g & 4 == 0:
             blocks[i].tran_g |= 4 * blocks[i].get_gmax(0)
@@ -370,14 +368,12 @@ def stage_3(blocks, b):
             size += 1
 
         if(size != 0):
-            print(i, format(tran_g, f'0{size}b'), "tg", format(blocks[i].tran_g, f'03b'), format(blocks[i].tran_d, f'03b'))
             word_mapping.code(tran_g, size, 0)
 
-        continue
         #TRANH
         hmax = np.ones(12, dtype='int')*-2
         for hi in range(3):
-            if(gmax[hi][1] <= 0):
+            if(blocks[i].get_gmax(hi) <= 0):
                 continue
 
             for hj in range(4):
@@ -387,8 +383,10 @@ def stage_3(blocks, b):
 
             temp = ''.join(map(str, hmax[hi*4:hi*4+4])).replace("-2",'').replace("2",'')
             if(len(temp) != 0):
+                print(i, hi, temp)
                 word_mapping.code(int(temp, 2), len(temp), 0 if len(temp) < 4 else 1)
 
+        continue
         #types_h and signs_h
         for hi in range(3):
             if(gmax[hi][1] != 1):
@@ -437,6 +435,7 @@ def stage_4(blocks, b):
                 if(blocks[i].get_status(index) == 2):
                     bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
 
+        continue
         for hi in range(3):
             for hj in range(4):
                 for j in range(4):
