@@ -43,12 +43,19 @@ class Block(object):
 
     def get_gmax(self, family):
         temp = -1
-        for i in range(16):
-            if self.get_status(21*family+5+i) == 0:
+        for i in range(4):
+            temp = max(temp, self.get_hmax(family, i))
+        return temp
+
+    def get_hmax(self, family, quarter):
+        temp = -1
+        for i in range(4):
+            if self.get_status(21*family+5+quarter*4+i) == 0:
                 temp = 0
-            elif self.get_status(21*family+5+i) == 1:
+            elif self.get_status(21*family+5+quarter*4+i) == 1:
                 return 1
         return temp
+
 
     def get_status(self, i):
         temp = (((self.status1 >> i) & 1) << 1) | ((self.status2 >> i) & 1)

@@ -8,7 +8,7 @@ import run_length_encoding as rle
 from subband_scaling import scale, rescale
 from common import pad_image_size
 
-def compress(filein="test/test_image_gradient.bmp", fileout='output'):
+def compress(filein="test/test_image_0.bmp", fileout='output'):
 
     #Load from file and initialize data to correct dimensions
     data, width, height = file_io.load_image(filein)
@@ -22,6 +22,7 @@ def compress(filein="test/test_image_gradient.bmp", fileout='output'):
 
     #NOTE: Run length encoding is currently a separate prosess
     #In the future data should be piped through during bitplane encoding
+
     file_io.fp = open(fileout+".cmp", "wb")
     bpe.encode(data, width, height, pad_width)
     file_io.cleanup()

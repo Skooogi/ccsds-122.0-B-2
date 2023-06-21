@@ -10,6 +10,8 @@ import discrete_wavelet_transform as dwt
 from dataclasses import dataclass
 from subband_scaling import rescale
 
+#from bitplane_encoder import fill_blocks, family
+
 decode_trees = []
 
 def readb(num):
@@ -242,10 +244,14 @@ def decode_bits(bitstring, size, symbol_option, code_option):
         return format(word, '02b')
 
     if(size == 3):
+        if(symbol_option == 1 and index == 7):
+            index -= 1
         word = [i for i, x in enumerate(sym3bit[symbol_option]) if x == index][0]
         return format(word, '03b')
 
     if(size == 4):
+        if(symbol_option == 1 and index == 15):
+            index -= 1
         word = [i for i, x in enumerate(sym4bit[symbol_option]) if x == index][0]
         return format(word, '04b')
 
@@ -264,7 +270,7 @@ def update_code_words(code_words, length):
         return code_words[index]
     
     code_words[index] = int(readb(1 if length < 3 else 2), 2)
-    print('|'+format(code_words[index], f'0{1 if length == 2 else 2}b')+'|',end='')
+    #print('|'+format(code_words[index], f'0{1 if length == 2 else 2}b')+'|',end='')
     return code_words[index]
 
 def decode_word(num_zeros, symbol_option, code_words, not_tran = True):
@@ -286,9 +292,9 @@ def decode_word(num_zeros, symbol_option, code_words, not_tran = True):
     if(not_tran and decoded_value):
         signs = readb(get_ones(decoded_value, num_zeros))
 
-    print(bitstring,end='')
-    if(signs != ''):
-        print('{'+signs+'}', end='')
+    #print(bitstring,end='')
+    #if(signs != ''):
+    #    print('{'+signs+'}', end='')
 
     return decoded, signs
 
@@ -399,7 +405,6 @@ def stage_2(blocks, bitplane, code_words):
 
             size_tran_d = 3
             blocks[i].tran_d = update_tran_word(blocks[i].tran_d, size_tran_d, decoded)
-            print(" "+decoded)
         
         for family in range(3):
 
@@ -429,11 +434,22 @@ def stage_3(blocks, bitplane, code_words):
         if blocks[i].bitAC < bitplane:
             continue
 
-        if blocks[i].tran_b == 0 or blocks[i].get_bmax() == -1:
+        if blocks[i].tran_b == 0:
             continue
 
+        status_f0 = blocks[i].get_gmax(0)
+        status_f1 = blocks[i].get_gmax(1)
+        status_f2 = blocks[i].get_gmax(2)
+        
+        subband_mask = 0
+        subband_mask |= 4 if status_f0 == -1 else 0
+        subband_mask |= 2 if status_f1 == -1 else 0
+        subband_mask |= 1 if status_f2 == -1 else 0
+
+        blocks[i].tran_g |= subband_mask
         #TRANG 
-        num_zeros = get_ones(blocks[i].tran_d, 3) - get_ones(blocks[i].tran_g, 3)
+        inverted_tran_d = (~blocks[i].tran_d & 7)
+        num_zeros = 3 - get_ones(blocks[i].tran_g | inverted_tran_d, 3)
         if num_zeros != 0:
 
             symbol_option = 0
@@ -441,14 +457,30 @@ def stage_3(blocks, bitplane, code_words):
             decoded, signs = decode_word(num_zeros, symbol_option, code_words, not_tran)
 
             size_tran_g = 3
-            blocks[i].tran_g = update_tran_word(blocks[i].tran_g, size_tran_g, decoded)
+            cache_g = blocks[i].tran_g
+            blocks[i].tran_g = update_tran_word(blocks[i].tran_g | inverted_tran_d, size_tran_g, decoded) ^ inverted_tran_d
+            blocks[i].tran_g |= cache_g
+            #print(i,'tg', decoded, format(blocks[i].tran_g, '03b'),format(blocks[i].tran_d, '03b'))
+        #else:
+            #print(i,'tg', format(blocks[i].tran_g,'03b'), format(blocks[i].tran_d,'03b'))
 
         #TRANH
         for family in range(3):
 
-            if((blocks[i].tran_g >> family) & 1) != 1:
+            if((blocks[i].tran_g >> family) & 1) == 0:
                 continue
 
+            status_hi0 = blocks[i].get_hmax(family, 0)
+            status_hi1 = blocks[i].get_hmax(family, 1)
+            status_hi2 = blocks[i].get_hmax(family, 2)
+            status_hi3 = blocks[i].get_hmax(family, 3)
+            
+            subband_mask = 0
+            subband_mask |= 8 if status_hi0 == -1 else 0
+            subband_mask |= 4 if status_hi1 == -1 else 0
+            subband_mask |= 2 if status_hi2 == -1 else 0
+            subband_mask |= 1 if status_hi3 == -1 else 0
+            blocks[i].tran_h[family] |= subband_mask
             num_zeros = 4 - get_ones(blocks[i].tran_h[family], 4)
             if num_zeros == 0:
                 continue
@@ -456,22 +488,20 @@ def stage_3(blocks, bitplane, code_words):
             symbol_option = 1 if num_zeros == 4 else 0
             not_tran = False
             decoded, signs = decode_word(num_zeros, symbol_option, code_words, not_tran)
-
             size_tran_h = 4
             blocks[i].tran_h[family] = update_tran_word(blocks[i].tran_h[family], size_tran_h, decoded)
-            print(i, family, decoded, format(blocks[i].tran_h[family], '04b'), format(blocks[i].tran_g, '03b'), format(blocks[i].tran_d, '03b'))
 
-        continue
         #types_h and signs_h
         for family in range(3):
-            if((blocks[i].tran_g >> family) & 1) != 1:
+            if((blocks[i].tran_g >> family) & 1) == 0:
                 continue
 
             for tran_hj in range(4):
-                if((blocks[i].tran_h[family] >> tran_hj) & 1) != 1:
+                if((blocks[i].tran_h[family] >> tran_hj) & 1) == 0:
                     continue
             
                 first_grandchild_index = 21*family + 5 + 4 * tran_hj
+
                 num_zeros = 0
                 num_zeros  += 1 if blocks[i].get_status(first_grandchild_index+0) == 0 else 0
                 num_zeros  += 1 if blocks[i].get_status(first_grandchild_index+1) == 0 else 0
@@ -479,13 +509,15 @@ def stage_3(blocks, bitplane, code_words):
                 num_zeros  += 1 if blocks[i].get_status(first_grandchild_index+3) == 0 else 0
 
                 if(num_zeros == 0):
-                    raiseValueError("types Hij 0000")
+                    continue
 
-                symbol_option = 0
+                symbol_option = 1 if num_zeros == 4 else 0
                 decoded, signs = decode_word(num_zeros, symbol_option, code_words)
                 offset = 5 + 4*tran_hj
                 span = 4
                 update_ac_values(bitplane, blocks[i], offset, span, decoded, signs, families = [family])
+                if i >= 0:
+                    print(i,family, tran_hj, format(blocks[i].tran_g, '03b'),format(blocks[i].tran_h[family], '04b'), decoded, signs)
             
     print()
 
@@ -511,7 +543,6 @@ def stage_4(blocks, bitplane):
                     print(temp, end='')
                     blocks[i].ac[index] |= int(temp) << bitplane
 
-        continue
         for hi in range(3):
             for hj in range(4):
                 for j in range(4):
@@ -536,7 +567,7 @@ def unpack_blocks(blocks, width, height):
                 index = 21 * family
 
                 #P_i
-                data[r][c] = blocks[block_i].ac[family]
+                data[r][c] = blocks[block_i].ac[index]
                 index += 1
 
                 #Children C_i
@@ -614,7 +645,7 @@ if __name__ == '__main__':
 
     for bitplane in range(bitACGlobal-1, -1, -1):
         print("processing bitplane", bitplane)
-        for stage in range(4):
+        for stage in range(1):
 
             for gaggle in range(0, len(blocks), 16):
 
@@ -632,7 +663,7 @@ if __name__ == '__main__':
                     print("S3")
                     stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
 
-        #stage_4(blocks, bitplane)
+        stage_4(blocks, bitplane)
         print(blocks[0])
 
     print("Fixing negatives")
@@ -641,7 +672,7 @@ if __name__ == '__main__':
             if blocks[i].ac[j] & (1 << blocks[i].bitAC) > 0:
                 blocks[i].ac[j] &= ~(1 << blocks[i].bitAC)
                 blocks[i].ac[j] *= -1
-    print(blocks[0])
+    #print(blocks[0])
 
     print("rescaling")
     data = unpack_blocks(blocks, int(width/8), int(height/8))
@@ -652,4 +683,3 @@ if __name__ == '__main__':
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
     print("Saving image")
     file_io.save_image("reconstructed.bmp", data, width, height)
-
