@@ -145,7 +145,7 @@ def encode(data, width, height, pad_width):
     for b in range(bitACGlobal-1, -1, -1):
 
         print("processing bitplane", b)
-        for stage in range(1):
+        for stage in range(4):
 
             for gaggle in range(0, len(blocks), 16):
 

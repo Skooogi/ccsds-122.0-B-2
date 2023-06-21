@@ -345,7 +345,7 @@ def stage_0(blocks, bitplane, q):
         if(3 <= bitplane < q):
             temp = int(readb(1))
             blocks[i].dc |= temp << bitplane
-            print(temp, end='')
+            #print(temp, end='')
 
         for j in range(63):
             if(common.subband_lim(j, bitplane)):
@@ -355,7 +355,7 @@ def stage_0(blocks, bitplane, q):
             else:
                 blocks[i].set_status(j, 0)
 
-    print()
+    #print()
 
 def stage_1(blocks, bitplane, code_words):
 
@@ -375,7 +375,7 @@ def stage_1(blocks, bitplane, code_words):
         offset = 0
         span = 1
         update_ac_values(bitplane, blocks[i], offset, span, decoded, signs)
-    print()
+    #print()
 
 def stage_2(blocks, bitplane, code_words):
 
@@ -385,7 +385,7 @@ def stage_2(blocks, bitplane, code_words):
 
         if blocks[i].tran_b == 0:
             blocks[i].tran_b = int(readb(1))
-            print(blocks[i].tran_b,end='')
+            #print(blocks[i].tran_b,end='')
 
         if blocks[i].tran_b == 0 or blocks[i].get_bmax() == -1:
             continue
@@ -426,7 +426,7 @@ def stage_2(blocks, bitplane, code_words):
             offset = 1
             span = 4
             update_ac_values(bitplane, blocks[i], offset, span, decoded, signs, families = [family])
-    print()
+    #print()
 
 def stage_3(blocks, bitplane, code_words):
 
@@ -442,14 +442,13 @@ def stage_3(blocks, bitplane, code_words):
         status_f2 = blocks[i].get_gmax(2)
         
         subband_mask = 0
-        subband_mask |= 4 if status_f0 == -1 else 0
+        subband_mask |= 4 if status_f2 == -1 else 0
         subband_mask |= 2 if status_f1 == -1 else 0
-        subband_mask |= 1 if status_f2 == -1 else 0
+        subband_mask |= 1 if status_f0 == -1 else 0
 
         blocks[i].tran_g |= subband_mask
         #TRANG 
-        inverted_tran_d = (~blocks[i].tran_d & 7)
-        num_zeros = 3 - get_ones(blocks[i].tran_g | inverted_tran_d, 3)
+        num_zeros =  get_ones(blocks[i].tran_d & (~blocks[i].tran_g & 7), 3)
         if num_zeros != 0:
 
             symbol_option = 0
@@ -458,11 +457,11 @@ def stage_3(blocks, bitplane, code_words):
 
             size_tran_g = 3
             cache_g = blocks[i].tran_g
-            blocks[i].tran_g = update_tran_word(blocks[i].tran_g | inverted_tran_d, size_tran_g, decoded) ^ inverted_tran_d
+            blocks[i].tran_g = update_tran_word(blocks[i].tran_g | (~blocks[i].tran_d & 7), size_tran_g, decoded) & blocks[i].tran_d
             blocks[i].tran_g |= cache_g
-            #print(i,'tg', decoded, format(blocks[i].tran_g, '03b'),format(blocks[i].tran_d, '03b'))
+        #    print(i,'tg', decoded, format(blocks[i].tran_g, '03b'),format(blocks[i].tran_d, '03b'))
         #else:
-            #print(i,'tg', format(blocks[i].tran_g,'03b'), format(blocks[i].tran_d,'03b'))
+        #    print(i,'tg', format(blocks[i].tran_g,'03b'), format(blocks[i].tran_d,'03b'))
 
         #TRANH
         for family in range(3):
@@ -476,10 +475,10 @@ def stage_3(blocks, bitplane, code_words):
             status_hi3 = blocks[i].get_hmax(family, 3)
             
             subband_mask = 0
-            subband_mask |= 8 if status_hi0 == -1 else 0
-            subband_mask |= 4 if status_hi1 == -1 else 0
-            subband_mask |= 2 if status_hi2 == -1 else 0
-            subband_mask |= 1 if status_hi3 == -1 else 0
+            subband_mask |= 1 if status_hi0 == -1 else 0
+            subband_mask |= 2 if status_hi1 == -1 else 0
+            subband_mask |= 4 if status_hi2 == -1 else 0
+            subband_mask |= 8 if status_hi3 == -1 else 0
             blocks[i].tran_h[family] |= subband_mask
             num_zeros = 4 - get_ones(blocks[i].tran_h[family], 4)
             if num_zeros == 0:
@@ -488,6 +487,8 @@ def stage_3(blocks, bitplane, code_words):
             symbol_option = 1 if num_zeros == 4 else 0
             not_tran = False
             decoded, signs = decode_word(num_zeros, symbol_option, code_words, not_tran)
+            #if i == 0:
+            #    print(num_zeros, family, status_hi0, format(blocks[i].tran_g, '03b'))
             size_tran_h = 4
             blocks[i].tran_h[family] = update_tran_word(blocks[i].tran_h[family], size_tran_h, decoded)
 
@@ -516,10 +517,10 @@ def stage_3(blocks, bitplane, code_words):
                 offset = 5 + 4*tran_hj
                 span = 4
                 update_ac_values(bitplane, blocks[i], offset, span, decoded, signs, families = [family])
-                if i >= 0:
-                    print(i,family, tran_hj, format(blocks[i].tran_g, '03b'),format(blocks[i].tran_h[family], '04b'), decoded, signs)
+                #if i >= 0:
+                    #print(i,family, tran_hj, format(blocks[i].tran_g, '03b'),format(blocks[i].tran_h[family], '04b'), decoded, signs)
             
-    print()
+    #print()
 
 def stage_4(blocks, bitplane):
 
@@ -532,7 +533,7 @@ def stage_4(blocks, bitplane):
             index = pi * 21
             if(blocks[i].get_status(index) == 2):
                 temp = readb(1)
-                print(temp, end='')
+                #print(temp, end='')
                 blocks[i].ac[index] |= int(temp) << bitplane
 
         for ci in range(3):
@@ -540,7 +541,7 @@ def stage_4(blocks, bitplane):
                 index = 1 + ci*21 + j
                 if(blocks[i].get_status(index) == 2):
                     temp = readb(1)
-                    print(temp, end='')
+                    #print(temp, end='')
                     blocks[i].ac[index] |= int(temp) << bitplane
 
         for hi in range(3):
@@ -549,9 +550,9 @@ def stage_4(blocks, bitplane):
                     index = 5+hi*21+hj*4+j
                     if(blocks[i].get_status(index) == 2):
                         temp = readb(1)
-                        print(temp, end='')
+                        #print(temp, end='')
                         blocks[i].ac[index] |= int(temp) << bitplane
-    print()
+   #print()
 
 def unpack_blocks(blocks, width, height):
 
@@ -609,6 +610,7 @@ if __name__ == '__main__':
 
     with open(filename, "rb") as f:
         readb.data = f.read()
+    readb.data = rle.uncompress(readb.data)	
 
     header = decode_header(segment_header.SegmentHeader)
     bitDC = header.bitDC
@@ -645,22 +647,22 @@ if __name__ == '__main__':
 
     for bitplane in range(bitACGlobal-1, -1, -1):
         print("processing bitplane", bitplane)
-        for stage in range(1):
+        for stage in range(4):
 
             for gaggle in range(0, len(blocks), 16):
 
                 code_words = [-1, -1, -1]
                 if(stage == 0):
-                    print("S0")
+                    #print("S0")
                     stage_0(blocks[gaggle:gaggle+16], bitplane, q)
                 elif(stage == 1):
-                    print("S1")
+                    #print("S1")
                     stage_1(blocks[gaggle:gaggle+16], bitplane, code_words)
                 elif(stage == 2):
-                    print("S2")
+                    #print("S2")
                     stage_2(blocks[gaggle:gaggle+16], bitplane, code_words)
                 elif(stage == 3):
-                    print("S3")
+                    #print("S3")
                     stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
 
         stage_4(blocks, bitplane)
@@ -672,7 +674,7 @@ if __name__ == '__main__':
             if blocks[i].ac[j] & (1 << blocks[i].bitAC) > 0:
                 blocks[i].ac[j] &= ~(1 << blocks[i].bitAC)
                 blocks[i].ac[j] *= -1
-    #print(blocks[0])
+    print(blocks[0])
 
     print("rescaling")
     data = unpack_blocks(blocks, int(width/8), int(height/8))
@@ -682,4 +684,4 @@ if __name__ == '__main__':
     levels = 3
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
     print("Saving image")
-    file_io.save_image("reconstructed.bmp", data, width, height)
+    file_io.save_image("out_2.bmp", data, width, height)

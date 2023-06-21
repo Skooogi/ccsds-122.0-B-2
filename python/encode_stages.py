@@ -297,7 +297,7 @@ def stage_2(blocks, b):
 def stage_3(blocks, b):
 
     for i in range(len(blocks)):
-        if(blocks[i].tran_b == 0 or blocks[i].bmax == -1):
+        if(blocks[i].tran_b == 0 or blocks[i].get_bmax() == -1):
             continue
     
         if(blocks[i].bitAC < b):
@@ -340,7 +340,6 @@ def stage_3(blocks, b):
             word_mapping.code(tran_g, size, 0)
         #else:
             #print(i,'tg',format(blocks[i].tran_g, f'03b'),format(blocks[i].tran_d, f'03b'))
-
 
         #TRANH
         for hi in range(3):
@@ -419,15 +418,15 @@ def stage_3(blocks, b):
                             signs_h |= 1 if blocks[i].ac[index+j] < 0 else 0
                             size_s += 1
                 if(size_h > 0):
-                    if i >= 0:
-                        print(i,hi,hj, format(blocks[i].tran_g, '03b'),format(blocks[i].tran_h[hi], f'04b'),format(types_h, f'0{size_h}b'),end=' ')
+                    #if i >= 0:
+                        #print(i,hi,hj, format(blocks[i].tran_g, '03b'),format(blocks[i].tran_h[hi], f'04b'),format(types_h, f'0{size_h}b'),end=' ')
                     word_mapping.code(types_h, size_h, 0 if size_h < 4 else 1)
                     if(size_s > 0):
-                        if i >= 0:
-                            print(format(signs_h, f'0{size_s}b'),end='')
+                        #if i >= 0:
+                            #print(format(signs_h, f'0{size_s}b'),end='')
                         word_mapping.code(signs_h, size_s, 0, -1)
-                    if i >= 0:
-                        print()
+                    #if i >= 0:
+                        #print()
 
 def stage_4(blocks, b):
     #Adds all bits of bitplane b from coefficients of type 2
@@ -457,5 +456,5 @@ def stage_4(blocks, b):
                         bitstring += str((abs(blocks[i].ac[index]) >> b) & 1)
 
     if(len(bitstring) > 0):
-        print("4:"+bitstring)
+        #print("4:"+bitstring)
         file_io.out_bits(bitstring)
