@@ -685,3 +685,25 @@ if __name__ == '__main__':
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
     print("Saving image")
     file_io.save_image("out_2.bmp", data, width, height)
+
+    data_a = np.copy(data)
+    data_b, b_width, b_height = file_io.load_image("out_1.bmp")
+    n = b_height * b_width
+
+    #MSE
+    mean_squared_error = 0
+    for i in range(b_height):
+        for j in range(b_width):
+            temp = data_b[i,j] - data_a[i,j] 
+            temp = temp * temp
+            mean_squared_error += temp
+
+    mean_squared_error /= n
+
+    #PSNR
+    peak_signal_to_noise_ratio = math.inf
+    if(mean_squared_error != 0):
+        peak_signal_to_noise_ratio = 10*math.log((255*255)/mean_squared_error, 10)
+
+    print(f'MSE:{mean_squared_error}\nPSNR:{peak_signal_to_noise_ratio} dB')
+

@@ -22,9 +22,9 @@ word4bit = np.array([["1", "01", "001", "0001", "0000000", "0000001", "0000010",
 
 
 
-words = np.array([], dtype='int')
-sizes = np.array([], dtype='int')
-symbol_option = np.array([], dtype='int')
+words = []
+sizes = []
+symbol_option = []
 options = np.array([[0,0],[0,0,0],[0,0,0,0]], dtype=object)
 num = np.zeros(4)
 def code(word, word_length, sym_option, uncoded = 1):
@@ -39,9 +39,9 @@ def code(word, word_length, sym_option, uncoded = 1):
 
     global num, words, sizes, symbol_option
     
-    words = np.append(words, word)
-    sizes = np.append(sizes, word_length*uncoded)
-    symbol_option = np.append(symbol_option, sym_option)
+    words.append(word)
+    sizes.append(word_length*uncoded)
+    symbol_option.append(sym_option)
 
     if(uncoded < 0):
         return

@@ -150,22 +150,22 @@ def encode(data, width, height, pad_width):
             for gaggle in range(0, len(blocks), 16):
 
                 bitstring = ""
-                word_mapping.words = np.array([], dtype='int')
-                word_mapping.sizes = np.array([], dtype='int')
-                word_mapping.symbol_option = np.array([], dtype='int')
+                word_mapping.words = []
+                word_mapping.sizes = []
+                word_mapping.symbol_option = []
                 word_mapping.options = np.array([[0,0],[0,0,0],[0,0,0,0]], dtype=object)
 
                 if(stage == 0):
-                    print("S0")
+                    #print("S0")
                     encode_stages.stage_0(blocks[gaggle:gaggle+16], q, b)
                 elif(stage == 1):
-                    print("S1")
+                    #print("S1")
                     encode_stages.stage_1(blocks[gaggle:gaggle+16], b)
                 elif(stage == 2):
-                    print("S2")
+                    #print("S2")
                     encode_stages.stage_2(blocks[gaggle:gaggle+16], b)
                 elif(stage == 3):
-                    print("S3")
+                    #print("S3")
                     encode_stages.stage_3(blocks[gaggle:gaggle+16], b)
 
                 #Choose the coding option that minimizes the bitstring length for this gaggle

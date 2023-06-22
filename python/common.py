@@ -2,6 +2,8 @@ import numpy as np
 
 #Collection of frequently used functions and classes
 
+state_map = [0,1,2,-1]
+
 class Block(object):
     # https://public.ccsds.org/Pubs/122x0b2.pdf section 4.1
     # NOTE:Currently uses more memory than necessary for recording debugging data
