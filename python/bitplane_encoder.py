@@ -117,7 +117,6 @@ def encode(data, width, height, pad_width):
 
     q = max(q_prime, 3)
 
-
     #TODO: Separate segment header generation
     header = SegmentHeader()
     header.first_segment    = 1
@@ -144,7 +143,7 @@ def encode(data, width, height, pad_width):
     #Figure 4-2
     for b in range(bitACGlobal-1, -1, -1):
 
-        print("processing bitplane", b)
+        #print("processing bitplane", b)
         for stage in range(4):
 
             for gaggle in range(0, len(blocks), 16):
@@ -219,4 +218,4 @@ def encode(data, width, height, pad_width):
                     file_io.out_bits(bitstring.replace('|','').replace('{','').replace('}','').replace('[','').replace(']',''))
 
         encode_stages.stage_4(blocks, b)
-        print(blocks[0])
+        #print(blocks[0])

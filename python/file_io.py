@@ -56,3 +56,7 @@ def cleanup():
     if(size != 0):
         out(0, 8)
     fp.close()
+
+    fp = ''
+    size = 0
+    cache = 0

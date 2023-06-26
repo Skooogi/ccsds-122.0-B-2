@@ -39,11 +39,11 @@ def decode_header(header):
     header.has_header_3   = int(readb(1))  
     header.has_header_4   = int(readb(1))
 
-    if(header.last_segment):
+    if(header.last_segment == 1):
         header.pad_width      = int(readb(3), 2)
         readb(5) #reserved
 
-    if(header.has_header_2):
+    if(header.has_header_2 == 1):
         header.header_2 = segment_header.Header_2()
         header.header_2.seg_byte_limit  = int(readb(27), 2)
         header.header_2.dc_stop         = int(readb(1))
@@ -52,14 +52,14 @@ def decode_header(header):
         header.header_2.use_fill        = int(readb(1))
         readb(4) #reserved
 
-    if(header.has_header_3):
+    if(header.has_header_3 == 1):
         header.header_3 = segment_header.Header_3()
         header.header_3.segment_size    = int(readb(20), 2)
         header.header_3.opt_dc_select   = int(readb(1))
         header.header_3.opt_ac_select   = int(readb(1))
         readb(2) #reserved
 
-    if(header.has_header_4):
+    if(header.has_header_4 == 1):
         header.header_4 = segment_header.Header_4()
         header.header_4.dwt_type = int(readb(1))
         readb(1) #reserved
@@ -193,7 +193,7 @@ def decode_ac_magnitudes(blocks, bitACGlobal, q):
 def initialize_binary_trees():
     
     global decode_trees
-
+    decode_trees = []
     #Setup binary trees
     word2bit = np.array([["1", "01", "001", "000"], 
                         ["00", "01", "10", "11"]])
@@ -524,7 +524,6 @@ def stage_3(blocks, bitplane, code_words):
 
 def stage_4(blocks, bitplane):
 
-    print("S4:")
     for i in range(len(blocks)):
         if(blocks[i].bitAC < bitplane):
             continue
@@ -603,14 +602,17 @@ def unpack_blocks(blocks, width, height):
 
     return data
 
-if __name__ == '__main__':
+def decompress():
     print("Uncompressing file")
+    readb.data = 0
+    readb.cache = ""
+    readb.i = 0
 
     filename = "output.cmp"
 
     with open(filename, "rb") as f:
         readb.data = f.read()
-    readb.data = rle.uncompress(readb.data)	
+    #readb.data = rle.uncompress(readb.data)	
 
     header = decode_header(segment_header.SegmentHeader)
     bitDC = header.bitDC
@@ -646,7 +648,7 @@ if __name__ == '__main__':
     initialize_binary_trees()
 
     for bitplane in range(bitACGlobal-1, -1, -1):
-        print("processing bitplane", bitplane)
+        #print("processing bitplane", bitplane)
         for stage in range(4):
 
             for gaggle in range(0, len(blocks), 16):
@@ -666,7 +668,7 @@ if __name__ == '__main__':
                     stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
 
         stage_4(blocks, bitplane)
-        print(blocks[0])
+        #print(blocks[0])
 
     print("Fixing negatives")
     for i in range(len(blocks)):
@@ -674,7 +676,6 @@ if __name__ == '__main__':
             if blocks[i].ac[j] & (1 << blocks[i].bitAC) > 0:
                 blocks[i].ac[j] &= ~(1 << blocks[i].bitAC)
                 blocks[i].ac[j] *= -1
-    print(blocks[0])
 
     print("rescaling")
     data = unpack_blocks(blocks, int(width/8), int(height/8))
@@ -691,12 +692,19 @@ if __name__ == '__main__':
     n = b_height * b_width
 
     #MSE
+    minimum = 30000
+    maximum = -30000
+
     mean_squared_error = 0
     for i in range(b_height):
         for j in range(b_width):
             temp = data_b[i,j] - data_a[i,j] 
             temp = temp * temp
+            minimum = min(minimum, data_b[i,j])
+            maximum = max(maximum, data_b[i,j])
             mean_squared_error += temp
+
+    print(minimum, maximum)
 
     mean_squared_error /= n
 
@@ -707,3 +715,7 @@ if __name__ == '__main__':
 
     print(f'MSE:{mean_squared_error}\nPSNR:{peak_signal_to_noise_ratio} dB')
 
+    return mean_squared_error == 0
+
+if __name__ == '__main__':
+    decompress()

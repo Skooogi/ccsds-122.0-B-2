@@ -8,7 +8,7 @@ import run_length_encoding as rle
 from subband_scaling import scale, rescale
 from common import pad_image_size
 
-def compress(filein="test/test_image_2.bmp", fileout='output'):
+def compress(filein="test/test_image_5.bmp", fileout='output'):
 
     #Load from file and initialize data to correct dimensions
     data, width, height = file_io.load_image(filein)
@@ -29,6 +29,7 @@ def compress(filein="test/test_image_2.bmp", fileout='output'):
     bpe.encode(data, width, height, pad_width)
     file_io.cleanup()
 
+    """
     fp = open(fileout+".cmp", 'rb')  
     temp = fp.read()
     fp.close()
@@ -38,6 +39,7 @@ def compress(filein="test/test_image_2.bmp", fileout='output'):
     fp = open(fileout+".cmp", 'wb')  
     fp.write(int(temp, 2).to_bytes(new_size, 'big'))
     fp.close()
+    """
 
 if __name__ == '__main__':
     compress()
