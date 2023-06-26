@@ -1,11 +1,14 @@
 import numpy as np
+from numba import njit
 
+@njit(cache=True)
 def intify(x):
     if(x < 0 and x != int(x)):
         return int(x-1)
     else:
         return int(x)
 
+@njit(cache=True)
 def forward_DWT(data, width):
     
     #Follows the integer transform given in 3.3.2
@@ -31,6 +34,7 @@ def forward_DWT(data, width):
         data[j] = x[2*j] - intify(-(D[j-1]+D[j])/4 + 1/2)
         data[N+j] = D[j]
 
+@njit(cache=True)
 def backward_DWT(data, width):
     
     #Follows the inverse integer transform given in 3.4.2
@@ -60,10 +64,11 @@ def backward_DWT(data, width):
     data[2*N-1] = D[N-1] + intify(9/8*data[2*N-2] - 1/8*data[2*N-4] + 1/2)
 
 
+@njit(cache=True)
 def discrete_wavelet_transform_2D(data, width, height, levels = 3, backward = False) -> None:
 
     if(backward):
-        for level in reversed(range(levels)):
+        for level in range(levels-1,-1,-1):
 
             sub_width = int(width/pow(2,level))
             sub_height = int(height/pow(2,level))
