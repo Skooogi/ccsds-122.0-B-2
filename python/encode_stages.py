@@ -39,9 +39,23 @@ def split_coding(diffs, first, size, N):
             J -= 1
 
         k = select_coding(gaggle_sum, J, N)
-        file_io.out(k, math.ceil(math.log(N,2)))
+        code_word_length = math.ceil(math.log(N,2))
+        if(k < 0):
+            file_io.out(2**code_word_length - 1, code_word_length)
+
+            if(i == 0):
+                file_io.out(first, N)
+
+            for j in range(1 if i==0 else 0,16):
+                index = i*16+j
+                if index >= size:
+                    break
+                file_io.out(diffs[index], N)
+            continue
+
+        file_io.out(k, code_word_length)
         if(i == 0):
-            file_io.out(first, 8)
+            file_io.out(first, N)
 
         for j in range(1 if i==0 else 0,16):
             index = i*16+j
@@ -82,18 +96,29 @@ def encode_dc_initial(blocks, bitDC, q):
     #First DC coefficient is uncoded
     diffs = np.zeros(len(blocks), dtype='int')
     for i in range(len(blocks)):
+        temp = blocks[i].dc
         blocks[i].dc = twos_complement(blocks[i].dc, bitDC)
     
-    last = int(blocks[0].dc / pow(2, q))
+    shifted = np.zeros(len(blocks), dtype='int')
+    mask_N_bits = 2**N-1
+    for i in range(len(blocks)):
+        shifted[i] = blocks[i].dc >> q
+        if(shifted[i] & (1 << (N-1)) == 0):
+            continue
+
+        shifted[i] = - (((shifted[i] ^ mask_N_bits) & mask_N_bits) + 1)
+
+
+    last = shifted[0]
     first = int(last)
 
     #Rest of the DC coefficients
     #4.3.2.4
     for i in range(1, len(blocks)):
 
-        sigma = int(blocks[i].dc / pow(2, q)) - last
+        sigma = shifted[i] - last
         theta = min(last + pow(2, (N-1)), pow(2, (N-1)) - 1 - last)
-        last = int(blocks[i].dc / pow(2, q))
+        last = shifted[i]
         res = 0
 
         if sigma >= 0 and sigma <= theta:
@@ -149,7 +174,6 @@ def encode_ac_magnitudes(blocks, bitACGlobal, q):
         diffs[i] = int(res)
 
     split_coding(diffs, first, len(blocks), N)
-
 
 def stage_0(blocks, q, b):
 

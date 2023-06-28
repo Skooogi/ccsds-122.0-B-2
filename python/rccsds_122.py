@@ -95,8 +95,17 @@ def decode_dc_initial(blocks, bitDC, q):
     diffs = np.zeros(len(blocks), dtype='int')
     for i in range(int(len(blocks)/16) + 1):
         k = int(readb(code_word_bits), 2)
+
         if(i == 0):
-            diffs[i] = int(readb(8), 2)
+            diffs[i] = int(readb(N), 2)
+
+        if(k == 2**code_word_bits-1):
+            for j in range(1 if i==0 else 0,16):
+                index = i*16+j
+                if index >= len(blocks):
+                    break
+                diffs[index] = int(readb(N), 2)
+            continue
 
         for j in range(1 if i == 0 else 0, 16):
             index = i*16+j
@@ -132,12 +141,14 @@ def decode_dc_initial(blocks, bitDC, q):
             else:
                 diffs[i] = -(diffs[i] + 1) / 2
 
-        blocks[i].dc = abs(blocks[i-1].dc + diffs[i])
+        blocks[i].dc = (blocks[i-1].dc + diffs[i])
 
     for i in range(len(blocks)):
+        blocks[i].dc = common.twos_complement(blocks[i].dc, N)
         blocks[i].dc <<= q
-        blocks[i].dc = common.twos_complement(blocks[i].dc, bitDC)
-
+        if(i == 9 or i == 22 or i == 60):
+            print(i, blocks[i].dc, format(blocks[i].dc, f'013b'))
+        #blocks[i].dc = common.twos_complement(blocks[i].dc, bitDC)
 
 def decode_ac_magnitudes(blocks, bitACGlobal, q):
 
@@ -151,7 +162,15 @@ def decode_ac_magnitudes(blocks, bitACGlobal, q):
     for i in range(int(len(blocks)/16) + 1):
         k = int(readb(code_word_bits), 2)
         if(i == 0):
-            diffs[i] = int(readb(8), 2)
+            diffs[i] = int(readb(N), 2)
+
+        if(k == 2**code_word_bits-1):
+            for j in range(1 if i==0 else 0,16):
+                index = i*16+j
+                if index >= len(blocks):
+                    break
+                diffs[index] = int(readb(N), 2)
+            continue
 
         for j in range(1 if i == 0 else 0, 16):
             index = i*16+j
@@ -168,7 +187,7 @@ def decode_ac_magnitudes(blocks, bitACGlobal, q):
             if(k == 0 or index >= len(blocks)):
                break
             diffs[index] |= int(readb(k), 2)
-
+    
     blocks[0].bitAC = diffs[0]
     for i in range(1, len(blocks)):
         theta = min(blocks[i-1].bitAC, pow(2, N) -1 - blocks[i-1].bitAC)
@@ -672,6 +691,8 @@ def decompress():
 
     print("Fixing negatives")
     for i in range(len(blocks)):
+        if(blocks[i].dc & (1 << (bitDC-1))):
+           blocks[i].dc -= 1 << bitDC
         for j in range(63):
             if blocks[i].ac[j] & (1 << blocks[i].bitAC) > 0:
                 blocks[i].ac[j] &= ~(1 << blocks[i].bitAC)

@@ -147,7 +147,7 @@ def subband_lim(ac_index, current_bitplane):
 
 def twos_complement(value, bits):
     if(value & 1 << (bits - 1)):
-        return ~value + 1
+        return ~abs(value) + 1 & (2**bits - 1)
     
     return value
 
