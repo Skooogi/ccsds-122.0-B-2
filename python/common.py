@@ -3,6 +3,13 @@ import numpy as np
 #Collection of frequently used functions and classes
 
 state_map = [0,1,2,-1]
+state_map_inv_1 = [0,0,1,1]
+state_map_inv_2 = [0,1,0,1]
+mask_64 = 0xffffffffffffffff
+b_mask = 0x7ffffbffffdffffe
+d_mask = 0x1ffffe
+g_mask = 0x1fffe0
+h_mask = 0x1e0
 
 class Block(object):
     # https://public.ccsds.org/Pubs/122x0b2.pdf section 4.1
@@ -28,50 +35,34 @@ class Block(object):
         self.dmax       = np.ones(3, dtype=int)
 
     def get_bmax(self):
-        temp = -1
-        temp = max(temp, self.get_dmax(0))
-        temp = max(temp, self.get_dmax(1))
-        temp = max(temp, self.get_dmax(2))
-        return temp
+        filtered = (~self.status1 & self.status2) & b_mask
+        return int(filtered > 0)
 
     def get_dmax(self, family):
-        temp = -1
-        for i in range(20):
-            if self.get_status(21*family+1+i) == 0:
-                temp = 0
-            elif self.get_status(21*family+1+i) == 1:
-                return 1
-        return temp
+        filtered = (~self.status1 & self.status2)
+        return int(filtered >> 21*family & d_mask > 0)
 
     def get_gmax(self, family):
-        temp = -1
-        for i in range(4):
-            temp = max(temp, self.get_hmax(family, i))
-        return temp
+        filtered = (~self.status1 & self.status2)
+        return int(filtered >> 21*family & g_mask > 0)
 
     def get_hmax(self, family, quarter):
-        temp = -1
-        for i in range(4):
-            if self.get_status(21*family+5+quarter*4+i) == 0:
-                temp = 0
-            elif self.get_status(21*family+5+quarter*4+i) == 1:
-                return 1
-        return temp
-
+        filtered = (~self.status1 & self.status2)
+        return int(filtered >> (21*family + quarter * 4) & h_mask > 0)
 
     def get_status(self, i):
-        temp = (((self.status1 >> i) & 1) << 1) | ((self.status2 >> i) & 1)
-        return temp if temp < 3 else -1
+        return state_map[(self.status1 >> i & 1) * 2 + (self.status2 >> i & 1)]
 
     def set_status(self, ac_index, value):
-        temp = 3 if value == -1 else value
 
-        reset = ~(1 << ac_index)
-        self.status1 &= reset
-        self.status2 &= reset
+        self.status1 = (self.status1 & ~(1 << ac_index)) | (state_map_inv_1[value] << ac_index)
+        self.status2 = (self.status2 & ~(1 << ac_index)) | (state_map_inv_2[value] << ac_index)
+        #self.status1 ^= (-state_map_inv_1[value] ^ self.status1) & (1 << ac_index)
+        #self.status2 ^= (-state_map_inv_2[value] ^ self.status2) & (1 << ac_index)
 
-        self.status1 |= ((temp >> 1) & 1) << ac_index
-        self.status2 |= (temp & 1) << ac_index
+    def set_status_with(self, status1, status2):
+        self.status1 = status1
+        self.status2 = status2
 
     def __str__(self):
         output = 'BLOCK:\nDC\t' + format(int(self.dc),'04d')+'\n'
@@ -130,20 +121,48 @@ class Block(object):
 
 
 
+
+subband_bitplane_2 = 0x200001
+subband_bitplane_1 = 0x040003c0001e
+subband_bitplane_0 = 0x7bfffc1fffe0
+
+sub_map_2 = np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+sub_map_1 = np.array([1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+sub_map_0 = np.array([1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+
+sub_map = [sub_map_0, sub_map_1, sub_map_2]
+
 def subband_lim(ac_index, current_bitplane):
 
     # Checks whether or not ac coefficient scaling means 
     # bitplane is necessarily 0 and is not encoded
     # Figure 3-4
+    if(current_bitplane > 2):
+        return False
 
+    return sub_map[current_bitplane][ac_index]
+
+    """
+    match (current_bitplane):
+        case 2 :
+            return (subband_bitplane_2 & (1 << ac_index)) > 0
+        case 1:
+            return ((subband_bitplane_2 | subband_bitplane_1) & (1 << ac_index)) > 0
+        case 0:
+            return ((subband_bitplane_2 | subband_bitplane_1| subband_bitplane_0) & (1 << ac_index)) > 0
+        case _:
+            return False
+    """
+    """
     if(ac_index == 0 or ac_index == 21) and current_bitplane < 3:
         return True
     elif((1 <= ac_index <= 4) or (22 <= ac_index <= 25) or ac_index == 42) and current_bitplane < 2:
         return True
     elif((5 <= ac_index <= 20) or (26 <= ac_index <= 41) or (43 <= ac_index <= 46)) and current_bitplane < 1:
         return True
-    else:
-        return False
+
+    return False
+    """
 
 def twos_complement(value, bits):
     if(value & 1 << (bits - 1)):

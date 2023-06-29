@@ -195,15 +195,23 @@ def stage_1(blocks, b):
         blocks[i].status1 = 0
         blocks[i].status2 = 0
 
+        new_status_1 = 0
+        new_status_2 = 0
+
         for j in range(63):
             if(subband_lim(j, b)):
-                blocks[i].set_status(j, -1)
-            elif(abs(blocks[i].ac[j]) < pow(2,b)):
-                blocks[i].set_status(j, 0)
-            elif(pow(2,b) <= abs(blocks[i].ac[j]) < pow(2,b+1)):
-                blocks[i].set_status(j, 1)
-            elif(pow(2,b+1) <= abs(blocks[i].ac[j])):
-                blocks[i].set_status(j, 2)
+                #blocks[i].set_status(j, -1)
+                new_status_1 |= 1 << j
+                new_status_2 |= 1 << j
+            #elif(abs(blocks[i].ac[j]) < 2**b):
+            #    blocks[i].set_status(j, 0)
+            elif(2**b <= abs(blocks[i].ac[j]) < 2**(b+1)):
+                #blocks[i].set_status(j, 1)
+                new_status_2 |= 1 << j
+            elif(2**(b+1) <= abs(blocks[i].ac[j])):
+                #blocks[i].set_status(j, 2)
+                new_status_1 |= 1 << j
+        blocks[i].set_status_with(new_status_1, new_status_2)
         
         #types_p and signs_p
         types_p = 0
