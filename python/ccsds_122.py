@@ -6,30 +6,49 @@ import bitplane_encoder as bpe
 import file_io
 import run_length_encoding as rle
 from subband_scaling import scale, rescale
-from common import pad_image_size
+from common import pad_data_to_8
 
-def compress(filein="test/test_image_1.bmp", fileout='output'):
+import time
 
-    #Load from file and initialize data to correct dimensions
-    data, width, height = file_io.load_image(filein)
-    data, pad_width, pad_height = pad_image_size(data, width, height)
+def compress_data(data, width, height, bitdepth = 8):
+
+    data, pad_width, pad_height = pad_data_to_8(data, width, height)
     width += pad_width
     height += pad_height
-
-    file_io.save_image("out_1.bmp",data, width, height)
 
     levels = 3
     dwt.discrete_wavelet_transform_2D(data, width, height, levels)
     scale(data, width, height)
 
+    file_io.fp = open("output.cmp", "wb")
+    bpe.encode(data, width, height, pad_width, bitdepth)
+    file_io.cleanup()
+
+def compress(filein="test/test_image_2.bmp", fileout='output'):
+
+    #Load from file and initialize data to correct dimensions
+    data, width, height = file_io.load_image(filein)
+    data, pad_width, pad_height = pad_data_to_8(data, width, height)
+    width += pad_width
+    height += pad_height
+
+    data_in = np.copy(data)
+
+    levels = 3
+    dwt.discrete_wavelet_transform_2D(data, width, height, levels)
+    scale(data, width, height)
+
+    file_io.fp = open(fileout+".cmp", "wb")
+    bitdepth = 8
+    bpe.encode(data, width, height, pad_width, bitdepth)
+    file_io.cleanup()
+
+    return data_in, width, height, bitdepth
+
+    """
     #NOTE: Run length encoding is currently a separate prosess
     #In the future data should be piped through during bitplane encoding
 
-    file_io.fp = open(fileout+".cmp", "wb")
-    bpe.encode(data, width, height, pad_width)
-    file_io.cleanup()
-
-    """
     fp = open(fileout+".cmp", 'rb')  
     temp = fp.read()
     fp.close()

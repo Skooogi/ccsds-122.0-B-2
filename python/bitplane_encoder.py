@@ -60,7 +60,7 @@ def fill_blocks(blocks, data, width, height):
             blocks[block_i].ac[42] = data[r+height][c+width]
             family(blocks, block_i, data, r+height, c+width, 43)
 
-def encode(data, width, height, pad_width):
+def encode(data, width, height, pad_width, bitdepth):
 
     # [-----------------------coefficients-----------------------] | WIDTH * HEIGHT DWT transformed pixel values
     # [ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ][ b ] | b = block = 1 DC and 63 AC coefficients
@@ -130,7 +130,7 @@ def encode(data, width, height, pad_width):
 
     header.header_3.segment_size = len(blocks)
     
-    header.header_4.pixel_bitdepth = 8
+    header.header_4.pixel_bitdepth = bitdepth
     header.header_4.image_width = width
 
     file_io.out_bits(str(header))
@@ -218,4 +218,3 @@ def encode(data, width, height, pad_width):
                     file_io.out_bits(bitstring.replace('|','').replace('{','').replace('}','').replace('[','').replace(']',''))
 
         encode_stages.stage_4(blocks, b)
-        #print(blocks[0])

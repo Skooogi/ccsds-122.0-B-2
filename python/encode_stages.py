@@ -76,11 +76,13 @@ def encode_dc_initial(blocks, bitDC, q):
 
     #DC coding
     N = max(bitDC - q, 1)
-    quantized = np.zeros(len(blocks))
 
+    for i in range(len(blocks)):
+        blocks[i].dc = twos_complement(blocks[i].dc, bitDC)
+    
     if(N == 1):
         #Coefficients are 1 bit long and no further coding is required
-        temp = int(blocks[0].dc / pow(2, q))
+        temp = blocks[i].dc >> q
         j = 1
 
         for i in range(1,len(blocks)):
@@ -90,15 +92,11 @@ def encode_dc_initial(blocks, bitDC, q):
                 temp = 0
             temp <<= 1
             j += 1
-            temp = int(blocks[i].dc / pow(2, q))
+            temp |= blocks[i].dc >> q
         return
         
     #First DC coefficient is uncoded
     diffs = np.zeros(len(blocks), dtype='int')
-    for i in range(len(blocks)):
-        temp = blocks[i].dc
-        blocks[i].dc = twos_complement(blocks[i].dc, bitDC)
-    
     shifted = np.zeros(len(blocks), dtype='int')
     mask_N_bits = 2**N-1
     for i in range(len(blocks)):
@@ -117,7 +115,7 @@ def encode_dc_initial(blocks, bitDC, q):
     for i in range(1, len(blocks)):
 
         sigma = shifted[i] - last
-        theta = min(last + pow(2, (N-1)), pow(2, (N-1)) - 1 - last)
+        theta = min(last + 2**(N-1), 2**(N-1) - 1 - last)
         last = shifted[i]
         res = 0
 
@@ -135,10 +133,12 @@ def encode_dc_initial(blocks, bitDC, q):
 def encode_ac_magnitudes(blocks, bitACGlobal, q):
 
     N = int(abs(math.log(1 + bitACGlobal,2)) + 1)
+    if(N == 0):
+        return
 
     if(N == 1):
         #Coefficients are 1 bit long and no further coding is required
-        temp = int(blocks[0].bitAC)
+        temp = blocks[0].bitAC
         j = 1
 
         for i in range(1,len(blocks)):
@@ -192,25 +192,17 @@ def stage_1(blocks, b):
             continue
 
         #Set each coefficient state
-        blocks[i].status1 = 0
-        blocks[i].status2 = 0
-
         new_status_1 = 0
         new_status_2 = 0
 
         for j in range(63):
             if(subband_lim(j, b)):
-                #blocks[i].set_status(j, -1)
                 new_status_1 |= 1 << j
-                new_status_2 |= 1 << j
-            #elif(abs(blocks[i].ac[j]) < 2**b):
-            #    blocks[i].set_status(j, 0)
-            elif(2**b <= abs(blocks[i].ac[j]) < 2**(b+1)):
-                #blocks[i].set_status(j, 1)
                 new_status_2 |= 1 << j
             elif(2**(b+1) <= abs(blocks[i].ac[j])):
-                #blocks[i].set_status(j, 2)
                 new_status_1 |= 1 << j
+            elif(2**b <= abs(blocks[i].ac[j]) < 2**(b+1)):
+                new_status_2 |= 1 << j
         blocks[i].set_status_with(new_status_1, new_status_2)
         
         #types_p and signs_p
@@ -219,30 +211,33 @@ def stage_1(blocks, b):
         size_s = 0
         size_p = 0
 
-        if(0 <= blocks[i].get_status(0) <= 1):
-            types_p |= (abs(blocks[i].ac[0]) >> b) & 1
+        p0 = blocks[i].get_status(0)
+        p1 = blocks[i].get_status(21)
+        p2 = blocks[i].get_status(42)
+        if(0 <= p0 <= 1):
+            types_p |= p0
             size_p += 1
 
-            if(blocks[i].get_status(0) == 1):
+            if(p0 == 1):
                 signs_p |= 1 if blocks[i].ac[0] < 0 else 0
                 size_s += 1
 
-        if(0 <= blocks[i].get_status(21) <= 1):
+        if(0 <= p1 <= 1):
             types_p <<= 1
-            types_p |= (abs(blocks[i].ac[21]) >> b) & 1
+            types_p |= p1
             size_p += 1
 
-            if(blocks[i].get_status(21) == 1):
+            if(p1 == 1):
                 signs_p <<= 1
                 signs_p |= 1 if blocks[i].ac[21] < 0 else 0
                 size_s += 1
 
-        if(0 <= blocks[i].get_status(42) <= 1):
+        if(0 <= p2 <= 1):
             types_p <<= 1
-            types_p |= (abs(blocks[i].ac[42]) >> b) & 1
+            types_p |= p2
             size_p += 1
 
-            if(blocks[i].get_status(42) == 1):
+            if(p2 == 1):
                 signs_p <<= 1
                 signs_p |= 1 if blocks[i].ac[42] < 0 else 0
                 size_s += 1

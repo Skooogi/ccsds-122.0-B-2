@@ -27,6 +27,7 @@ sizes = []
 symbol_option = []
 options = np.array([[0,0],[0,0,0],[0,0,0,0]], dtype=object)
 num = np.zeros(4)
+
 def code(word, word_length, sym_option, uncoded = 1):
 
     #A word is mapped according to 4.5.3.3 with each code option

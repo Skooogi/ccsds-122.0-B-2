@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 #Collection of frequently used functions and classes
 
@@ -142,35 +143,13 @@ def subband_lim(ac_index, current_bitplane):
 
     return sub_map[current_bitplane][ac_index]
 
-    """
-    match (current_bitplane):
-        case 2 :
-            return (subband_bitplane_2 & (1 << ac_index)) > 0
-        case 1:
-            return ((subband_bitplane_2 | subband_bitplane_1) & (1 << ac_index)) > 0
-        case 0:
-            return ((subband_bitplane_2 | subband_bitplane_1| subband_bitplane_0) & (1 << ac_index)) > 0
-        case _:
-            return False
-    """
-    """
-    if(ac_index == 0 or ac_index == 21) and current_bitplane < 3:
-        return True
-    elif((1 <= ac_index <= 4) or (22 <= ac_index <= 25) or ac_index == 42) and current_bitplane < 2:
-        return True
-    elif((5 <= ac_index <= 20) or (26 <= ac_index <= 41) or (43 <= ac_index <= 46)) and current_bitplane < 1:
-        return True
-
-    return False
-    """
-
 def twos_complement(value, bits):
     if(value & 1 << (bits - 1)):
         return ~abs(value) + 1 & (2**bits - 1)
     
     return value
 
-def pad_image_size(data, width, height):
+def pad_data_to_8(data, width, height):
     #Pad image width and height to multiples of 8
 
     pad_width = 8 - width % 8
@@ -192,4 +171,24 @@ def pad_image_size(data, width, height):
             data = np.vstack((data, last_row))
 
     return data, pad_width, pad_height
+
+def MSE(data_in, data_out, width, height):
+    n = height * width
+    #MSE
+    mean_squared_error = 0
+    for i in range(height):
+        for j in range(width):
+            temp = data_out[i,j] - data_in[i,j] 
+            temp = temp * temp
+            mean_squared_error += temp
+    mean_squared_error /= n
+    return mean_squared_error
+
+def PSNR(mean_squared_error, bitdepth):
+
+    peak_signal_to_noise_ratio = math.inf
+    if(mean_squared_error != 0):
+        peak_signal_to_noise_ratio = 10*math.log(((2**bitdepth-1)*(2**bitdepth-1))/mean_squared_error, 10)
+
+    print(f'MSE:{mean_squared_error}\nPSNR:{peak_signal_to_noise_ratio} dB')
 

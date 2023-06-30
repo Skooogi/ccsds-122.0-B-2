@@ -1,5 +1,7 @@
 import numpy as np
+from numba import njit
 
+@njit(cache=True)
 def scale(data, width, height):
     #Scales the subbands according to their individual weights
     #Figure 3-4
@@ -37,6 +39,7 @@ def scale(data, width, height):
             data[j][i] = int(data[j][i] * 8) 
     return data
 
+@njit(cache=True)
 def rescale(data, width, height):
 
     #Scaling HL_1 LH_1

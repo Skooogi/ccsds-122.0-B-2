@@ -6,13 +6,35 @@ import rccsds_122 as decomp
 
 from random import randint, seed
 
+from common import MSE, PSNR
+
 def testFile(fileName):
-    comp.compress(fileName)
-    success = decomp.decompress()
-    if success:
+    print("Testing ",fileName)
+    data_in, width, height, bitdepth = comp.compress(fileName)
+    data_out = decomp.decompress()
+    
+    mean_squared_error = MSE(data_in, data_out, width, height)
+    if mean_squared_error == 0:
         print("Final result: Success.")
     else:
         print("Final result: ERROR. ERROR. ERROR. ERROR. ERROR. ERROR. ERROR. ERROR.")
+        print(f'MSE: {mean_squared_error}, PSNR: {PSNR(mean_squared_error, bitdepth)} dB')
+        print("Stopping!")
+        exit(1)
+
+def testData(data, width, height, bitdepth):
+
+    data_in = np.copy(data)
+    #NOTE compress_data() mutates data
+    comp.compress_data(data, width, height, bitdepth)
+    decompressed_data = decomp.decompress()
+
+    mean_squared_error = MSE(data_in, decompressed_data, width, height)
+    if mean_squared_error == 0:
+        print("Final result: Success.")
+    else:
+        print("Final result: ERROR. ERROR. ERROR. ERROR. ERROR. ERROR. ERROR. ERROR.")
+        print(f'MSE: {mean_squared_error}, PSNR: {PSNR(mean_squared_error, bitdepth)} dB')
         print("Stopping!")
         exit(1)
 
@@ -23,26 +45,25 @@ def randomtests():
     # ------------------------------------------------------------------------------
 
     # The total number of random images to test
-    num_images = 4
+    num_images = 20
 
     # The minimum and maximum image width. Note that the image width must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_width = 32
-    max_width = 32
+    max_width = 256
 
     # The minimum and maximum image height. Note that the image height must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_height = 32
-    max_height = 32
+    max_height = 256
 
     # The minimum and maximum bitdepth to use. (Currently only 8 bits supported by the code.)
-    min_bitdepth = 10
-    max_bitdepth = 10
+    min_bitdepth = 1
+    max_bitdepth = 15
 
     # The seed to use for the run. Arbitrary. Always setting the same seed so that the
     # results are reproducible.
     seed_value = 0
-
 
     # ------------------------------------------------------------------------------
     # Start the test:
@@ -88,6 +109,9 @@ def randomtests():
         orig_img = np.random.randint(min_pixval, max_pixval + 1, (img_height, img_width))
         # print(orig_img)
 
+        testData(orig_img, img_width, img_height, img_bitdepth)
+
+        """
         # Temporary file name
         fname = "temp_orig_" + str(img_ind + 1) + ".bmp"
 
@@ -96,20 +120,20 @@ def randomtests():
 
         # Run the analysis
         testFile(fname)
-
+        """
 
 if __name__ == '__main__':
 
-    test_case = 2
+    test_case = 1
 
     # Checking compression + decompression of the test images supplied by Kasper:
     if test_case == 1:
         testFile("test/test_image_0.bmp")               # works!
-        # testFile("test/test_image_1.bmp")             # works!
-        # testFile("test/test_image_2.bmp")             # works!
-        # testFile("test/test_image_3.bmp")             # PROBLEM! output is NOT IDENTICAL to input. 
-        # testFile("test/test_image_4.bmp")             # works!
-        # testFile("test/test_image_gradient.bmp")      # works!
+        testFile("test/test_image_1.bmp")             # works!
+        testFile("test/test_image_2.bmp")             # works!
+        testFile("test/test_image_3.bmp")             # PROBLEM! output is NOT IDENTICAL to input. 
+        testFile("test/test_image_4.bmp")             # works!
+        testFile("test/test_image_gradient.bmp")      # works!
 
     if test_case == 2:
         randomtests()

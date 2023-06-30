@@ -49,7 +49,7 @@ def single_dwt(data, test) -> None:
     data_b = np.copy(data)
     height, width = np.shape(data)
 
-    data_a, pad_width, pad_height = ccsds_122.pad_image_size(data, width, height)
+    data_a, pad_width, pad_height = ccsds_122.pad_data_to_8(data, width, height)
     width += pad_width
     height += pad_height
 

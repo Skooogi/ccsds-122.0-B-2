@@ -10,10 +10,7 @@ import discrete_wavelet_transform as dwt
 from dataclasses import dataclass
 from subband_scaling import rescale
 
-#from bitplane_encoder import fill_blocks, family
-
 decode_trees = []
-
 def readb(num):
     while(len(readb.cache) < num and readb.i < len(readb.data)):
         readb.cache += format(readb.data[readb.i], '08b')
@@ -89,6 +86,12 @@ def decode_dc_initial(blocks, bitDC, q):
     print("Decoding DC magnitudes")
     #DC Magnitudes
     N = max(bitDC - q, 1)
+
+    if(N == 1):
+        for i in range(len(blocks)):
+            blocks[i].dc = int(readb(1))
+        return
+
     code_word_bits = (math.ceil(math.log(N,2)))
     k = 0
 
@@ -123,8 +126,9 @@ def decode_dc_initial(blocks, bitDC, q):
                break
             diffs[index] |= int(readb(k), 2)
 
+    mask = 2**(N-1)-1
     if(diffs[0] & 1 << (N-1)) > 0:
-        blocks[0].dc = diffs[0]*-1
+        blocks[0].dc = -(((diffs[0] ^ mask) & mask) + 1)
     else:
         blocks[0].dc = diffs[0]
 
@@ -146,9 +150,6 @@ def decode_dc_initial(blocks, bitDC, q):
     for i in range(len(blocks)):
         blocks[i].dc = common.twos_complement(blocks[i].dc, N)
         blocks[i].dc <<= q
-        if(i == 9 or i == 22 or i == 60):
-            print(i, blocks[i].dc, format(blocks[i].dc, f'013b'))
-        #blocks[i].dc = common.twos_complement(blocks[i].dc, bitDC)
 
 def decode_ac_magnitudes(blocks, bitACGlobal, q):
 
@@ -156,6 +157,11 @@ def decode_ac_magnitudes(blocks, bitACGlobal, q):
     #AC Magnitudes
     diffs = np.zeros(len(blocks), dtype='int')
     N = int(abs(math.log(1 + bitACGlobal,2)) + 1)
+    if(N == 1):
+        for i in range(len(blocks)):
+            blocks[i].bitAC = int(readb(1))
+        return
+
     code_word_bits = (math.ceil(math.log(N,2)))
     k = 0
 
@@ -245,14 +251,15 @@ def initialize_binary_trees():
             rle.regen_tree(decode_tree_4[i], j, word4bit[i][j])
     decode_trees = [decode_tree_2, decode_tree_3, decode_tree_4]
 
+
+sym2bit = np.array([0, 2, 1, 3])
+sym3bit = np.array([[1, 4, 0, 5, 2, 6, 3, 7], [-1, 3, 0, 4, 1, 5, 2, 6]])
+sym4bit = np.array([[10, 1, 3, 6, 2, 5, 9, 12, 0, 8, 7, 13, 4, 14, 11, 15], [-1, 1, 3, 6, 2, 5, 9, 11, 0, 8, 7, 12, 4, 13, 10, 14]])
+
 def decode_bits(bitstring, size, symbol_option, code_option):
 
     if(size == 1):
         return bitstring
-
-    sym2bit = np.array([0, 2, 1, 3])
-    sym3bit = np.array([[1, 4, 0, 5, 2, 6, 3, 7], [-1, 3, 0, 4, 1, 5, 2, 6]])
-    sym4bit = np.array([[10, 1, 3, 6, 2, 5, 9, 12, 0, 8, 7, 13, 4, 14, 11, 15], [-1, 1, 3, 6, 2, 5, 9, 11, 0, 8, 7, 12, 4, 13, 10, 14]])
 
     index, skip = rle.read_tree(decode_trees[size-2][code_option], bitstring)
     if(skip == -1):
@@ -366,14 +373,6 @@ def stage_0(blocks, bitplane, q):
             blocks[i].dc |= temp << bitplane
             #print(temp, end='')
 
-        for j in range(63):
-            if(common.subband_lim(j, bitplane)):
-                blocks[i].set_status(j, -1)
-            elif(blocks[i].get_status(j) == 1 or blocks[i].get_status(j) == 2):
-                blocks[i].set_status(j, 2)
-            else:
-                blocks[i].set_status(j, 0)
-
     #print()
 
 def stage_1(blocks, bitplane, code_words):
@@ -381,6 +380,26 @@ def stage_1(blocks, bitplane, code_words):
     for i in range(len(blocks)):
         if blocks[i].bitAC < bitplane:
             continue
+
+        new_status_1 = 0
+        new_status_2 = 0
+        for j in range(63):
+            if(common.subband_lim(j, bitplane)):
+                new_status_1 |= 1 << j
+                new_status_2 |= 1 << j
+            elif(blocks[i].get_status(j) > 0):
+                new_status_1 |= 1 << j
+        blocks[i].set_status_with(new_status_1, new_status_2)
+
+        """
+        for j in range(63):
+            if(common.subband_lim(j, bitplane)):
+                blocks[i].set_status(j, -1)
+            elif(blocks[i].get_status(j) == 1 or blocks[i].get_status(j) == 2):
+                blocks[i].set_status(j, 2)
+            else:
+                blocks[i].set_status(j, 0)
+        """
 
         num_zeros  = 1 if blocks[i].get_status(0) == 0 else 0
         num_zeros += 1 if blocks[i].get_status(21) == 0 else 0
@@ -574,7 +593,7 @@ def stage_4(blocks, bitplane):
 
 def unpack_blocks(blocks, width, height):
 
-    data = np.ones([height*8, width*8])
+    data = np.ones([height*8, width*8], np.int32)
 
     for row in range(height):
         for column in range(width):
@@ -693,6 +712,7 @@ def decompress():
     for i in range(len(blocks)):
         if(blocks[i].dc & (1 << (bitDC-1))):
            blocks[i].dc -= 1 << bitDC
+        
         for j in range(63):
             if blocks[i].ac[j] & (1 << blocks[i].bitAC) > 0:
                 blocks[i].ac[j] &= ~(1 << blocks[i].bitAC)
@@ -705,38 +725,7 @@ def decompress():
     print("IDWT")
     levels = 3
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
-    print("Saving image")
-    file_io.save_image("out_2.bmp", data, width, height)
-
-    data_a = np.copy(data)
-    data_b, b_width, b_height = file_io.load_image("out_1.bmp")
-    n = b_height * b_width
-
-    #MSE
-    minimum = 30000
-    maximum = -30000
-
-    mean_squared_error = 0
-    for i in range(b_height):
-        for j in range(b_width):
-            temp = data_b[i,j] - data_a[i,j] 
-            temp = temp * temp
-            minimum = min(minimum, data_b[i,j])
-            maximum = max(maximum, data_b[i,j])
-            mean_squared_error += temp
-
-    print(minimum, maximum)
-
-    mean_squared_error /= n
-
-    #PSNR
-    peak_signal_to_noise_ratio = math.inf
-    if(mean_squared_error != 0):
-        peak_signal_to_noise_ratio = 10*math.log((255*255)/mean_squared_error, 10)
-
-    print(f'MSE:{mean_squared_error}\nPSNR:{peak_signal_to_noise_ratio} dB')
-
-    return mean_squared_error == 0
+    return data
 
 if __name__ == '__main__':
     decompress()
