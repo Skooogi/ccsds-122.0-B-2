@@ -59,7 +59,7 @@ def randomtests():
 
     # The minimum and maximum bitdepth to use. (Currently only 8 bits supported by the code.)
     min_bitdepth = 1
-    max_bitdepth = 15
+    max_bitdepth = 1
 
     # The seed to use for the run. Arbitrary. Always setting the same seed so that the
     # results are reproducible.
@@ -109,6 +109,9 @@ def randomtests():
         orig_img = np.random.randint(min_pixval, max_pixval + 1, (img_height, img_width))
         # print(orig_img)
 
+        # Save the original input file.
+        fname = "temp_orig_" + str(img_ind + 1) + ".bmp"
+        file_io.save_image(fname, orig_img, img_width, img_height)
         testData(orig_img, img_width, img_height, img_bitdepth)
 
         """
@@ -124,7 +127,7 @@ def randomtests():
 
 if __name__ == '__main__':
 
-    test_case = 1
+    test_case = 2
 
     # Checking compression + decompression of the test images supplied by Kasper:
     if test_case == 1:
