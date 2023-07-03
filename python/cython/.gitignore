@@ -1,0 +1,4 @@
+*.so
+core
+build
+__pycache__
