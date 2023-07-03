@@ -1,0 +1,4 @@
+0.4616191090 s
+0.41 instr/cycle
+0.10 % branch misses
+1.3 billion operations/s
