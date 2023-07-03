@@ -27,7 +27,7 @@ debug: all
 	@(cd ${BUILD_DIR}; gdb ./$(PROJECT).bin)
 
 perf: all
-	@(cd ${BUILD_DIR}; perf record --call-graph dwarf ./$(PROJECT).bin)
+	@(cd ${BUILD_DIR}; perf record -F max --call-graph dwarf ./$(PROJECT).bin)
 
 stat: all
 	@(cd ${BUILD_DIR}; perf stat -d ./$(PROJECT).bin)

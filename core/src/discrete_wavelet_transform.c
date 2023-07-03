@@ -15,7 +15,7 @@ static void forward_DWT(int32_t* data, size_t width) {
 
 	highpass[0] = cache[1] - to_int(9.f/16 * (cache[0]+cache[2]) -1.f/16 * (cache[2]+cache[4]) + 0.5);
 
-	for(size_t i = 1; i < n_coeffs - 2; i+=4) {
+	for(size_t i = 1; i < n_coeffs - 2; i++) {
 		highpass[i] = cache[2*i+1] - to_int(9.f/16*(cache[2*i]+cache[2*i+2]) -1.f/16*(cache[2*i-2]+cache[2*i+4]) + 0.5);
 	}
 
