@@ -172,22 +172,24 @@ def pad_data_to_8(data, width, height):
 
     return data, pad_width, pad_height
 
+
 def MSE(data_in, data_out, width, height):
     n = height * width
-    #MSE
+    # MSE
     mean_squared_error = 0
     for i in range(height):
         for j in range(width):
-            temp = data_out[i,j] - data_in[i,j] 
+            temp = data_out[i, j] - data_in[i, j]
             temp = temp * temp
             mean_squared_error += temp
     mean_squared_error /= n
     return mean_squared_error
+ 
 
 def PSNR(mean_squared_error, bitdepth):
 
     peak_signal_to_noise_ratio = math.inf
-    if(mean_squared_error != 0):
+    if (mean_squared_error != 0):
         peak_signal_to_noise_ratio = 10*math.log(((2**bitdepth-1)*(2**bitdepth-1))/mean_squared_error, 10)
 
     print(f'MSE:{mean_squared_error}\nPSNR:{peak_signal_to_noise_ratio} dB')

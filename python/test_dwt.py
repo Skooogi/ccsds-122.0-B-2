@@ -1,10 +1,10 @@
 import numpy as np
 import math
 import time
-import os
 
 import discrete_wavelet_transform as dwt
 import ccsds_122
+import cython.c_dwt as c_dwt
 from file_io import load_image
 
 test_data_0 = load_image("test/test_image_0.bmp")[0]
@@ -30,7 +30,7 @@ def single_dwt(data, test) -> None:
     levels = 3
     #Time transforms
     forward_start_time = time.time()
-    dwt.discrete_wavelet_transform_2D(data_a, width, height, levels)
+    dwt.discrete_wavelet_transform_2D(data_a, width, height, levels, False)
     forward_end_time = time.time()
 
     backward_start_time = time.time()

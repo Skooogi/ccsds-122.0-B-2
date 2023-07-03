@@ -15,7 +15,7 @@ source_paths = [
 sourcefiles= ["c_dwt.pyx"]
 sourcefiles.extend(source_paths)
 
-compile_args = ["-O3", "-fPIC"]
+compile_args = ["-O3", "-fPIC", "-march=native"]
 for icd in include_paths:
 	compile_args.append( "-I"+icd )
 

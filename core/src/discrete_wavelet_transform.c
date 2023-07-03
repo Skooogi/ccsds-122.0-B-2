@@ -1,16 +1,9 @@
 #include "discrete_wavelet_transform.h"
-#include <math.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 
-static inline int32_t to_int(float value) { return (int)(value - (value < 0 && value != (int) value)); }
-
-//Precomputed coefficients for faster multiplication
-static float o_16 = -1.f/16;
-static float o_8 = -1.f/8;
-static float n_16 = 9.f/16;
-static float n_8 = 9.f/8;
+static inline int32_t to_int(float value) { return (value < 0 && value != (int) value) ? (int)(value - 1) : (int)value; }
 
 static void forward_DWT(int32_t* data, size_t width) {
 
@@ -20,30 +13,15 @@ static void forward_DWT(int32_t* data, size_t width) {
 	uint32_t n_coeffs = width >> 1;
 	int32_t highpass[n_coeffs + 1];
 
-	highpass[0] = cache[1] - to_int(n_16 * (cache[0]+cache[2]) + o_16 * (cache[2]+cache[4]) + 0.5);
+	highpass[0] = cache[1] - to_int(9.f/16 * (cache[0]+cache[2]) -1.f/16 * (cache[2]+cache[4]) + 0.5);
 
 	for(size_t i = 1; i < n_coeffs - 2; i+=4) {
-
-        uint32_t c_2 = cache[2*i-2];
-        uint32_t c_1 = cache[2*i-1];
-        uint32_t c0 = cache[2*i];
-        uint32_t c1 = cache[2*i+1];
-        uint32_t c2 = cache[2*i+2];
-        uint32_t c3 = cache[2*i+3];
-        uint32_t c4 = cache[2*i+4];
-        uint32_t c5 = cache[2*i+5];
-        uint32_t c6 = cache[2*i+6];
-        uint32_t c7 = cache[2*i+7];
-
-		highpass[i]   = cache[c1] - to_int(n_16*(cache[c0]+cache[c2]) + o_16*(cache[c_2]+cache[c4]) + 0.5);
-		highpass[i+1] = cache[c2] - to_int(n_16*(cache[c1]+cache[c3]) + o_16*(cache[c_1]+cache[c5]) + 0.5);
-		highpass[i+2] = cache[c3] - to_int(n_16*(cache[c2]+cache[c4]) + o_16*(cache[c0]+cache[c6]) + 0.5);
-		highpass[i+3] = cache[c4] - to_int(n_16*(cache[c3]+cache[c5]) + o_16*(cache[c1]+cache[c7]) + 0.5);
+		highpass[i] = cache[2*i+1] - to_int(9.f/16*(cache[2*i]+cache[2*i+2]) -1.f/16*(cache[2*i-2]+cache[2*i+4]) + 0.5);
 	}
 
-    highpass[n_coeffs-2] = cache[2*n_coeffs-3] - to_int(n_16*(cache[2*n_coeffs-4]+cache[2*n_coeffs-2])  + o_16*(cache[2*n_coeffs-6]+cache[2*n_coeffs-2]) + 0.5);
+    highpass[n_coeffs-2] = cache[2*n_coeffs-3] - to_int(9.f/16*(cache[2*n_coeffs-4]+cache[2*n_coeffs-2]) -1.f/16*(cache[2*n_coeffs-6]+cache[2*n_coeffs-2]) + 0.5);
 
-    highpass[n_coeffs-1] = cache[2*n_coeffs-1] - to_int(n_8*cache[2*n_coeffs-2] + o_8*cache[2*n_coeffs-4] + 0.5);
+    highpass[n_coeffs-1] = cache[2*n_coeffs-1] - to_int(9.f/8*cache[2*n_coeffs-2] -1.f/8*cache[2*n_coeffs-4] + 0.5);
 
     data[0] = cache[0] - to_int(-highpass[0]*0.5 + 0.5);
 	data[n_coeffs] = highpass[0];

@@ -7,7 +7,7 @@ C_INCLUDES = \
 -Icore/include \
 
 C_DEFS =
-CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -g
+CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -g -O3
 #Dependency information
 CFLAGS+= -MMD -MP -MF"$(@:%.o=%.d)"
 
