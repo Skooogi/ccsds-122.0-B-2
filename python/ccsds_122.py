@@ -8,9 +8,7 @@ import run_length_encoding as rle
 from subband_scaling import scale, rescale
 from common import pad_data_to_8
 
-import time
-
-def compress_data(data, width, height, bitdepth = 8):
+def compress_data(data, width, height, bitdepth=8):
 
     data, pad_width, pad_height = pad_data_to_8(data, width, height)
     width += pad_width
@@ -24,9 +22,10 @@ def compress_data(data, width, height, bitdepth = 8):
     bpe.encode(data, width, height, pad_width, bitdepth)
     file_io.cleanup()
 
-def compress(filein="test/test_image_2.bmp", fileout='output'):
 
-    #Load from file and initialize data to correct dimensions
+def compress(filein="test/test_image_black32.bmp", fileout='output'):
+
+    # Load from file and initialize data to correct dimensions
     data, width, height = file_io.load_image(filein)
     data, pad_width, pad_height = pad_data_to_8(data, width, height)
     width += pad_width
@@ -49,16 +48,17 @@ def compress(filein="test/test_image_2.bmp", fileout='output'):
     #NOTE: Run length encoding is currently a separate prosess
     #In the future data should be piped through during bitplane encoding
 
-    fp = open(fileout+".cmp", 'rb')  
+    fp = open(fileout+".cmp", 'rb')
     temp = fp.read()
     fp.close()
     temp = rle.compress(temp)
     new_size = int(len(temp)/8)
 
-    fp = open(fileout+".cmp", 'wb')  
+    fp = open(fileout+".cmp", 'wb')
     fp.write(int(temp, 2).to_bytes(new_size, 'big'))
     fp.close()
     """
+
 
 if __name__ == '__main__':
     compress()

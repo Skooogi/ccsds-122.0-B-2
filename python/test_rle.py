@@ -14,33 +14,6 @@ test_data_6 = load_image("test/test_image_2.bmp")[0]
 test_data_7 = load_image("test/test_image_3.bmp")[0]
 test_data_8 = load_image("test/test_image_4.bmp")[0]
 
-def test_rle_0():
-    single_rle(test_data_0, 0)
-
-def test_rle_1():
-    single_rle(test_data_1, 1)
-
-def test_rle_2():
-    single_rle(test_data_2, 2)
-
-def test_rle_3():
-    single_rle(test_data_3, 3)
-
-def test_rle_4():
-    single_rle(test_data_4, 4)
-
-def test_rle_5():
-    single_rle(test_data_5, 5)
-
-def test_rle_6():
-    single_rle(test_data_6, 6)
-
-def test_rle_7():
-    single_rle(test_data_7, 7)
-
-def test_rle_8_pure_noise():
-    #This should fail
-    single_rle(test_data_8, 8)
 
 def single_rle(data_in, test) -> None:
 
@@ -53,21 +26,42 @@ def single_rle(data_in, test) -> None:
 
     new_size = int(len(bitstring) / 8)
     
-    assert len(bitstring) % 8 == 0
-    assert new_size < original_size
 
     print("Test:",test)
     print("\torg:",f'\t{original_size} B')
     print("\tnew:",f'\t{new_size} B:')
     print("\tratio:",f'\t{(new_size/original_size):3.4f}')
     print("\tcomp:",f'\t{(comp_end_time-comp_start_time):3.4f} s')
+    
+    if(len(bitstring) % 8 != 0):
+        print("DATA LENGHT % 8 != 0")
+        exit(1)
+    if(new_size >= original_size):
+        print("Generated file not compressing data")
+        exit(1)
 
     byt = int(bitstring, 2).to_bytes(new_size, 'big')
     comp_start_time = time.time() 
     result = rle.uncompress(byt)
     comp_end_time = time.time() 
 
+    errors = 0
     for i in range(len(result)):
-        assert data[i] == result[i]
+        errors += data[i] != result[i]
+    if(errors):
+        print("Process not lossless!")
+        exit(1)
 
     print("\tucomp:",f'\t{(comp_end_time-comp_start_time):3.4f} s')
+
+if __name__ == '__main__':
+    single_rle(test_data_0, 0)
+    single_rle(test_data_1, 1)
+    single_rle(test_data_2, 2)
+    single_rle(test_data_3, 3)
+    single_rle(test_data_4, 4)
+    single_rle(test_data_5, 5)
+    single_rle(test_data_6, 6)
+    single_rle(test_data_7, 7)
+    print("This should fail from not compressing pure noise:")
+    single_rle(test_data_8, 8)

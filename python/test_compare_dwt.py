@@ -11,6 +11,9 @@ from common import MSE, PSNR, pad_data_to_8
 
 import cython.c_dwt as c_dwt
 
+#Before testing comment out @njit decorators in discrete_wavelet_transform.py
+#Otherwise njit implementation sometimes runs better as it doesn't have
+#extra overhead from linkin C and python like cython does
 def test_file(filename = 'test/test_image_2.bmp', bitdepth = 8):
 
     data, width, height = file_io.load_image(filename)
@@ -24,6 +27,7 @@ def test_file(filename = 'test/test_image_2.bmp', bitdepth = 8):
         for j in range(width):
             c_data[i * width + j] = data[i][j]
     c_data = struct.pack(f'{num_pixels}I', *c_data)
+    print(f'Width:{width} Height:{height}')
 
     levels = 3
     #Normal dwt
@@ -31,15 +35,16 @@ def test_file(filename = 'test/test_image_2.bmp', bitdepth = 8):
     dwt.discrete_wavelet_transform_2D(data, width, height, levels)
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
     end = timer()
-    print(f'DWT: {(end-start)*1000:.4f} ms')
+    print(f'DWT:\t{(end-start)*1000:.4f} ms')
     file_io.save_image("img_in.bmp", data, width, height)
 
     #C dwt
     start = timer()
-    c_data = c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, 0)
-    c_data = c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, 1)
+    c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, 0)
+    c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, 1)
     end = timer()
-    print(f'C DWT: {(end-start)*1000:.4f} ms')
+    print(f'C DWT:\t{(end-start)*1000:.4f} ms')
+    print()
 
     c_data = struct.unpack(f'{num_pixels}I', c_data)
     for i in range(height):
@@ -48,5 +53,12 @@ def test_file(filename = 'test/test_image_2.bmp', bitdepth = 8):
     file_io.save_image("img_out.bmp", data, width, height)
 
 if __name__ == '__main__':
+    print("Tests speed difference between python and cython implementation of DWT")
+    print("Timed process is 3 layers of transform followed by 3 levels of inverse transform")
 
-    test_file()
+    test_file("test/test_image_0.bmp")
+    test_file("test/test_image_1.bmp")
+    test_file("test/test_image_2.bmp")
+    test_file("test/test_image_3.bmp")
+    test_file("test/test_image_4.bmp")
+    test_file("test/test_image_5.bmp")

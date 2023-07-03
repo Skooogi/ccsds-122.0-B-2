@@ -7,7 +7,7 @@
         "extra_compile_args": [
             "-O3",
             "-fPIC",
-            "-I../../core/include/"
+            "-I../../core/src/"
         ],
         "name": "c_dwt",
         "sources": [
@@ -1127,59 +1127,6 @@ static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
     PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,\
     const char* function_name);
 
-/* PyCFunctionFastCall.proto */
-#if CYTHON_FAST_PYCCALL
-static CYTHON_INLINE PyObject *__Pyx_PyCFunction_FastCall(PyObject *func, PyObject **args, Py_ssize_t nargs);
-#else
-#define __Pyx_PyCFunction_FastCall(func, args, nargs)  (assert(0), NULL)
-#endif
-
-/* PyFunctionFastCall.proto */
-#if CYTHON_FAST_PYCALL
-#define __Pyx_PyFunction_FastCall(func, args, nargs)\
-    __Pyx_PyFunction_FastCallDict((func), (args), (nargs), NULL)
-#if 1 || PY_VERSION_HEX < 0x030600B1
-static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs);
-#else
-#define __Pyx_PyFunction_FastCallDict(func, args, nargs, kwargs) _PyFunction_FastCallDict(func, args, nargs, kwargs)
-#endif
-#define __Pyx_BUILD_ASSERT_EXPR(cond)\
-    (sizeof(char [1 - 2*!(cond)]) - 1)
-#ifndef Py_MEMBER_SIZE
-#define Py_MEMBER_SIZE(type, member) sizeof(((type *)0)->member)
-#endif
-#if CYTHON_FAST_PYCALL
-  static size_t __pyx_pyframe_localsplus_offset = 0;
-  #include "frameobject.h"
-#if PY_VERSION_HEX >= 0x030b00a6
-  #ifndef Py_BUILD_CORE
-    #define Py_BUILD_CORE 1
-  #endif
-  #include "internal/pycore_frame.h"
-#endif
-  #define __Pxy_PyFrame_Initialize_Offsets()\
-    ((void)__Pyx_BUILD_ASSERT_EXPR(sizeof(PyFrameObject) == offsetof(PyFrameObject, f_localsplus) + Py_MEMBER_SIZE(PyFrameObject, f_localsplus)),\
-     (void)(__pyx_pyframe_localsplus_offset = ((size_t)PyFrame_Type.tp_basicsize) - Py_MEMBER_SIZE(PyFrameObject, f_localsplus)))
-  #define __Pyx_PyFrame_GetLocalsplus(frame)\
-    (assert(__pyx_pyframe_localsplus_offset), (PyObject **)(((char *)(frame)) + __pyx_pyframe_localsplus_offset))
-#endif // CYTHON_FAST_PYCALL
-#endif
-
-/* PyObjectCall.proto */
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw);
-#else
-#define __Pyx_PyObject_Call(func, arg, kw) PyObject_Call(func, arg, kw)
-#endif
-
-/* PyObjectCallMethO.proto */
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg);
-#endif
-
-/* PyObjectCallOneArg.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
-
 /* PyDictVersioning.proto */
 #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_TYPE_SLOTS
 #define __PYX_DICT_VERSION_INIT  ((PY_UINT64_T) -1)
@@ -1560,106 +1507,46 @@ static PyObject *__pyx_pf_5c_dwt_c_discrete_wavelet_transform_2D(CYTHON_UNUSED P
  *     return _c_dwt_2D(<uint8_t*> data, <int> num_bytes, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)
  * 
  * cdef _c_dwt_2D(uint8_t* src, int num_bytes, width, height, levels, inverse):             # <<<<<<<<<<<<<<
- *     cdef uint8_t* buff;
- *     buff = <uint8_t*> malloc(num_bytes)
+ *     c_dwt.discrete_wavelet_transform_2D(<int32_t*> src, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)
  */
 
-static PyObject *__pyx_f_5c_dwt__c_dwt_2D(__pyx_t_5c_dwt_uint8_t *__pyx_v_src, int __pyx_v_num_bytes, PyObject *__pyx_v_width, PyObject *__pyx_v_height, PyObject *__pyx_v_levels, PyObject *__pyx_v_inverse) {
-  __pyx_t_5c_dwt_uint8_t *__pyx_v_buff;
-  PyObject *__pyx_v_RET = NULL;
+static PyObject *__pyx_f_5c_dwt__c_dwt_2D(__pyx_t_5c_dwt_uint8_t *__pyx_v_src, CYTHON_UNUSED int __pyx_v_num_bytes, PyObject *__pyx_v_width, PyObject *__pyx_v_height, PyObject *__pyx_v_levels, PyObject *__pyx_v_inverse) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   size_t __pyx_t_1;
   size_t __pyx_t_2;
   __pyx_t_5c_dwt_uint8_t __pyx_t_3;
   __pyx_t_5c_dwt_uint8_t __pyx_t_4;
-  PyObject *__pyx_t_5 = NULL;
-  PyObject *__pyx_t_6 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_c_dwt_2D", 0);
 
-  /* "c_dwt.pyx":12
+  /* "c_dwt.pyx":11
+ * 
  * cdef _c_dwt_2D(uint8_t* src, int num_bytes, width, height, levels, inverse):
- *     cdef uint8_t* buff;
- *     buff = <uint8_t*> malloc(num_bytes)             # <<<<<<<<<<<<<<
- *     memcpy(buff, src, num_bytes)
- *     c_dwt.discrete_wavelet_transform_2D(<int32_t*> buff, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)
+ *     c_dwt.discrete_wavelet_transform_2D(<int32_t*> src, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)             # <<<<<<<<<<<<<<
  */
-  __pyx_v_buff = ((__pyx_t_5c_dwt_uint8_t *)malloc(__pyx_v_num_bytes));
-
-  /* "c_dwt.pyx":13
- *     cdef uint8_t* buff;
- *     buff = <uint8_t*> malloc(num_bytes)
- *     memcpy(buff, src, num_bytes)             # <<<<<<<<<<<<<<
- *     c_dwt.discrete_wavelet_transform_2D(<int32_t*> buff, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)
- *     RET = bytes((<uint8_t*>buff)[:num_bytes])
- */
-  (void)(memcpy(__pyx_v_buff, __pyx_v_src, __pyx_v_num_bytes));
-
-  /* "c_dwt.pyx":14
- *     buff = <uint8_t*> malloc(num_bytes)
- *     memcpy(buff, src, num_bytes)
- *     c_dwt.discrete_wavelet_transform_2D(<int32_t*> buff, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)             # <<<<<<<<<<<<<<
- *     RET = bytes((<uint8_t*>buff)[:num_bytes])
- *     free(buff)
- */
-  __pyx_t_1 = __Pyx_PyInt_As_size_t(__pyx_v_width); if (unlikely((__pyx_t_1 == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 14, __pyx_L1_error)
-  __pyx_t_2 = __Pyx_PyInt_As_size_t(__pyx_v_height); if (unlikely((__pyx_t_2 == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 14, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyInt_As_uint8_t(__pyx_v_levels); if (unlikely((__pyx_t_3 == ((uint8_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 14, __pyx_L1_error)
-  __pyx_t_4 = __Pyx_PyInt_As_uint8_t(__pyx_v_inverse); if (unlikely((__pyx_t_4 == ((uint8_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 14, __pyx_L1_error)
-  discrete_wavelet_transform_2D(((__pyx_t_5c_dwt_int32_t *)__pyx_v_buff), ((size_t)__pyx_t_1), ((size_t)__pyx_t_2), ((__pyx_t_5c_dwt_uint8_t)__pyx_t_3), ((__pyx_t_5c_dwt_uint8_t)__pyx_t_4));
-
-  /* "c_dwt.pyx":15
- *     memcpy(buff, src, num_bytes)
- *     c_dwt.discrete_wavelet_transform_2D(<int32_t*> buff, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)
- *     RET = bytes((<uint8_t*>buff)[:num_bytes])             # <<<<<<<<<<<<<<
- *     free(buff)
- *     return RET
- */
-  __pyx_t_5 = __Pyx_PyBytes_FromStringAndSize(((const char*)((__pyx_t_5c_dwt_uint8_t *)__pyx_v_buff)) + 0, __pyx_v_num_bytes - 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 15, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyBytes_Type)), __pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 15, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_v_RET = ((PyObject*)__pyx_t_6);
-  __pyx_t_6 = 0;
-
-  /* "c_dwt.pyx":16
- *     c_dwt.discrete_wavelet_transform_2D(<int32_t*> buff, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)
- *     RET = bytes((<uint8_t*>buff)[:num_bytes])
- *     free(buff)             # <<<<<<<<<<<<<<
- *     return RET
- */
-  free(__pyx_v_buff);
-
-  /* "c_dwt.pyx":17
- *     RET = bytes((<uint8_t*>buff)[:num_bytes])
- *     free(buff)
- *     return RET             # <<<<<<<<<<<<<<
- */
-  __Pyx_XDECREF(__pyx_r);
-  __Pyx_INCREF(__pyx_v_RET);
-  __pyx_r = __pyx_v_RET;
-  goto __pyx_L0;
+  __pyx_t_1 = __Pyx_PyInt_As_size_t(__pyx_v_width); if (unlikely((__pyx_t_1 == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_As_size_t(__pyx_v_height); if (unlikely((__pyx_t_2 == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_As_uint8_t(__pyx_v_levels); if (unlikely((__pyx_t_3 == ((uint8_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyInt_As_uint8_t(__pyx_v_inverse); if (unlikely((__pyx_t_4 == ((uint8_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 11, __pyx_L1_error)
+  discrete_wavelet_transform_2D(((__pyx_t_5c_dwt_int32_t *)__pyx_v_src), ((size_t)__pyx_t_1), ((size_t)__pyx_t_2), ((__pyx_t_5c_dwt_uint8_t)__pyx_t_3), ((__pyx_t_5c_dwt_uint8_t)__pyx_t_4));
 
   /* "c_dwt.pyx":10
  *     return _c_dwt_2D(<uint8_t*> data, <int> num_bytes, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)
  * 
  * cdef _c_dwt_2D(uint8_t* src, int num_bytes, width, height, levels, inverse):             # <<<<<<<<<<<<<<
- *     cdef uint8_t* buff;
- *     buff = <uint8_t*> malloc(num_bytes)
+ *     c_dwt.discrete_wavelet_transform_2D(<int32_t*> src, <size_t> width, <size_t> height, <uint8_t> levels, <uint8_t> inverse)
  */
 
   /* function exit code */
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
+  goto __pyx_L0;
   __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_XDECREF(__pyx_t_6);
   __Pyx_AddTraceback("c_dwt._c_dwt_2D", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_RET);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
@@ -2228,228 +2115,6 @@ invalid_keyword:
 bad:
     return -1;
 }
-
-/* PyCFunctionFastCall */
-#if CYTHON_FAST_PYCCALL
-static CYTHON_INLINE PyObject * __Pyx_PyCFunction_FastCall(PyObject *func_obj, PyObject **args, Py_ssize_t nargs) {
-    PyCFunctionObject *func = (PyCFunctionObject*)func_obj;
-    PyCFunction meth = PyCFunction_GET_FUNCTION(func);
-    PyObject *self = PyCFunction_GET_SELF(func);
-    int flags = PyCFunction_GET_FLAGS(func);
-    assert(PyCFunction_Check(func));
-    assert(METH_FASTCALL == (flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_KEYWORDS | METH_STACKLESS)));
-    assert(nargs >= 0);
-    assert(nargs == 0 || args != NULL);
-    /* _PyCFunction_FastCallDict() must not be called with an exception set,
-       because it may clear it (directly or indirectly) and so the
-       caller loses its exception */
-    assert(!PyErr_Occurred());
-    if ((PY_VERSION_HEX < 0x030700A0) || unlikely(flags & METH_KEYWORDS)) {
-        return (*((__Pyx_PyCFunctionFastWithKeywords)(void*)meth)) (self, args, nargs, NULL);
-    } else {
-        return (*((__Pyx_PyCFunctionFast)(void*)meth)) (self, args, nargs);
-    }
-}
-#endif
-
-/* PyFunctionFastCall */
-#if CYTHON_FAST_PYCALL
-static PyObject* __Pyx_PyFunction_FastCallNoKw(PyCodeObject *co, PyObject **args, Py_ssize_t na,
-                                               PyObject *globals) {
-    PyFrameObject *f;
-    PyThreadState *tstate = __Pyx_PyThreadState_Current;
-    PyObject **fastlocals;
-    Py_ssize_t i;
-    PyObject *result;
-    assert(globals != NULL);
-    /* XXX Perhaps we should create a specialized
-       PyFrame_New() that doesn't take locals, but does
-       take builtins without sanity checking them.
-       */
-    assert(tstate != NULL);
-    f = PyFrame_New(tstate, co, globals, NULL);
-    if (f == NULL) {
-        return NULL;
-    }
-    fastlocals = __Pyx_PyFrame_GetLocalsplus(f);
-    for (i = 0; i < na; i++) {
-        Py_INCREF(*args);
-        fastlocals[i] = *args++;
-    }
-    result = PyEval_EvalFrameEx(f,0);
-    ++tstate->recursion_depth;
-    Py_DECREF(f);
-    --tstate->recursion_depth;
-    return result;
-}
-#if 1 || PY_VERSION_HEX < 0x030600B1
-static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs) {
-    PyCodeObject *co = (PyCodeObject *)PyFunction_GET_CODE(func);
-    PyObject *globals = PyFunction_GET_GLOBALS(func);
-    PyObject *argdefs = PyFunction_GET_DEFAULTS(func);
-    PyObject *closure;
-#if PY_MAJOR_VERSION >= 3
-    PyObject *kwdefs;
-#endif
-    PyObject *kwtuple, **k;
-    PyObject **d;
-    Py_ssize_t nd;
-    Py_ssize_t nk;
-    PyObject *result;
-    assert(kwargs == NULL || PyDict_Check(kwargs));
-    nk = kwargs ? PyDict_Size(kwargs) : 0;
-    if (Py_EnterRecursiveCall((char*)" while calling a Python object")) {
-        return NULL;
-    }
-    if (
-#if PY_MAJOR_VERSION >= 3
-            co->co_kwonlyargcount == 0 &&
-#endif
-            likely(kwargs == NULL || nk == 0) &&
-            co->co_flags == (CO_OPTIMIZED | CO_NEWLOCALS | CO_NOFREE)) {
-        if (argdefs == NULL && co->co_argcount == nargs) {
-            result = __Pyx_PyFunction_FastCallNoKw(co, args, nargs, globals);
-            goto done;
-        }
-        else if (nargs == 0 && argdefs != NULL
-                 && co->co_argcount == Py_SIZE(argdefs)) {
-            /* function called with no arguments, but all parameters have
-               a default value: use default values as arguments .*/
-            args = &PyTuple_GET_ITEM(argdefs, 0);
-            result =__Pyx_PyFunction_FastCallNoKw(co, args, Py_SIZE(argdefs), globals);
-            goto done;
-        }
-    }
-    if (kwargs != NULL) {
-        Py_ssize_t pos, i;
-        kwtuple = PyTuple_New(2 * nk);
-        if (kwtuple == NULL) {
-            result = NULL;
-            goto done;
-        }
-        k = &PyTuple_GET_ITEM(kwtuple, 0);
-        pos = i = 0;
-        while (PyDict_Next(kwargs, &pos, &k[i], &k[i+1])) {
-            Py_INCREF(k[i]);
-            Py_INCREF(k[i+1]);
-            i += 2;
-        }
-        nk = i / 2;
-    }
-    else {
-        kwtuple = NULL;
-        k = NULL;
-    }
-    closure = PyFunction_GET_CLOSURE(func);
-#if PY_MAJOR_VERSION >= 3
-    kwdefs = PyFunction_GET_KW_DEFAULTS(func);
-#endif
-    if (argdefs != NULL) {
-        d = &PyTuple_GET_ITEM(argdefs, 0);
-        nd = Py_SIZE(argdefs);
-    }
-    else {
-        d = NULL;
-        nd = 0;
-    }
-#if PY_MAJOR_VERSION >= 3
-    result = PyEval_EvalCodeEx((PyObject*)co, globals, (PyObject *)NULL,
-                               args, (int)nargs,
-                               k, (int)nk,
-                               d, (int)nd, kwdefs, closure);
-#else
-    result = PyEval_EvalCodeEx(co, globals, (PyObject *)NULL,
-                               args, (int)nargs,
-                               k, (int)nk,
-                               d, (int)nd, closure);
-#endif
-    Py_XDECREF(kwtuple);
-done:
-    Py_LeaveRecursiveCall();
-    return result;
-}
-#endif
-#endif
-
-/* PyObjectCall */
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw) {
-    PyObject *result;
-    ternaryfunc call = Py_TYPE(func)->tp_call;
-    if (unlikely(!call))
-        return PyObject_Call(func, arg, kw);
-    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
-        return NULL;
-    result = (*call)(func, arg, kw);
-    Py_LeaveRecursiveCall();
-    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
-        PyErr_SetString(
-            PyExc_SystemError,
-            "NULL result without error in PyObject_Call");
-    }
-    return result;
-}
-#endif
-
-/* PyObjectCallMethO */
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg) {
-    PyObject *self, *result;
-    PyCFunction cfunc;
-    cfunc = PyCFunction_GET_FUNCTION(func);
-    self = PyCFunction_GET_SELF(func);
-    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
-        return NULL;
-    result = cfunc(self, arg);
-    Py_LeaveRecursiveCall();
-    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
-        PyErr_SetString(
-            PyExc_SystemError,
-            "NULL result without error in PyObject_Call");
-    }
-    return result;
-}
-#endif
-
-/* PyObjectCallOneArg */
-#if CYTHON_COMPILING_IN_CPYTHON
-static PyObject* __Pyx__PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-    PyObject *result;
-    PyObject *args = PyTuple_New(1);
-    if (unlikely(!args)) return NULL;
-    Py_INCREF(arg);
-    PyTuple_SET_ITEM(args, 0, arg);
-    result = __Pyx_PyObject_Call(func, args, NULL);
-    Py_DECREF(args);
-    return result;
-}
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-#if CYTHON_FAST_PYCALL
-    if (PyFunction_Check(func)) {
-        return __Pyx_PyFunction_FastCall(func, &arg, 1);
-    }
-#endif
-    if (likely(PyCFunction_Check(func))) {
-        if (likely(PyCFunction_GET_FLAGS(func) & METH_O)) {
-            return __Pyx_PyObject_CallMethO(func, arg);
-#if CYTHON_FAST_PYCCALL
-        } else if (__Pyx_PyFastCFunction_Check(func)) {
-            return __Pyx_PyCFunction_FastCall(func, &arg, 1);
-#endif
-        }
-    }
-    return __Pyx__PyObject_CallOneArg(func, arg);
-}
-#else
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-    PyObject *result;
-    PyObject *args = PyTuple_Pack(1, arg);
-    if (unlikely(!args)) return NULL;
-    result = __Pyx_PyObject_Call(func, args, NULL);
-    Py_DECREF(args);
-    return result;
-}
-#endif
 
 /* PyDictVersioning */
 #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_TYPE_SLOTS

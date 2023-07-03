@@ -82,17 +82,8 @@ def encode_dc_initial(blocks, bitDC, q):
     
     if(N == 1):
         #Coefficients are 1 bit long and no further coding is required
-        temp = blocks[i].dc >> q
-        j = 1
-
-        for i in range(1,len(blocks)):
-            if(j == 7):
-                j = 0
-                file_io.out(temp, 8)
-                temp = 0
-            temp <<= 1
-            j += 1
-            temp |= blocks[i].dc >> q
+        for i in range(len(blocks)):
+            file_io.out(blocks[i].dc>>q, 1)
         return
         
     #First DC coefficient is uncoded
@@ -138,17 +129,8 @@ def encode_ac_magnitudes(blocks, bitACGlobal, q):
 
     if(N == 1):
         #Coefficients are 1 bit long and no further coding is required
-        temp = blocks[0].bitAC
-        j = 1
-
         for i in range(1,len(blocks)):
-            if(j == 7):
-                file_io.out(temp, 8)
-                j = 0
-                temp = 0
-            temp <<= 1
-            j += 1
-            temp |= blocks[i].bitAC
+            file_io.out(blocks[i].bitAC, 1)
         return
              
     diffs = np.zeros(len(blocks), dtype='int')

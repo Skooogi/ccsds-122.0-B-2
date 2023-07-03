@@ -17,32 +17,6 @@ test_data_6 = load_image("test/test_image_2.bmp")[0]
 test_data_7 = load_image("test/test_image_3.bmp")[0]
 test_data_8 = load_image("test/test_image_4.bmp")[0]
 
-def test_dwt_0() -> None:
-    single_dwt(test_data_0, 0)
-
-def test_dwt_1() -> None:
-    single_dwt(test_data_1, 1)
-
-def test_dwt_2() -> None:
-    single_dwt(test_data_2, 2)
-
-def test_dwt_3() -> None:
-    single_dwt(test_data_3, 3)
-
-def test_dwt_4() -> None:
-    single_dwt(test_data_4, 4)
-
-def test_dwt_5() -> None:
-    single_dwt(test_data_5, 5)
-
-def test_dwt_6() -> None:
-    single_dwt(test_data_6, 6)
-
-def test_dwt_7() -> None:
-    single_dwt(test_data_7, 7)
-
-def test_dwt_8_pure_noise() -> None:
-    single_dwt(test_data_8, 8)
 
 def single_dwt(data, test) -> None:
 
@@ -92,4 +66,19 @@ def single_dwt(data, test) -> None:
     print("\tDWT", f'\t{(forward_end_time-forward_start_time):3.4f} s')
     print("\tIDWT", f'\t{(backward_end_time-backward_start_time):3.4f} s')
     
-    assert peak_signal_to_noise_ratio == math.inf and mean_squared_error == 0
+    if(peak_signal_to_noise_ratio == math.inf and mean_squared_error == 0):
+        print("Success")
+    else:
+        print("ERROR")
+        exit(1)
+
+if __name__ == '__main__':
+    single_dwt(test_data_0, 0)
+    single_dwt(test_data_1, 1)
+    single_dwt(test_data_2, 2)
+    single_dwt(test_data_3, 3)
+    single_dwt(test_data_4, 4)
+    single_dwt(test_data_5, 5)
+    single_dwt(test_data_6, 6)
+    single_dwt(test_data_7, 7)
+    single_dwt(test_data_8, 8)

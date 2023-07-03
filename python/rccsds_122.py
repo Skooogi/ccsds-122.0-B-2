@@ -89,7 +89,7 @@ def decode_dc_initial(blocks, bitDC, q):
 
     if(N == 1):
         for i in range(len(blocks)):
-            blocks[i].dc = int(readb(1))
+            blocks[i].dc = int(readb(1)) << q
         return
 
     code_word_bits = (math.ceil(math.log(N,2)))

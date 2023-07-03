@@ -5,7 +5,7 @@ from Cython.Build import cythonize
 AIS_REPO_PATH = "../../core"
 
 include_paths = [
-    AIS_REPO_PATH+"/include/"
+    AIS_REPO_PATH+"/src/"
 ]
 
 source_paths = [
@@ -22,9 +22,9 @@ for icd in include_paths:
 extensions = [Extension("c_dwt", sourcefiles, extra_compile_args=compile_args)]
 
 setup(
-	name='C_DWT',
-	ext_modules=cythonize(extensions, compiler_directives={"language_level":"3"}),
-	zip_safe=False,
+    name='C_DWT',
+    ext_modules=cythonize(extensions, compiler_directives={"language_level": "3"}),
+    zip_safe=False,
 )
 
 

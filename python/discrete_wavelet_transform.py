@@ -83,7 +83,6 @@ def discrete_wavelet_transform_2D(data, width, height, levels = 3, backward = Fa
                 backward_DWT(data[i,:int(sub_width)], sub_width)
         return
 
-    print(width, height)
     for level in range(levels):
 
         sub_width = int(width/pow(2,level))
