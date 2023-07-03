@@ -20,20 +20,24 @@ OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 all: $(BUILD_DIR)/$(PROJECT).bin 
 
+TEST_FILE = "../tests/raw/test_image_noise_4k.raw"
+TEST_SIZE = 4096
+RUN_BIN = ./$(PROJECT).bin $(TEST_FILE) $(TEST_SIZE)
+
 run: all
-	@(cd ${BUILD_DIR}; ./$(PROJECT).bin)
+	@(cd ${BUILD_DIR}; $(RUN_BIN))
 
 debug: all 
-	@(cd ${BUILD_DIR}; gdb ./$(PROJECT).bin)
+	@(cd ${BUILD_DIR}; gdb $(RUN_BIN))
 
 perf: all
-	@(cd ${BUILD_DIR}; perf record -F max --call-graph dwarf ./$(PROJECT).bin)
+	@(cd ${BUILD_DIR}; perf record -F max --call-graph dwarf $(RUN_BIN))
 
 stat: all
-	@(cd ${BUILD_DIR}; perf stat -d ./$(PROJECT).bin)
+	@(cd ${BUILD_DIR}; perf stat -d $(RUN_BIN))
 
 valgrind: all
-	@(cd ${BUILD_DIR}; valgrind --leak-check=full --track-origins=yes ./$(PROJECT).bin)
+	@(cd ${BUILD_DIR}; valgrind --leak-check=full --track-origins=yes $(RUN_BIN))
 
 $(BUILD_DIR)/$(PROJECT).bin: $(OBJECTS)
 	@$(CC) $^ $(LDFLAGS) -o $@

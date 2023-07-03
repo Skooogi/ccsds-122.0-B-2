@@ -3,7 +3,20 @@
 #include <string.h>
 #include <stdio.h>
 
-static inline int32_t to_int(float value) { return (value < 0 && value != (int) value) ? (int)(value - 1) : (int)value; }
+//static inline int32_t to_int(float value) { return (value < 0 && value != (int) value) ? (int)(value - 1) : (int)value; }
+
+static const float _double2fixmagic = 68719476736.0*1.5;     //2^36 * 1.5,  (52-_shiftamt=36) uses limited precisicion to floor
+static const int32_t _shiftamt      = 16;                    //16.16 fixed point representation
+//Fast floating point conversion from http://stereopsis.com/FPU.html
+static inline int32_t to_int(float value) {
+    value = value + _double2fixmagic;
+	return ((int32_t*)&value)[0] >> _shiftamt;
+}
+
+//Multiplication is faster than division
+static const float per16 = 0.0625f;
+static const float per8 = 0.125f;
+static const float per4 = 0.25f;
 
 static void forward_DWT(int32_t* data, size_t width) {
 
@@ -13,21 +26,19 @@ static void forward_DWT(int32_t* data, size_t width) {
 	uint32_t n_coeffs = width >> 1;
 	int32_t highpass[n_coeffs + 1];
 
-	highpass[0] = cache[1] - to_int(9.f/16 * (cache[0]+cache[2]) -1.f/16 * (cache[2]+cache[4]) + 0.5);
+	highpass[0] = cache[1] - to_int((9 * (cache[0]+cache[2]) - (cache[2]+cache[4]))*per16 + 0.5);
 
 	for(size_t i = 1; i < n_coeffs - 2; i++) {
-		highpass[i] = cache[2*i+1] - to_int(9.f/16*(cache[2*i]+cache[2*i+2]) -1.f/16*(cache[2*i-2]+cache[2*i+4]) + 0.5);
+		highpass[i] = cache[2*i+1] - to_int((9*(cache[2*i]+cache[2*i+2]) -(cache[2*i-2]+cache[2*i+4]))*per16 + 0.5);
 	}
 
-    highpass[n_coeffs-2] = cache[2*n_coeffs-3] - to_int(9.f/16*(cache[2*n_coeffs-4]+cache[2*n_coeffs-2]) -1.f/16*(cache[2*n_coeffs-6]+cache[2*n_coeffs-2]) + 0.5);
-
-    highpass[n_coeffs-1] = cache[2*n_coeffs-1] - to_int(9.f/8*cache[2*n_coeffs-2] -1.f/8*cache[2*n_coeffs-4] + 0.5);
+    highpass[n_coeffs-2] = cache[2*n_coeffs-3] - to_int((9*(cache[2*n_coeffs-4]+cache[2*n_coeffs-2]) -(cache[2*n_coeffs-6]+cache[2*n_coeffs-2]))*per16 + 0.5);
+    highpass[n_coeffs-1] = cache[2*n_coeffs-1] - to_int((9*cache[2*n_coeffs-2] -cache[2*n_coeffs-4])*per8 + 0.5);
+    memcpy(data+n_coeffs, highpass, n_coeffs*sizeof(int32_t));
 
     data[0] = cache[0] - to_int(-highpass[0]*0.5 + 0.5);
-	data[n_coeffs] = highpass[0];
     for(size_t i = 1; i < n_coeffs; ++i) {
-        data[i] = cache[2*i] - to_int(-(highpass[i-1]+highpass[i])*0.25 + 0.5);
-		data[n_coeffs+i] = highpass[i];
+        data[i] = cache[2*i] - to_int(-(highpass[i-1]+highpass[i])*per4 + 0.5);
 	}
 }
 
