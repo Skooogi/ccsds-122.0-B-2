@@ -21,12 +21,8 @@ def test_file(filename='test/test_image_2.bmp', bitdepth=8):
     height += pad_height
 
     num_pixels = width*height
-    c_data = np.zeros(num_pixels, dtype=np.int32)
-    for i in range(height):
-        for j in range(width):
-            c_data[i * width + j] = data[i][j]
-    c_data = struct.pack(f'{num_pixels}I', *c_data)
-    print(f'Width:{width} Height:{height}')
+    data = data.astype(np.int32)
+    c_data = data.tobytes()
 
     levels = 3
     # Normal dwt
@@ -45,18 +41,14 @@ def test_file(filename='test/test_image_2.bmp', bitdepth=8):
     print(f'C DWT:\t{(end-start)*1000:.4f} ms')
     print()
 
-    c_data = struct.unpack(f'{num_pixels}I', c_data)
-    data_org = np.zeros([height, width])
-    for i in range(height):
-        for j in range(width):
-            data_org[i][j] = data[i][j]
-            data[i][j] = c_data[i * width + j]
+    c_data = np.frombuffer(c_data, dtype=np.int32).reshape(height, width)
+    data_out = c_data.astype('uint8')
 
-    mse = MSE(data_org, data, width, height)
+    file_io.save_image("img_out.bmp", data_out, width, height)
+    mse = MSE(data_out, data, width, height)
     if (mse != 0):
         psnr = PSNR(mse, bitdepth)
 
-    file_io.save_image("img_out.bmp", data, width, height)
 
 
 if __name__ == '__main__':

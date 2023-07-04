@@ -36,6 +36,10 @@ perf: all
 stat: all
 	@(cd ${BUILD_DIR}; perf stat -d $(RUN_BIN))
 
+test: all
+	@(cd python/cython; python3 compile.py)
+	@(cd python; python3 test_compare_dwt.py)
+
 valgrind: all
 	@(cd ${BUILD_DIR}; valgrind --leak-check=full --track-origins=yes $(RUN_BIN))
 

@@ -3,11 +3,10 @@
 #include <string.h>
 #include <stdio.h>
 
-//static inline int32_t to_int(float value) { return (value < 0 && value != (int) value) ? (int)(value - 1) : (int)value; }
 
+//Fast floating point conversion from http://stereopsis.com/FPU.html
 static const float _double2fixmagic = 68719476736.0*1.5;     //2^36 * 1.5,  (52-_shiftamt=36) uses limited precisicion to floor
 static const int32_t _shiftamt      = 16;                    //16.16 fixed point representation
-//Fast floating point conversion from http://stereopsis.com/FPU.html
 static inline int32_t to_int(float value) {
     value = value + _double2fixmagic;
 	return ((int32_t*)&value)[0] >> _shiftamt;
@@ -20,26 +19,29 @@ static const float per4 = 0.25f;
 
 static void forward_DWT(int32_t* data, size_t width) {
 
-	//Copy line for in place operating
+	//cache line for in place operation
 	int32_t cache[width+1];
 	memcpy(&cache, data, width * sizeof(int32_t));
-	uint32_t n_coeffs = width >> 1;
-	int32_t highpass[n_coeffs + 1];
 
-	highpass[0] = cache[1] - to_int((9 * (cache[0]+cache[2]) - (cache[2]+cache[4]))*per16 + 0.5);
+	uint32_t n = width >> 1; //number of coefficients in pass
+	int32_t* highpass = &data[n];
+	int32_t* lowpass = &data[0];
 
-	for(size_t i = 1; i < n_coeffs - 2; i++) {
-		highpass[i] = cache[2*i+1] - to_int((9*(cache[2*i]+cache[2*i+2]) -(cache[2*i-2]+cache[2*i+4]))*per16 + 0.5);
+    int32_t curr_highpass = 0;
+	int32_t prev_highpass = 0;
+    highpass[0] = cache[1] - to_int((9 * (cache[0] + cache[2]) - (cache[2] + cache[4])) * per16 + 0.5);
+    lowpass[0] = cache[0] - to_int(-prev_highpass*0.5 + 0.5);
+
+    highpass[n-2] = cache[2*n-3] - to_int((9 * (cache[2*n-4] + cache[2*n-2]) - (cache[2*n-6] + cache[2*n-2])) * per16 + 0.5);
+    highpass[n-1] = cache[2*n-1] - to_int((9 * cache[2*n-2] - cache[2*n-4]) * per8 + 0.5);
+
+	for(size_t i = 1; i < n - 2; ++i) {
+		highpass[i] = cache[2*i+1] - to_int((9 * (cache[2*i] + cache[2*i+2]) - (cache[2*i-2] + cache[2*i+4])) * per16 + 0.5);
+        lowpass[i] = cache[2*i] - to_int(-(highpass[i-1] + highpass[i]) * per4 + 0.5);
 	}
 
-    highpass[n_coeffs-2] = cache[2*n_coeffs-3] - to_int((9*(cache[2*n_coeffs-4]+cache[2*n_coeffs-2]) -(cache[2*n_coeffs-6]+cache[2*n_coeffs-2]))*per16 + 0.5);
-    highpass[n_coeffs-1] = cache[2*n_coeffs-1] - to_int((9*cache[2*n_coeffs-2] -cache[2*n_coeffs-4])*per8 + 0.5);
-    memcpy(data+n_coeffs, highpass, n_coeffs*sizeof(int32_t));
-
-    data[0] = cache[0] - to_int(-highpass[0]*0.5 + 0.5);
-    for(size_t i = 1; i < n_coeffs; ++i) {
-        data[i] = cache[2*i] - to_int(-(highpass[i-1]+highpass[i])*per4 + 0.5);
-	}
+    lowpass[n-2] = cache[2*n-4] - to_int(-(highpass[n-3] + highpass[n-2]) * per4 + 0.5);
+    lowpass[n-1] = cache[2*n-2] - to_int(-(highpass[n-2] + highpass[n-1]) * per4 + 0.5);
 }
 
 static void backward_DWT(int32_t* data, size_t width) {
