@@ -1,4 +1,5 @@
 #include "discrete_wavelet_transform.h"
+#include "segment_header.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -27,6 +28,19 @@ int main(int argc, char** argv) {
     fclose(fp);
 
     discrete_wavelet_transform_2D(test_data, side_length, side_length, 3, 0);
+
+    //Save output
+    FILE* output_fp = fopen("output.cmp", "wb");
+    if(!output_fp) {
+        printf("Can not open output.cmp for writing!\n");
+        return 1;
+    }
+
+    SegmentHeader* headers = segment_header_init_values();
+    headers->header_1.bitDC = 5;
+    fwrite(headers, 1, sizeof(SegmentHeader), output_fp);
+    fwrite(test_data, side_length*side_length, sizeof(int32_t), output_fp);
+    fclose(output_fp);
 
     free(test_data);
 	return 0;
