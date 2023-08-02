@@ -30,15 +30,19 @@ int main(int argc, char** argv) {
     discrete_wavelet_transform_2D(test_data, side_length, side_length, 3, 0);
 
     //Save output
-    FILE* output_fp = fopen("output.cmp", "wb");
+    FILE* output_fp = fopen("../python/output.cmp", "wb");
     if(!output_fp) {
         printf("Can not open output.cmp for writing!\n");
         return 1;
     }
 
     SegmentHeader* headers = segment_header_init_values();
-    headers->header_1.bitDC = 5;
-    fwrite(headers, 1, sizeof(SegmentHeader), output_fp);
+
+    //TEST PARAMETERS START
+
+    //TEST PARAMETERS END
+    
+    segment_header_write_data(headers, output_fp);
     fwrite(test_data, side_length*side_length, sizeof(int32_t), output_fp);
     fclose(output_fp);
 
