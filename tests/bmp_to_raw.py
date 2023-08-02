@@ -4,6 +4,7 @@ import os
 
 
 if __name__ == '__main__':
+    """
     files = [
         "../res/noise/test_image_noise_32.bmp",
         "../res/noise/test_image_noise_64.bmp",
@@ -13,6 +14,13 @@ if __name__ == '__main__':
         "../res/noise/test_image_noise_1k.bmp",
         "../res/noise/test_image_noise_2k.bmp",
         "../res/noise/test_image_noise_4k.bmp"
+    ]
+    """
+    files = [
+        "../res/space/test_image_space_1.bmp",
+        "../res/space/test_image_space_2.bmp",
+        "../res/space/test_image_space_3.bmp",
+        "../res/space/test_image_space_4.bmp",
     ]
 
     for filename in files:
