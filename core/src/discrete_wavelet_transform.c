@@ -120,7 +120,6 @@ void discrete_wavelet_transform_2D(int32_t* data, size_t data_width, size_t data
 		//Horizontal
 		int32_t temp_row[current_width];
 		//Iterate each row
-        printf("Data width: %zu, height %zu\n", data_width, data_height);
 		for(uint32_t row = 0; row < current_height; ++row) {
 
 			//Copy current row to temp_row
