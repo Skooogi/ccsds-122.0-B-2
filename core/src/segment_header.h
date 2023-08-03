@@ -193,7 +193,7 @@ typedef struct {
 } SegmentHeader;
 
 SegmentHeader* segment_header_init_values(void);
-void segment_header_write_data(SegmentHeader* headers, FILE* fp);
+void segment_header_write_data(SegmentHeader* headers);
 
 #ifdef	__cplusplus
 }
