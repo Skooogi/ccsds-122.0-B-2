@@ -7,7 +7,7 @@
 //Fast floating point conversion from http://stereopsis.com/FPU.html
 static const float _double2fixmagic = 68719476736.0*1.5;     //2^36 * 1.5,  (52-_shiftamt=36) uses limited precisicion to floor
 static const int32_t _shiftamt      = 16;                    //16.16 fixed point representation
-static inline int32_t to_int(float value) {
+static inline int32_t to_int(double value) {
     value = value + _double2fixmagic;
 	return ((int32_t*)&value)[0] >> _shiftamt;
 }
@@ -36,6 +36,7 @@ static void forward_DWT(int32_t* data, size_t width) {
 	for(size_t i = 1; i < n - 2; ++i) {
         highpass[i] = cache[2*i+1] - to_int((9 * (cache[2*i] + cache[2*i+2]) - (cache[2*i-2] + cache[2*i+4])) * per16 + 0.5);
         lowpass[i] = cache[2*i] - to_int(-(highpass[i-1] + highpass[i]) * per4 + 0.5);
+        
 	}
 
     lowpass[n-2] = cache[2*n-4] - to_int(-(highpass[n-3] + highpass[n-2]) * per4 + 0.5);
@@ -74,7 +75,7 @@ void discrete_wavelet_transform_2D(int32_t* data, size_t data_width, size_t data
             uint32_t current_height = data_height >> level;
 
             //Vertical
-			uint32_t temp_column[current_height];
+			int32_t temp_column[current_height];
             for(uint32_t column = 0; column < current_width; ++column) {
 
 				//Copy current column to temp_column
@@ -119,6 +120,7 @@ void discrete_wavelet_transform_2D(int32_t* data, size_t data_width, size_t data
 		//Horizontal
 		int32_t temp_row[current_width];
 		//Iterate each row
+        printf("Data width: %zu, height %zu\n", data_width, data_height);
 		for(uint32_t row = 0; row < current_height; ++row) {
 
 			//Copy current row to temp_row
