@@ -15,12 +15,21 @@ if __name__ == '__main__':
         "../res/noise/test_image_noise_2k.bmp",
         "../res/noise/test_image_noise_4k.bmp"
     ]
-    """
     files = [
         "../res/space/test_image_space_1.bmp",
         "../res/space/test_image_space_2.bmp",
         "../res/space/test_image_space_3.bmp",
-        "../res/space/test_image_space_4.bmp",
+        "../res/space/test_image_space_4.bmp"
+    ]
+    """
+
+    files = [
+		"../res/pattern/test_image_black_32.bmp",
+		"../res/pattern/test_image_black_256.bmp",
+		"../res/pattern/test_image_checker_32.bmp",
+		"../res/pattern/test_image_gradient_3.bmp",
+		"../res/pattern/test_image_white_32.bmp",
+		"../res/pattern/test_image_white_256.bmp"
     ]
 
     for filename in files:
