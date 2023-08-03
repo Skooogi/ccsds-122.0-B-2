@@ -20,15 +20,15 @@ OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 all: $(BUILD_DIR)/$(PROJECT).bin 
 
-TEST_FILE = "../tests/raw/test_image_noise_4k.raw"
-TEST_SIZE = 4096
+TEST_FILE = "../res/pattern/raw/test_image_gradient_32.raw"
+TEST_SIZE = 32
 RUN_BIN = ./$(PROJECT).bin $(TEST_FILE) $(TEST_SIZE)
 
 run: all
 	@(cd ${BUILD_DIR}; $(RUN_BIN))
 
 debug: all 
-	@(cd ${BUILD_DIR}; gdb $(RUN_BIN))
+	@(cd ${BUILD_DIR}; gdb --args $(RUN_BIN))
 
 perf: all
 	@(cd ${BUILD_DIR}; perf record -F max --call-graph dwarf $(RUN_BIN))
