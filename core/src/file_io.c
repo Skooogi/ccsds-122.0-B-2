@@ -4,7 +4,7 @@
 
 static FILE* fp;
 
-void write_bits(uint64_t bits, size_t length) {
+void file_io_write_bits(uint64_t bits, size_t length) {
 
     static uint8_t cache = 0;
     static uint8_t size = 0;
@@ -22,13 +22,13 @@ void write_bits(uint64_t bits, size_t length) {
     }
 }
 
-void set_output_file(const char* filename) {
-    if((fp = fopen(filename, "wb"))) {
+void file_io_set_output_file(const char* filename) {
+    if(!(fp = fopen(filename, "wb"))) {
         printf("Failed to open %s for writing!\n", filename);
         exit(EXIT_FAILURE);
     }
 }
 
-void close_output_file() {
+void file_io_close_output_file() {
     fclose(fp);
 }
