@@ -1,6 +1,7 @@
 #include "bitplane_encoder.h"
 #include "block_transform.h"
 #include "common.h"
+#include "encoding_stages.h"
 #include "file_io.h"
 #include "magnitude_encoding.h"
 #include "word_mapping.h"
@@ -8,11 +9,6 @@
 #include <string.h>
 
 static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max);
-
-static void stage_0(Block* blocks, size_t num_blocks, uint8_t q, uint8_t bitplane);
-static void stage_1();
-static void stage_2();
-static void stage_3();
 
 void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
 
@@ -60,7 +56,7 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     encode_ac_magnitudes((Block*)&blocks, num_blocks, bitAC_max, q);
 
     for(int8_t bitplane = bitAC_max - 1; bitplane > -1; --bitplane) {
-        for(size_t stage = 0; stage < 2; ++stage) {
+        for(size_t stage = 0; stage < 3; ++stage) {
             for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
 
                 reset_block_string();
@@ -68,19 +64,13 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
                 if(stage == 0) {
                     stage_0(blocks, num_blocks, q, bitplane);
                 }
+                else if(stage == 1) {
+                    stage_1(blocks, num_blocks, bitplane);
+                }
 
                 write_block_string();
             }
 
-        }
-    }
-}
-
-static void stage_0(Block* blocks, size_t num_blocks, uint8_t q, uint8_t bitplane) {
-    //Any remaining DC bits
-    for(size_t i = 0; i < num_blocks; ++i) {
-        if(3 <= bitplane && bitplane < q) {
-            word_mapping_code((blocks[i].dc >> bitplane) & 1, 1, 0, 1);
         }
     }
 }
