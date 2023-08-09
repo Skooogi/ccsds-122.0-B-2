@@ -77,6 +77,10 @@ void write_block_string() {
         MappedWord current = block_string.mapped_words[word_index];
         uint8_t word, length;
 
+        if(current.uncoded) {
+            file_io_write_bits(current.word, current.length);
+        }
+
         switch(current.length) {
             case 1:
                 file_io_write_bits(current.word, current.length);

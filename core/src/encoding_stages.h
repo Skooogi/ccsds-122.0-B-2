@@ -10,6 +10,9 @@ extern "C" {
 
 void stage_0(Block* blocks, size_t num_blocks, uint8_t q, uint8_t bitplane);
 void stage_1(Block* blocks, size_t num_blocks, uint8_t bitplane);
+void stage_2(Block* blocks, size_t num_blocks, uint8_t bitplane);
+void stage_3(Block* blocks, size_t num_blocks, uint8_t bitplane);
+void stage_4(Block* blocks, size_t num_blocks, uint8_t bitplane);
 #ifdef __cplusplus
 }
 #endif

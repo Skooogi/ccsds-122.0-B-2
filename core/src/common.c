@@ -29,14 +29,13 @@ bool subband_lim(uint8_t ac_index, uint8_t bitplane) {
         return false;
     }
 
-    return sub_map[bitplane] & 1 << (63 - ac_index);
+    return sub_map[bitplane] & (1 << (63 - ac_index));
 }
 
 //Block operations
 static int8_t state_map[4] = { 0,1,2,-1 };
 static uint8_t state_map_inv_1[4] = { 0,0,1,1 };
 static uint8_t state_map_inv_2[4] = { 0,1,0,1 };
-static uint64_t mask_64 = 0xffffffffffffffff;
 static uint64_t b_mask = 0x7ffffbffffdffffe;
 static uint64_t d_mask = 0x1ffffe;
 static uint64_t g_mask = 0x1fffe0;
@@ -52,11 +51,11 @@ void block_set_status(Block* block, uint8_t ac_index, int8_t value) {
     block->low_status_bit = (block->low_status_bit & ~(1 << ac_index)) | (state_map_inv_2[value] << ac_index);
 }
 
-uint8_t block_get_status(Block* block, uint8_t ac_index) {
+int8_t block_get_status(Block* block, uint8_t ac_index) {
     return state_map[(block->high_status_bit >> ac_index & 1) * 2 + (block->low_status_bit >> ac_index & 1)];
 }
 
-int8_t block_get_bmax(Block* block, uint8_t ac_index) {
+int8_t block_get_bmax(Block* block) {
     uint8_t filtered = (~block->high_status_bit & block->low_status_bit) & b_mask;
     return (filtered > 0);
 }

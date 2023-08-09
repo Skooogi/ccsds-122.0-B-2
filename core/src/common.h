@@ -11,8 +11,16 @@ extern "C" {
 #define AC_COEFFICIENTS_PER_BLOCK 63
 #define BLOCKS_PER_GAGGLE 16
 
+typedef struct Tran {
+    unsigned b  : 1;
+    unsigned d  : 3;
+    unsigned g  : 3;
+    uint8_t h[3];
+} Tran;
+
 typedef struct Block {
     unsigned bitAC  : 5;
+    Tran tran;
     int32_t dc;
     int32_t ac[AC_COEFFICIENTS_PER_BLOCK]; 
     uint64_t high_status_bit;
@@ -28,9 +36,6 @@ typedef struct MappedWord {
 } MappedWord;
 
 typedef struct BlockString {
-    uint8_t code_option_bit_2;
-    uint8_t code_option_bit_3;
-    uint8_t code_option_bit_4;
     MappedWord mapped_words[1024];
     uint16_t index;
 } BlockString;
@@ -39,8 +44,8 @@ typedef struct BlockString {
 bool subband_lim(uint8_t ac_index, uint8_t bitplane);
 void block_set_status_with(Block* block, uint64_t high_status_bit, uint8_t low_status_bit);
 void block_set_status(Block* block, uint8_t ac_index, int8_t value);
-uint8_t block_get_status(Block* block, uint8_t ac_index);
-int8_t block_get_bmax(Block* block, uint8_t ac_index);
+int8_t block_get_status(Block* block, uint8_t ac_index);
+int8_t block_get_bmax(Block* block);
 int8_t block_get_dmax(Block* block, uint8_t family);
 int8_t block_get_gmax(Block* block, uint8_t family);
 int8_t block_get_hmax(Block* block, uint8_t family, uint8_t quadrant);

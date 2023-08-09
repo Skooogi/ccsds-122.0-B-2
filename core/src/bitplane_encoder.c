@@ -56,7 +56,7 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     encode_ac_magnitudes((Block*)&blocks, num_blocks, bitAC_max, q);
 
     for(int8_t bitplane = bitAC_max - 1; bitplane > -1; --bitplane) {
-        for(size_t stage = 0; stage < 3; ++stage) {
+        for(size_t stage = 0; stage < 1; ++stage) {
             for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
 
                 reset_block_string();
@@ -67,10 +67,16 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
                 else if(stage == 1) {
                     stage_1(blocks, num_blocks, bitplane);
                 }
+                else if(stage == 2) {
+                    stage_2(blocks, num_blocks, bitplane);
+                }
+                else {
+                    stage_3(blocks, num_blocks, bitplane);
+                }
 
                 write_block_string();
             }
-
+            //stage_4(blocks, num_blocks, bitplane);
         }
     }
 }
