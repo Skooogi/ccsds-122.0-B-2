@@ -12,7 +12,9 @@ void stage_0(Block* blocks, size_t num_blocks, uint8_t q, uint8_t bitplane) {
     }
 }
 
-void stage_1(Block* blocks, size_t num_blocks, uint8_t bitplane) {
+void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
+
+    uint32_t bitAC = headers->header_1.bitAC;
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
         if(blocks[block_index].bitAC < bitplane) {
@@ -24,16 +26,16 @@ void stage_1(Block* blocks, size_t num_blocks, uint8_t bitplane) {
         uint64_t new_low_status_bit = 0;
 
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
-            uint32_t ac_coefficient = abs(blocks[block_index].ac[ac_index]);
+            uint32_t ac_coefficient = blocks[block_index].ac[ac_index] & ~(1<<bitAC);
             if(subband_lim(ac_index, bitplane)) {
-                new_high_status_bit |= 1 << ac_index;
-                new_low_status_bit |= 1 << ac_index;
+                new_high_status_bit |= 1L << ac_index;
+                new_low_status_bit |= 1L << ac_index;
             }
             else if((1<<(bitplane+1)) <= ac_coefficient) {
-                new_high_status_bit |= 1 << ac_index;
+                new_high_status_bit |= 1L << ac_index;
             }
             else if((1<<bitplane) <= ac_coefficient && ac_coefficient < (1<<(bitplane+1))) {
-                new_low_status_bit |= 1 << ac_index;
+                new_low_status_bit |= 1L << ac_index;
             }
         }
         block_set_status_with(&blocks[block_index], new_high_status_bit, new_low_status_bit);
@@ -47,12 +49,13 @@ void stage_1(Block* blocks, size_t num_blocks, uint8_t bitplane) {
         int8_t p0 = block_get_status(&blocks[block_index], 0);
         int8_t p1 = block_get_status(&blocks[block_index], 21);
         int8_t p2 = block_get_status(&blocks[block_index], 42);
+
         if(0 <= p0 && p0 <= 1) {
             types_p |= p0;
             size_p += 1;
 
             if(p0 == 1){
-                signs_p |= blocks[block_index].ac[0] < 0 ? 1 : 0;
+                signs_p |= (blocks[block_index].ac[0] >> bitAC) & 1;
                 size_s += 1;
             }
         }
@@ -64,7 +67,7 @@ void stage_1(Block* blocks, size_t num_blocks, uint8_t bitplane) {
 
             if(p1 == 1) {
                 signs_p <<= 1;
-                signs_p |= blocks[block_index].ac[21] < 0 ? 1 : 0;
+                signs_p |= (blocks[block_index].ac[21] >> bitAC) & 1;
                 size_s += 1;
             }
         }
@@ -76,7 +79,7 @@ void stage_1(Block* blocks, size_t num_blocks, uint8_t bitplane) {
 
             if(p2 == 1) {
                 signs_p <<= 1;
-                signs_p |= blocks[block_index].ac[42] < 0 ? 1 : 0;
+                signs_p |= (blocks[block_index].ac[42] >> bitAC) & 1;
                 size_s += 1;
             }
         }
@@ -90,7 +93,9 @@ void stage_1(Block* blocks, size_t num_blocks, uint8_t bitplane) {
     }
 }
 
-void stage_2(Block* blocks, size_t num_blocks, uint8_t bitplane) {
+void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
+
+    uint32_t bitAC = headers->header_1.bitAC;
 
    for(size_t block_index = 0; block_index < num_blocks; ++block_index) { 
         if(blocks[block_index].bitAC < bitplane) {
@@ -100,15 +105,13 @@ void stage_2(Block* blocks, size_t num_blocks, uint8_t bitplane) {
         //TRANB
         int8_t bmax = block_get_bmax(&blocks[block_index]);
 
-        if(blocks[block_index].tran.b != 1 && bmax >= 0) {
+        if(blocks[block_index].tran.b != 1) {
             blocks[block_index].tran.b = bmax;
             word_mapping_code(blocks[block_index].tran.b, 1, 0, 1);
         }
 
         //TRAND
         if(blocks[block_index].tran.b != 0 && bmax != -1) {
-
-        }
             uint8_t tran_d = 0;
             uint8_t size = 0;
 
@@ -146,6 +149,7 @@ void stage_2(Block* blocks, size_t num_blocks, uint8_t bitplane) {
             if(size != 0) {
                 word_mapping_code(tran_d, size, size == 3 ? 1 : 0, 0);
             }
+        }
 
         //types_c and signs_c
         for(size_t ci = 0; ci < 3; ++ci) {
@@ -157,7 +161,7 @@ void stage_2(Block* blocks, size_t num_blocks, uint8_t bitplane) {
             uint8_t signs_c = 0;
             uint8_t size_s = 0;
             uint8_t size_c = 0;
-            for(size_t cj = 0; cj < 3; ++cj) {
+            for(size_t cj = 0; cj < 4; ++cj) {
                 size_t index = 1+ci*21+cj;
                 uint8_t status = block_get_status(&blocks[block_index], index);
                 if(0 <= status && status <= 1) {
@@ -167,7 +171,7 @@ void stage_2(Block* blocks, size_t num_blocks, uint8_t bitplane) {
                     if(types_c & 1) {
                         signs_c <<= 1;
                         size_s += 1;
-                        signs_c |= blocks[block_index].ac[index] < 0 ? 1 : 0;
+                        signs_c |= (blocks[block_index].ac[index] >> bitAC) & 1;
                     }
                 }
             }
@@ -181,7 +185,7 @@ void stage_2(Block* blocks, size_t num_blocks, uint8_t bitplane) {
     }
 }
 
-void stage_3(Block* blocks, size_t num_blocks, uint8_t bitplane) {
+void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
@@ -324,7 +328,7 @@ void stage_3(Block* blocks, size_t num_blocks, uint8_t bitplane) {
     }
 }
 
-void stage_4(Block* blocks, size_t num_blocks, uint8_t bitplane) {
+void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
 
     for(size_t i = 0; i < num_blocks; ++i) {
         if(blocks[i].bitAC < bitplane) {

@@ -19,7 +19,7 @@ typedef struct Tran {
 } Tran;
 
 typedef struct Block {
-    unsigned bitAC  : 5;
+    uint8_t bitAC  : 5;
     Tran tran;
     int32_t dc;
     int32_t ac[AC_COEFFICIENTS_PER_BLOCK]; 
@@ -36,13 +36,13 @@ typedef struct MappedWord {
 } MappedWord;
 
 typedef struct BlockString {
-    MappedWord mapped_words[1024];
+    MappedWord mapped_words[4086];
     uint16_t index;
 } BlockString;
 
 //Block operations
 bool subband_lim(uint8_t ac_index, uint8_t bitplane);
-void block_set_status_with(Block* block, uint64_t high_status_bit, uint8_t low_status_bit);
+void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_status_bit);
 void block_set_status(Block* block, uint8_t ac_index, int8_t value);
 int8_t block_get_status(Block* block, uint8_t ac_index);
 int8_t block_get_bmax(Block* block);

@@ -9,7 +9,7 @@ uint32_t log2_32 (uint32_t value) {
 
 uint32_t twos_complement(int32_t value, size_t num_bits) {
     if(value & 1 << (num_bits - 1)) {
-        return (~(abs(value)) + 1) & (1<<(num_bits - 1));
+        return (~(value) + 1) & ((1<<num_bits)-1);
     }
     return value;
 }
@@ -17,9 +17,9 @@ uint32_t twos_complement(int32_t value, size_t num_bits) {
 bool subband_lim(uint8_t ac_index, uint8_t bitplane) {
 
     static uint64_t sub_map[3] = {
-        0b1000000000000000000001000000000000000000000000000000000000000000,
+        0b1111111111111111111111111111111111111111111111100000000000000000,
         0b1111100000000000000001111100000000000000001000000000000000000000,
-        0b1111111111111111111111111111111111111111111111100000000000000000
+        0b1000000000000000000001000000000000000000000000000000000000000000
     };
 
     // Checks whether or not ac coefficient scaling means 
@@ -29,7 +29,7 @@ bool subband_lim(uint8_t ac_index, uint8_t bitplane) {
         return false;
     }
 
-    return sub_map[bitplane] & (1 << (63 - ac_index));
+    return sub_map[bitplane] >> (63 - ac_index) & 1;
 }
 
 //Block operations
@@ -41,18 +41,18 @@ static uint64_t d_mask = 0x1ffffe;
 static uint64_t g_mask = 0x1fffe0;
 static uint64_t h_mask = 0x1e0;
 
-void block_set_status_with(Block* block, uint64_t high_status_bit, uint8_t low_status_bit) {
+void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_status_bit) {
     block->high_status_bit = high_status_bit;
     block->low_status_bit = low_status_bit;
 }
 
 void block_set_status(Block* block, uint8_t ac_index, int8_t value) {
-    block->high_status_bit = (block->high_status_bit & ~(1 << ac_index)) | (state_map_inv_1[value] << ac_index);
-    block->low_status_bit = (block->low_status_bit & ~(1 << ac_index)) | (state_map_inv_2[value] << ac_index);
+    block->high_status_bit = (block->high_status_bit & ~(1L << ac_index)) | (state_map_inv_1[value] << ac_index);
+    block->low_status_bit = (block->low_status_bit & ~(1L << ac_index)) | (state_map_inv_2[value] << ac_index);
 }
 
 int8_t block_get_status(Block* block, uint8_t ac_index) {
-    return state_map[(block->high_status_bit >> ac_index & 1) * 2 + (block->low_status_bit >> ac_index & 1)];
+    return state_map[((block->high_status_bit >> ac_index) & 1) * 2 + ((block->low_status_bit >> ac_index) & 1)];
 }
 
 int8_t block_get_bmax(Block* block) {

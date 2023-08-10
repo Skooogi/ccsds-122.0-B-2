@@ -4,6 +4,7 @@
 #include "encoding_stages.h"
 #include "file_io.h"
 #include "magnitude_encoding.h"
+#include "segment_header.h"
 #include "word_mapping.h"
 #include <stdlib.h>
 #include <string.h>
@@ -27,7 +28,6 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
 
         bitDC = blocks[block_index].dc;
         dc_coefficients[block_index] = bitDC;
-        printf("%i ", dc_coefficients[block_index]);
         if(bitDC < 0) {
             bitDC_max = max(bitDC_max, 1 + (log2_32(abs(bitDC))));
         }
@@ -45,6 +45,15 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
         bitAC_max = max(bitAC_max, bitAC);
     }
 
+    //Transform ac coefficients to sign-magnitude representation
+    for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
+        for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
+            int32_t ac_coefficient = blocks[block_index].ac[ac_index];
+            blocks[block_index].ac[ac_index] = twos_complement(ac_coefficient, bitAC_max);
+            blocks[block_index].ac[ac_index] |= ((ac_coefficient) >> 31 & 1) * (1 <<bitAC_max);
+        }
+    }
+
     uint8_t q = calculate_q_value(bitDC_max, bitAC_max);
 
     printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
@@ -56,7 +65,7 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     encode_ac_magnitudes((Block*)&blocks, num_blocks, bitAC_max, q);
 
     for(int8_t bitplane = bitAC_max - 1; bitplane > -1; --bitplane) {
-        for(size_t stage = 0; stage < 1; ++stage) {
+        for(size_t stage = 0; stage < 3; ++stage) {
             for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
 
                 reset_block_string();
@@ -65,13 +74,13 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
                     stage_0(blocks, num_blocks, q, bitplane);
                 }
                 else if(stage == 1) {
-                    stage_1(blocks, num_blocks, bitplane);
+                    stage_1(headers, blocks, num_blocks, bitplane);
                 }
                 else if(stage == 2) {
-                    stage_2(blocks, num_blocks, bitplane);
+                    stage_2(headers, blocks, num_blocks, bitplane);
                 }
                 else {
-                    stage_3(blocks, num_blocks, bitplane);
+                    stage_3(headers, blocks, num_blocks, bitplane);
                 }
 
                 write_block_string();
