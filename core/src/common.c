@@ -8,7 +8,7 @@ uint32_t log2_32 (uint32_t value) {
 }
 
 uint32_t twos_complement(int32_t value, size_t num_bits) {
-    if(value & 1 << (num_bits - 1)) {
+    if(value & (1 << num_bits)) {
         return (~(value) + 1) & ((1<<num_bits)-1);
     }
     return value;
@@ -56,7 +56,7 @@ int8_t block_get_status(Block* block, uint8_t ac_index) {
 }
 
 int8_t block_get_bmax(Block* block) {
-    uint8_t filtered = (~block->high_status_bit & block->low_status_bit) & b_mask;
+    uint64_t filtered = (~block->high_status_bit & block->low_status_bit) & b_mask;
     return (filtered > 0);
 }
 

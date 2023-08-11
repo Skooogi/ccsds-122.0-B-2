@@ -2,7 +2,7 @@
 
 static void family(Block* blocks, size_t block_index, int32_t* data, size_t width, size_t row, size_t column, size_t ac_index);
 
-void block_transfrom_pack(Block* blocks, size_t num_blocks, int32_t* data, size_t data_width) {
+void block_transform_pack(Block* blocks, size_t num_blocks, int32_t* data, size_t data_width) {
 
     size_t block_width = data_width>>3;
     size_t block_height = num_blocks / block_width;

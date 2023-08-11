@@ -11,15 +11,18 @@ extern "C" {
 #define AC_COEFFICIENTS_PER_BLOCK 63
 #define BLOCKS_PER_GAGGLE 16
 
-typedef struct Tran {
-    unsigned b  : 1;
-    unsigned d  : 3;
-    unsigned g  : 3;
-    uint8_t h[3];
+typedef union Tran {
+    struct {
+        unsigned b  : 1;
+        unsigned d  : 4;
+        unsigned g  : 3;
+        uint8_t h[3];
+    };
+    uint32_t packed;
 } Tran;
 
 typedef struct Block {
-    uint8_t bitAC  : 5;
+    uint8_t bitAC;
     Tran tran;
     int32_t dc;
     int32_t ac[AC_COEFFICIENTS_PER_BLOCK]; 
@@ -29,14 +32,14 @@ typedef struct Block {
 
 typedef struct MappedWord {
     unsigned word : 4;
-    unsigned length : 2;
+    unsigned length : 4;
     unsigned symbol_option : 1;
     unsigned uncoded : 1;
-    signed mapped_symbol : 8;
+    unsigned mapped_symbol : 4;
 } MappedWord;
 
 typedef struct BlockString {
-    MappedWord mapped_words[4086];
+    MappedWord mapped_words[1024];
     uint16_t index;
 } BlockString;
 

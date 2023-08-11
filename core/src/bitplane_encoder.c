@@ -16,20 +16,20 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     size_t num_blocks = headers->header_3.segment_size;
     int32_t bitDC_max = 1;
     int32_t bitAC_max = 0;
-    int32_t bitDC = 1;
-    int32_t bitAC = 0;
+    uint8_t bitDC = 1;
+    uint8_t bitAC = 0;
 
     int32_t dc_coefficients[num_blocks];
 
     Block blocks[num_blocks];
-    block_transfrom_pack((Block*)&blocks, num_blocks, data, headers->header_4.image_width);
+    block_transform_pack((Block*)&blocks, num_blocks, data, headers->header_4.image_width);
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
         bitDC = blocks[block_index].dc;
         dc_coefficients[block_index] = bitDC;
         if(bitDC < 0) {
-            bitDC_max = max(bitDC_max, 1 + (log2_32(abs(bitDC))));
+            bitDC_max = max(bitDC_max, 1 + (log2_32(bitDC)));
         }
 
         else {
@@ -47,10 +47,11 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
 
     //Transform ac coefficients to sign-magnitude representation
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
+        blocks[block_index].tran.packed = 0; 
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             int32_t ac_coefficient = blocks[block_index].ac[ac_index];
             blocks[block_index].ac[ac_index] = twos_complement(ac_coefficient, bitAC_max);
-            blocks[block_index].ac[ac_index] |= ((ac_coefficient) >> 31 & 1) * (1 <<bitAC_max);
+            blocks[block_index].ac[ac_index] |= ac_coefficient < 0 ? (1 << bitAC_max) : 0;
         }
     }
 
@@ -65,7 +66,9 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     encode_ac_magnitudes((Block*)&blocks, num_blocks, bitAC_max, q);
 
     for(int8_t bitplane = bitAC_max - 1; bitplane > -1; --bitplane) {
+        printf("bitplane %u\n", bitplane);
         for(size_t stage = 0; stage < 3; ++stage) {
+            printf("stage %zu\n", stage);
             for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
 
                 reset_block_string();

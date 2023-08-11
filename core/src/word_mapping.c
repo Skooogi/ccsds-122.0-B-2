@@ -93,27 +93,30 @@ void write_block_string() {
                 if((written_code_options & 1) != 1) {
                     file_io_write_bits(code_option_bit_2, 1);
                     written_code_options |= 1;
+                    printf("2: %u %u\n", code_option_bit_2, 1);
                 }
                 word = word2bit[code_option_bit_2][current.mapped_symbol];
-                length = word_length_bit_2[current.mapped_symbol];
+                length = code_option_bit_2 == 1 ? 2 : word_length_bit_2[current.mapped_symbol];
                 file_io_write_bits(word, length);
                 break;
             case 3:
                 if((written_code_options & 2) != 2) {
                     file_io_write_bits(code_option_bit_3, 2);
                     written_code_options |= 2;
+                    printf("3: %u %u\n", code_option_bit_3, 2);
                 }
                 word = word3bit[code_option_bit_3][current.mapped_symbol];
-                length = word_length_bit_3[code_option_bit_3][current.mapped_symbol];
+                length = code_option_bit_3 == 2 ? 3 : word_length_bit_3[code_option_bit_3][current.mapped_symbol];
                 file_io_write_bits(word, length);
                 break;
             case 4:
                 if((written_code_options & 4) != 4) {
                     file_io_write_bits(code_option_bit_4, 2);
+                    printf("4: %u %u\n", code_option_bit_4, 2);
                     written_code_options |= 4;
                 }
                 word = word4bit[code_option_bit_4][current.mapped_symbol];
-                length = word_length_bit_4[code_option_bit_4][current.mapped_symbol];
+                length = code_option_bit_4 == 3 ? 4 : word_length_bit_4[code_option_bit_4][current.mapped_symbol];
                 file_io_write_bits(word, length);
                 break;
         }
@@ -129,7 +132,7 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
     current->uncoded = uncoded;
     block_string.index++;
 
-    if(uncoded) {
+    if(uncoded || word_length == 1) {
         return;
     }
 
