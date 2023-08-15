@@ -16,8 +16,7 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     size_t num_blocks = headers->header_3.segment_size;
     int32_t bitDC_max = 1;
     int32_t bitAC_max = 0;
-    uint8_t bitDC = 1;
-    uint8_t bitAC = 0;
+    int32_t bitAC = 0;
 
     int32_t dc_coefficients[num_blocks];
 
@@ -26,38 +25,39 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
-        bitDC = blocks[block_index].dc;
-        dc_coefficients[block_index] = bitDC;
-        if(bitDC < 0) {
-            bitDC_max = max(bitDC_max, 1 + (log2_32(bitDC)));
+        dc_coefficients[block_index] = blocks[block_index].dc;
+        int32_t current_dc = dc_coefficients[block_index];
+        if(current_dc < 0) {
+            bitDC_max = max(bitDC_max, 1 + (log2_32(current_dc)));
         }
 
         else {
-            bitDC_max = max(bitDC_max, 1 + (log2_32(bitDC+1)));
+            bitDC_max = max(bitDC_max, 1 + (log2_32(current_dc+1)));
         }
 
-        bitAC = 0;
+        int32_t max_AC = 0;
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
-            bitAC = max(bitAC, abs(blocks[block_index].ac[ac_index]));
+            max_AC = max(max_AC, abs(blocks[block_index].ac[ac_index]));
         }
-        bitAC = log2_32(bitAC + 1);
+        bitAC = log2_32(max_AC + 1);
         blocks[block_index].bitAC = bitAC;
         bitAC_max = max(bitAC_max, bitAC);
     }
+    uint8_t q = calculate_q_value(bitDC_max, bitAC_max);
+    printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
 
     //Transform ac coefficients to sign-magnitude representation
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
         blocks[block_index].tran.packed = 0; 
+        //memset(&blocks[block_index].tran, 0, sizeof(Tran));
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             int32_t ac_coefficient = blocks[block_index].ac[ac_index];
             blocks[block_index].ac[ac_index] = twos_complement(ac_coefficient, bitAC_max);
             blocks[block_index].ac[ac_index] |= ac_coefficient < 0 ? (1 << bitAC_max) : 0;
         }
+        printf("%u %u\n", blocks[block_index].dc, blocks[block_index].bitAC);
     }
 
-    uint8_t q = calculate_q_value(bitDC_max, bitAC_max);
-
-    printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
     headers->header_1.bitDC = bitDC_max;
     headers->header_1.bitAC = bitAC_max;
     segment_header_write_data(headers);
@@ -67,8 +67,8 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
 
     for(int8_t bitplane = bitAC_max - 1; bitplane > -1; --bitplane) {
         printf("bitplane %u\n", bitplane);
-        for(size_t stage = 0; stage < 3; ++stage) {
-            printf("stage %zu\n", stage);
+        for(size_t stage = 0; stage < 4; ++stage) {
+            //printf("stage %zu\n", stage);
             for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
 
                 reset_block_string();
@@ -88,8 +88,11 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
 
                 write_block_string();
             }
-            //stage_4(blocks, num_blocks, bitplane);
         }
+        //printf("stage 4\n");
+        reset_block_string();
+        stage_4(headers, blocks, num_blocks, bitplane);
+        write_block_string();
     }
 }
 

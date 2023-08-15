@@ -20,7 +20,7 @@ OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 all: $(BUILD_DIR)/$(PROJECT).bin 
 
-TEST_FILE = "../res/pattern/raw/test_image_gradient_32.raw"
+TEST_FILE = "../res/noise/raw/test_image_noise_32.raw"
 TEST_SIZE = 32
 RUN_BIN = ./$(PROJECT).bin $(TEST_FILE) $(TEST_SIZE)
 

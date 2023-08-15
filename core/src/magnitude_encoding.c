@@ -1,5 +1,6 @@
 #include "magnitude_encoding.h"
 #include "file_io.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 static int8_t select_coding(int32_t gaggle_sum, size_t J, size_t N) {
@@ -146,14 +147,14 @@ void encode_dc_magnitudes(int32_t* dc_coefficients, int32_t num_coeffs, int32_t 
 
 void encode_ac_magnitudes(Block* blocks, size_t num_blocks, uint32_t bitAC_max, uint32_t q) {
 
-    uint32_t N = ((log2_32(1 + bitAC_max)) + 1);
+    uint32_t N = (log2_32(1 + bitAC_max));
     if(N == 0) {
         return;
     }
 
     if(N == 1) {
         //Coefficients are 1 bit long and no further coding is required
-        for(size_t i = 0; i < num_blocks; ++i) {
+        for(size_t i = 1; i < num_blocks; ++i) {
             file_io_write_bits(blocks[i].bitAC, 1);
         }
         return;
@@ -175,10 +176,10 @@ void encode_ac_magnitudes(Block* blocks, size_t num_blocks, uint32_t bitAC_max, 
         res = 0;
 
         if(sigma >= 0 && sigma <= theta) {
-            res = 2*sigma;
+            res = sigma<<1;
         }
         else if(sigma < 0 && sigma >= -theta) {
-            res = 2*abs(sigma)-1;
+            res = (abs(sigma)<<1) - 1;
         }
         else{
             res = theta + abs(sigma);

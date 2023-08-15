@@ -21,8 +21,6 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             continue;
         }
 
-        //uint32_t bitAC = blocks[block_index].bitAC;
-        //Set each coefficient state
         uint64_t new_high_status_bit = 0;
         uint64_t new_low_status_bit = 0;
 
@@ -50,15 +48,6 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
         int8_t p0 = block_get_status(&blocks[block_index], 0);
         int8_t p1 = block_get_status(&blocks[block_index], 21);
         int8_t p2 = block_get_status(&blocks[block_index], 42);
-
-        /*
-        printf("(%zu) %i %i %i\t", block_index, p0, p1, p2);
-        printf("%i %i %i\n", 
-                blocks[block_index].ac[0] & ~(1<<bitAC),
-                blocks[block_index].ac[21] & ~(1<<bitAC),
-                blocks[block_index].ac[42] & ~(1<<bitAC)
-                );
-                */
 
         if(0 <= p0 && p0 <= 1) {
             types_p |= p0;
@@ -197,6 +186,8 @@ void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 
 void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
 
+    uint32_t bitAC = headers->header_1.bitAC;
+
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
         if(blocks[block_index].tran.b == 0 || block_get_bmax(&blocks[block_index]) == -1) {
@@ -306,7 +297,7 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                 continue;
             }
 
-            for(uint8_t hj = 0; hj < 3; ++hj) {
+            for(uint8_t hj = 0; hj < 4; ++hj) {
 
                 if(((blocks[block_index].tran.h[hi] >> (3-hj)) & 1) == 0) {
                     continue;
@@ -318,19 +309,22 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                 uint8_t signs_h = 0;
                 uint8_t index = hi*21+5+hj*4;
                 for(uint8_t j = 0; j < 4; ++j) {
-                    types_h <<= 1;
-                    types_h |= ((abs(blocks[block_index].ac[index+j]) >> bitplane) & 1);
-                    size_h += 1;
-                    if(types_h & 1) {
-                        signs_h <<= 1;
-                        signs_h |= blocks[block_index].ac[index+j] < 0 ? 1 : 0;
-                        size_s += 1;
-                    }
-                    if(size_h > 0) {
-                        word_mapping_code(types_h, size_h, size_h < 4 ? 0 : 1, 0);
-                        if(size_s > 0) {
-                            word_mapping_code(signs_h, size_s, 0, 1);
+                    int8_t status = block_get_status(&blocks[block_index], index+j);
+                    if(0 <= status && status <= 1) {
+                        types_h <<= 1;
+                        types_h |= ((blocks[block_index].ac[index+j] >> bitplane) & 1);
+                        size_h += 1;
+                        if(types_h & 1) {
+                            signs_h <<= 1;
+                            signs_h |= (blocks[block_index].ac[index+j] >> bitAC) & 1;
+                            size_s += 1;
                         }
+                    }
+                }
+                if(size_h > 0) {
+                    word_mapping_code(types_h, size_h, size_h < 4 ? 0 : 1, 0);
+                    if(size_s > 0) {
+                        word_mapping_code(signs_h, size_s, 0, 1);
                     }
                 }
             }
@@ -348,24 +342,27 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
         for(size_t pi = 0; pi < 3; ++pi) {
             size_t index = pi * 21;
             if(block_get_status(&blocks[i], index) == 2) {
-                word_mapping_code((abs(blocks[i].ac[index]) >> bitplane) & 1, 1, 0, 0);
+                uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
+                word_mapping_code(temp, 1, 0, 1);
             }
         }
         for(size_t ci = 0; ci < 3; ++ci) {
-            for(size_t j = 0; j < 3; ++j) {
+            for(size_t j = 0; j < 4; ++j) {
                 size_t index = 1 + ci * 21 + j;
                 if(block_get_status(&blocks[i], index) == 2) {
-                    word_mapping_code((abs(blocks[i].ac[index]) >> bitplane) & 1, 1, 0, 0);
+                    uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
+                    word_mapping_code(temp, 1, 0, 1);
                 }
             }
         }
 
         for(size_t hi = 0; hi < 3; ++hi) {
-            for(size_t hj = 0; hj < 3; ++hj) {
-                for(size_t j = 0; j < 3; ++j) {
+            for(size_t hj = 0; hj < 4; ++hj) {
+                for(size_t j = 0; j < 4; ++j) {
                     size_t index = 5+hi*21+hj*4+j;
                     if(block_get_status(&blocks[i], index) == 2) {
-                        word_mapping_code((abs(blocks[i].ac[index]) >> bitplane) & 1, 1, 0, 0);
+                        uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
+                        word_mapping_code(temp, 1, 0, 1);
                     }
                 }
             }

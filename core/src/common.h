@@ -39,8 +39,8 @@ typedef struct MappedWord {
 } MappedWord;
 
 typedef struct BlockString {
-    MappedWord mapped_words[1024];
-    uint16_t index;
+    MappedWord mapped_words[4096];
+    uint32_t index;
 } BlockString;
 
 //Block operations
