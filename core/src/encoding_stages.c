@@ -1,4 +1,5 @@
 #include "encoding_stages.h"
+#include "file_io.h"
 #include "word_mapping.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -343,7 +344,8 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             size_t index = pi * 21;
             if(block_get_status(&blocks[i], index) == 2) {
                 uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
-                word_mapping_code(temp, 1, 0, 1);
+                //word_mapping_code(temp, 1, 0, 1);
+                file_io_write_bits(temp, 1);
             }
         }
         for(size_t ci = 0; ci < 3; ++ci) {
@@ -351,7 +353,8 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                 size_t index = 1 + ci * 21 + j;
                 if(block_get_status(&blocks[i], index) == 2) {
                     uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
-                    word_mapping_code(temp, 1, 0, 1);
+                    //word_mapping_code(temp, 1, 0, 1);
+                    file_io_write_bits(temp, 1);
                 }
             }
         }
@@ -362,7 +365,8 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                     size_t index = 5+hi*21+hj*4+j;
                     if(block_get_status(&blocks[i], index) == 2) {
                         uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
-                        word_mapping_code(temp, 1, 0, 1);
+                        //word_mapping_code(temp, 1, 0, 1);
+                        file_io_write_bits(temp, 1);
                     }
                 }
             }

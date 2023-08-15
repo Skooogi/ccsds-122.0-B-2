@@ -51,17 +51,40 @@ static uint32_t string_length_bit_3[3] = {};
 static uint32_t string_length_bit_4[4] = {};
 
 void reset_block_string() {
-    memset(&block_string, 0, sizeof(BlockString));
+    /*
+    block_string.index = 0;
+    memset(block_string.mapped_words, 0, 32000 * sizeof(MappedWord));
+    */
+    memset(&block_string, 0, sizeof(block_string));
     memset(&string_length_bit_2, 0, 2 * sizeof(uint32_t));
     memset(&string_length_bit_3, 0, 3 * sizeof(uint32_t));
     memset(&string_length_bit_4, 0, 4 * sizeof(uint32_t));
 }
+
+/*
+void block_string_initialize() {
+    block_string = malloc(sizeof(BlockString));
+    block_string.index = 0;
+    block_string.mapped_words = malloc(32000 * sizeof(MappedWord));
+    if(!block_string.mapped_words) {
+        printf("Failed to allocate block string!\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void block_string_free() {
+    free(block_string.mapped_words);
+    free(block_string);
+}
+*/
 
 void write_block_string() {
 
     if(block_string.index == 0) {
         return;
     }
+
+    //printf("%u\n", block_string.index);
 
     uint8_t written_code_options = 0;
     uint8_t code_option_bit_2 = string_length_bit_2[0] <= string_length_bit_2[1] ? 0 : 1;
@@ -78,17 +101,36 @@ void write_block_string() {
         }
     }
 
+    /*
+    printf("c2 %u = %u %u\n",
+            code_option_bit_2,
+            string_length_bit_2[0],
+            string_length_bit_2[1]);
+    printf("c3 %u = %u %u %u\n",
+            code_option_bit_3,
+            string_length_bit_3[0],
+            string_length_bit_3[1],
+            string_length_bit_3[2]);
+
+    printf("c4 %u = %u %u %u %u\n",
+            code_option_bit_4,
+            string_length_bit_4[0],
+            string_length_bit_4[1],
+            string_length_bit_4[2],
+            string_length_bit_4[3]);
+    */
+
     for(size_t word_index = 0; word_index < block_string.index; ++word_index) {
         MappedWord current = block_string.mapped_words[word_index];
         uint8_t word, length;
 
-        if(current.length == 1 || current.uncoded) {
-            file_io_write_bits(current.word, current.length);
+        if(current.length == 0 || current.uncoded) {
+            file_io_write_bits(current.mapped_symbol, current.length + 1);
             continue;
         }
 
         switch(current.length) {
-            case 2:
+            case 1:
                 if((written_code_options & 1) != 1) {
                     file_io_write_bits(code_option_bit_2, 1);
                     written_code_options |= 1;
@@ -98,7 +140,7 @@ void write_block_string() {
                 length = code_option_bit_2 == 1 ? 2 : word_length_bit_2[current.mapped_symbol];
                 file_io_write_bits(word, length);
                 break;
-            case 3:
+            case 2:
                 if((written_code_options & 2) != 2) {
                     file_io_write_bits(code_option_bit_3, 2);
                     written_code_options |= 2;
@@ -108,7 +150,7 @@ void write_block_string() {
                 length = code_option_bit_3 == 2 ? 3 : word_length_bit_3[code_option_bit_3][current.mapped_symbol];
                 file_io_write_bits(word, length);
                 break;
-            case 4:
+            case 3:
                 if((written_code_options & 4) != 4) {
                     file_io_write_bits(code_option_bit_4, 2);
                     //printf("4: %u %u\n", code_option_bit_4, 2);
@@ -125,13 +167,13 @@ void write_block_string() {
 void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option, uint8_t uncoded) {
     
     MappedWord* current = &block_string.mapped_words[block_string.index];
-    current->word = word;
-    current->uncoded = uncoded;
+    current->length = word_length - 1;
     current->symbol_option = symbol_option;
-    current->length = word_length;
+    current->uncoded = uncoded;
     block_string.index++;
 
     if(uncoded || word_length == 1) {
+        current->mapped_symbol = word;
         return;
     }
 

@@ -31,15 +31,14 @@ typedef struct Block {
 } Block;
 
 typedef struct MappedWord {
-    unsigned word : 4;
-    unsigned length : 4;
+    unsigned length : 2;
     unsigned symbol_option : 1;
     unsigned uncoded : 1;
     unsigned mapped_symbol : 4;
 } MappedWord;
 
 typedef struct BlockString {
-    MappedWord mapped_words[4096];
+    MappedWord mapped_words[512];
     uint32_t index;
 } BlockString;
 

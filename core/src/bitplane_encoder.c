@@ -18,10 +18,10 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     int32_t bitAC_max = 0;
     int32_t bitAC = 0;
 
-    int32_t dc_coefficients[num_blocks];
+    int32_t* dc_coefficients = malloc(num_blocks * sizeof(int32_t));
+    Block* blocks = malloc(num_blocks * sizeof(Block));
 
-    Block blocks[num_blocks];
-    block_transform_pack((Block*)&blocks, num_blocks, data, headers->header_4.image_width);
+    block_transform_pack(blocks, num_blocks, data, headers->header_4.image_width);
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
@@ -55,7 +55,6 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
             blocks[block_index].ac[ac_index] = twos_complement(ac_coefficient, bitAC_max);
             blocks[block_index].ac[ac_index] |= ac_coefficient < 0 ? (1 << bitAC_max) : 0;
         }
-        printf("%u %u\n", blocks[block_index].dc, blocks[block_index].bitAC);
     }
 
     headers->header_1.bitDC = bitDC_max;
@@ -63,37 +62,40 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     segment_header_write_data(headers);
 
     encode_dc_magnitudes(dc_coefficients, num_blocks, bitDC_max, q);
-    encode_ac_magnitudes((Block*)&blocks, num_blocks, bitAC_max, q);
+    encode_ac_magnitudes(blocks, num_blocks, bitAC_max, q);
+
+    //block_string_initialize();
 
     for(int8_t bitplane = bitAC_max - 1; bitplane > -1; --bitplane) {
-        printf("bitplane %u\n", bitplane);
+        //printf("bitplane %u\n", bitplane);
         for(size_t stage = 0; stage < 4; ++stage) {
             //printf("stage %zu\n", stage);
             for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
 
                 reset_block_string();
+                size_t blocks_in_gaggle = gaggle + 16 < num_blocks ? 16 : num_blocks - gaggle;
 
                 if(stage == 0) {
-                    stage_0(blocks, num_blocks, q, bitplane);
+                    stage_0(blocks+gaggle, blocks_in_gaggle, q, bitplane);
                 }
                 else if(stage == 1) {
-                    stage_1(headers, blocks, num_blocks, bitplane);
+                    stage_1(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
                 }
                 else if(stage == 2) {
-                    stage_2(headers, blocks, num_blocks, bitplane);
+                    stage_2(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
                 }
                 else {
-                    stage_3(headers, blocks, num_blocks, bitplane);
+                    stage_3(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
                 }
 
                 write_block_string();
             }
         }
         //printf("stage 4\n");
-        reset_block_string();
         stage_4(headers, blocks, num_blocks, bitplane);
-        write_block_string();
     }
+
+    //block_string_free();
 }
 
 static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max) {
