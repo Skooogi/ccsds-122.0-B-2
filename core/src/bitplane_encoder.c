@@ -18,15 +18,15 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     int32_t bitAC_max = 0;
     int32_t bitAC = 0;
 
-    int32_t* dc_coefficients = malloc(num_blocks * sizeof(int32_t));
-    Block* blocks = malloc(num_blocks * sizeof(Block));
+    int32_t* dc_coefficients = calloc(num_blocks, sizeof(int32_t));
+    Block* blocks = calloc(num_blocks, sizeof(Block));
 
     block_transform_pack(blocks, num_blocks, data, headers->header_4.image_width);
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
         dc_coefficients[block_index] = blocks[block_index].dc;
-        int32_t current_dc = dc_coefficients[block_index];
+        uint32_t current_dc = abs(dc_coefficients[block_index]);
         if(current_dc < 0) {
             bitDC_max = max(bitDC_max, 1 + (log2_32(current_dc)));
         }
@@ -64,12 +64,8 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     encode_dc_magnitudes(dc_coefficients, num_blocks, bitDC_max, q);
     encode_ac_magnitudes(blocks, num_blocks, bitAC_max, q);
 
-    //block_string_initialize();
-
     for(int8_t bitplane = bitAC_max - 1; bitplane > -1; --bitplane) {
-        //printf("bitplane %u\n", bitplane);
         for(size_t stage = 0; stage < 4; ++stage) {
-            //printf("stage %zu\n", stage);
             for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
 
                 reset_block_string();
@@ -91,11 +87,8 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
                 write_block_string();
             }
         }
-        //printf("stage 4\n");
         stage_4(headers, blocks, num_blocks, bitplane);
     }
-
-    //block_string_free();
 }
 
 static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max) {

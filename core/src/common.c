@@ -3,7 +3,7 @@
 
 uint32_t log2_32 (uint32_t value) {
     uint32_t result = 0;
-    while(value > 1<<result) result++;
+    while(value > (1<<result)) result++;
     return result;
 }
 

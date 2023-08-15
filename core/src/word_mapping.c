@@ -51,32 +51,11 @@ static uint32_t string_length_bit_3[3] = {};
 static uint32_t string_length_bit_4[4] = {};
 
 void reset_block_string() {
-    /*
-    block_string.index = 0;
-    memset(block_string.mapped_words, 0, 32000 * sizeof(MappedWord));
-    */
-    memset(&block_string, 0, sizeof(block_string));
+    memset(&block_string, 0, sizeof(BlockString));
     memset(&string_length_bit_2, 0, 2 * sizeof(uint32_t));
     memset(&string_length_bit_3, 0, 3 * sizeof(uint32_t));
     memset(&string_length_bit_4, 0, 4 * sizeof(uint32_t));
 }
-
-/*
-void block_string_initialize() {
-    block_string = malloc(sizeof(BlockString));
-    block_string.index = 0;
-    block_string.mapped_words = malloc(32000 * sizeof(MappedWord));
-    if(!block_string.mapped_words) {
-        printf("Failed to allocate block string!\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-void block_string_free() {
-    free(block_string.mapped_words);
-    free(block_string);
-}
-*/
 
 void write_block_string() {
 
@@ -100,25 +79,6 @@ void write_block_string() {
             code_option_bit_4 = i;
         }
     }
-
-    /*
-    printf("c2 %u = %u %u\n",
-            code_option_bit_2,
-            string_length_bit_2[0],
-            string_length_bit_2[1]);
-    printf("c3 %u = %u %u %u\n",
-            code_option_bit_3,
-            string_length_bit_3[0],
-            string_length_bit_3[1],
-            string_length_bit_3[2]);
-
-    printf("c4 %u = %u %u %u %u\n",
-            code_option_bit_4,
-            string_length_bit_4[0],
-            string_length_bit_4[1],
-            string_length_bit_4[2],
-            string_length_bit_4[3]);
-    */
 
     for(size_t word_index = 0; word_index < block_string.index; ++word_index) {
         MappedWord current = block_string.mapped_words[word_index];
