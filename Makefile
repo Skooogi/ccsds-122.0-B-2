@@ -20,9 +20,9 @@ OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 all: $(BUILD_DIR)/$(PROJECT).bin 
 
-TEST_IN_FILE = "../res/space/raw/test_image_space_3.raw"
+TEST_IN_FILE = "../res/noise/raw/test_image_noise_1k.raw"
 TEST_OUT_FILE = "../python/output.cmp"
-TEST_SIZE = 2000 1322 8
+TEST_SIZE = 1024 1024 8
 RUN_BIN = ./$(PROJECT).bin $(TEST_IN_FILE) $(TEST_OUT_FILE) $(TEST_SIZE)
 
 run: all
@@ -36,10 +36,6 @@ perf: all
 
 stat: all
 	@(cd ${BUILD_DIR}; perf stat -d $(RUN_BIN))
-
-test: all
-	@(cd python/cython; python3 compile.py)
-	@(cd python; python3 test_compare_dwt.py)
 
 valgrind: all
 	@(cd ${BUILD_DIR}; valgrind --leak-check=full --track-origins=yes $(RUN_BIN))

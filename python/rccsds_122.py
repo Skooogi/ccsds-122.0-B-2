@@ -83,7 +83,7 @@ def decode_header(header):
 
 def decode_dc_initial(blocks, bitDC, q):
 
-    print("Decoding DC magnitudes")
+    #print("Decoding DC magnitudes")
     #DC Magnitudes
     N = max(bitDC - q, 1)
 
@@ -153,7 +153,7 @@ def decode_dc_initial(blocks, bitDC, q):
 
 def decode_ac_magnitudes(blocks, bitACGlobal, q):
 
-    print("Decoding AC magnitudes")
+    #print("Decoding AC magnitudes")
     #AC Magnitudes
     diffs = np.zeros(len(blocks), dtype='int')
     N = int(abs(math.log(1 + bitACGlobal,2)) + 1)
@@ -641,7 +641,7 @@ def unpack_blocks(blocks, width, height):
     return data
 
 def decompress():
-    print("Uncompressing file")
+    #print("Uncompressing file")
     readb.data = 0
     readb.cache = ""
     readb.i = 0
@@ -657,7 +657,7 @@ def decompress():
     bitACGlobal = header.bitAC
     width = header.header_4.image_width
     pad_width = header.pad_width
-    print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, width:{width}, padding:{pad_width}]')
+    #print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, width:{width}, padding:{pad_width}]')
     
     blocks = np.empty(header.header_3.segment_size, dtype=object)
     for i in range(len(blocks)):
@@ -665,7 +665,7 @@ def decompress():
         blocks[i].dmax = np.ones(3, dtype=int)*-2
         blocks[i].tran_h = np.zeros(3, dtype=int)
         blocks[i].ac = np.zeros(63, dtype=int)
-    print("Blocks:",len(blocks))
+    #print("Blocks:",len(blocks))
     height = int(len(blocks) / int(width/8))*8
 
     #determine q and N for DC
@@ -708,7 +708,7 @@ def decompress():
         stage_4(blocks, bitplane)
         #print(blocks[0])
 
-    print("Fixing negatives")
+    #print("Fixing negatives")
     for i in range(len(blocks)):
         if(blocks[i].dc & (1 << (bitDC-1))):
            blocks[i].dc -= 1 << bitDC
@@ -718,13 +718,14 @@ def decompress():
                 blocks[i].ac[j] &= ~(1 << blocks[i].bitAC)
                 blocks[i].ac[j] *= -1
 
-    print("rescaling")
+    #print("rescaling")
     data = unpack_blocks(blocks, int(width/8), int(height/8))
     rescale(data, width, height)
 
-    print("IDWT")
+    #print("IDWT")
     levels = 3
     dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
+    #file_io.save_image("img_out.bmp", data, width, height) #uncomment if you want to see the result image
     return data
 
 if __name__ == '__main__':

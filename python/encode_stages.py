@@ -40,6 +40,7 @@ def split_coding(diffs, first, size, N):
 
         k = select_coding(gaggle_sum, J, N)
         code_word_length = math.ceil(math.log(N,2))
+        print(N)
         if(k < 0):
             file_io.out(2**code_word_length - 1, code_word_length)
 

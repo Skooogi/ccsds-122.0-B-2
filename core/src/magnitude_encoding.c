@@ -148,10 +148,6 @@ void encode_dc_magnitudes(int32_t* dc_coefficients, int32_t num_coeffs, int32_t 
 void encode_ac_magnitudes(Block* blocks, size_t num_blocks, uint32_t bitAC_max, uint32_t q) {
 
     uint32_t N = (log2_32(1 + bitAC_max));
-    if(N == 0) {
-        return;
-    }
-
     if(N == 1) {
         //Coefficients are 1 bit long and no further coding is required
         for(size_t i = 1; i < num_blocks; ++i) {

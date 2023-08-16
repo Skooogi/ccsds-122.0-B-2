@@ -23,7 +23,7 @@ def compress_data(data, width, height, bitdepth=8):
     file_io.cleanup()
 
 
-def compress(filein="test/test_image_black32.bmp", fileout='output'):
+def compress(filein="../res/temp_orig_1.bmp", fileout='output'):
 
     # Load from file and initialize data to correct dimensions
     data, width, height = file_io.load_image(filein)

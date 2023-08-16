@@ -44,7 +44,7 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
         bitAC_max = max(bitAC_max, bitAC);
     }
     uint8_t q = calculate_q_value(bitDC_max, bitAC_max);
-    printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
+    //printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
 
     //Transform ac coefficients to sign-magnitude representation
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
