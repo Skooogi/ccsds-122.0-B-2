@@ -9,17 +9,20 @@
 
 int main(int argc, char** argv) {
 
-    char* filename = argv[1];
-    char* end;
-    int32_t width = strtol(argv[2], &end, 10);
-    int32_t height = width;
-    if(argc > 3) {
-        height = strtol(argv[3], &end, 10);
+    if(argc < 6) {
+        printf("Usage: ccsds.bin input_file output_file width height bits_per_pixel\n");
+        return 0;
     }
+    char* file_in = argv[1];
+    char* file_out = argv[2];
+    char* end;
+    int32_t width = strtol(argv[3], &end, 10);
+    int32_t height = strtol(argv[4], &end, 10);
+    uint8_t bitdepth = strtol(argv[5], &end, 10);
 
-    FILE* fp = fopen(filename, "rb");
+    FILE* fp = fopen(file_in, "rb");
     if(!fp) {
-        printf("Can not open file %s", filename);
+        printf("Can not open file %s", file_in);
         return 1;
     }
 
@@ -31,6 +34,8 @@ int main(int argc, char** argv) {
         printf("Failed to allocate image!\n");
         exit(EXIT_FAILURE);
     }
+
+    //Padding image to multiple of 8
     for(size_t row = 0; row < height; ++row) {
         fread(&test_data[row*(width+pad_width)], sizeof(int32_t), width, fp);
         for(size_t column = width; column < width + pad_width; ++column) {
@@ -40,16 +45,13 @@ int main(int argc, char** argv) {
     for(size_t row = height; row < height + pad_height; ++row) {
         memcpy(&test_data[row*(width+pad_width)], &test_data[(height-1)*(width+pad_width)], (width+pad_width)*sizeof(int32_t));
     }
-    //fread(test_data, sizeof(int32_t), width*height, fp);
     fclose(fp);
-    printf("%u %u %u %u\n", width, pad_width, height, pad_height);
+
+    file_io_set_output_file(file_out) ;
+
+    SegmentHeader* headers = segment_header_init_values();
     width += pad_width;
     height += pad_height;
-
-
-    //Save output
-    file_io_set_output_file("../python/output.cmp") ;
-    SegmentHeader* headers = segment_header_init_values();
     //TEST PARAMETERS START
     headers->header_1.first_segment = 1;
     headers->header_1.last_segment = 1;
@@ -61,7 +63,7 @@ int main(int argc, char** argv) {
     headers->header_3.segment_size = (width>>3)*(height>>3);
 
     headers->header_4.dwt_type = 1;
-    headers->header_4.pixel_bitdepth = 8;
+    headers->header_4.pixel_bitdepth = bitdepth;
     headers->header_4.image_width = width;
     //TEST PARAMETERS END
     
