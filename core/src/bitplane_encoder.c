@@ -26,29 +26,32 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
         dc_coefficients[block_index] = blocks[block_index].dc;
-        uint32_t current_dc = abs(dc_coefficients[block_index]);
+        int32_t current_dc = (dc_coefficients[block_index]);
         if(current_dc < 0) {
-            bitDC_max = max(bitDC_max, 1 + (log2_32(current_dc)));
+            bitDC_max = max(bitDC_max, 1 + (log2_32(abs(current_dc))));
         }
 
         else {
-            bitDC_max = max(bitDC_max, 1 + (log2_32(current_dc+1)));
+            bitDC_max = max(bitDC_max, 1 + (log2_32_ceil(current_dc+1)));
         }
 
         int32_t max_AC = 0;
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             max_AC = max(max_AC, abs(blocks[block_index].ac[ac_index]));
         }
-        bitAC = log2_32(max_AC + 1);
+        bitAC = log2_32_ceil(max_AC + 1);
         blocks[block_index].bitAC = bitAC;
         bitAC_max = max(bitAC_max, bitAC);
+        //printf("%zu %u %i\n", block_index, bitAC, dc_coefficients[block_index]);
     }
     uint8_t q = calculate_q_value(bitDC_max, bitAC_max);
-    //printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
+    printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
 
     //Transform ac coefficients to sign-magnitude representation
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
         blocks[block_index].tran.packed = 0; 
+        //blocks[block_index].dc = twos_complement(blocks[block_index].dc, bitDC_max);
+        blocks[block_index].dc &= (1<<bitDC_max) - 1;
         //memset(&blocks[block_index].tran, 0, sizeof(Tran));
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             int32_t ac_coefficient = blocks[block_index].ac[ac_index];

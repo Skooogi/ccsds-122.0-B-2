@@ -43,7 +43,7 @@ static void split_coding(int32_t* differences, size_t num_differences, uint32_t 
         size_t J = i == 0 ? 15 : 16;
 
         size_t k = select_coding(gaggle_sum, J, N);
-        size_t code_word_length = log2_32(N);
+        size_t code_word_length = log2_32_ceil(N);
         if(k < 0){
             file_io_write_bits((1<<code_word_length) - 1, code_word_length);
 
@@ -92,10 +92,6 @@ void encode_dc_magnitudes(int32_t* dc_coefficients, int32_t num_coeffs, int32_t 
 
     //DC coding
     uint32_t N = max(bitDC - q, 1);
-
-    for(size_t i = 0;  i < num_coeffs; ++i) {
-        dc_coefficients[i] = twos_complement(dc_coefficients[i], bitDC);
-    }
     
     if(N == 1) {
         for(size_t i = 0;  i < num_coeffs; ++i) {
@@ -147,7 +143,7 @@ void encode_dc_magnitudes(int32_t* dc_coefficients, int32_t num_coeffs, int32_t 
 
 void encode_ac_magnitudes(Block* blocks, size_t num_blocks, uint32_t bitAC_max, uint32_t q) {
 
-    uint32_t N = (log2_32(1 + bitAC_max));
+    uint32_t N = (log2_32(1 + bitAC_max) + 1);
     if(N == 1) {
         //Coefficients are 1 bit long and no further coding is required
         for(size_t i = 1; i < num_blocks; ++i) {

@@ -86,6 +86,7 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 
         if(size_p > 0) {
             word_mapping_code(types_p, size_p, 0, 0);
+            //printf("%zu %u %u\n",block_index,types_p,size_p);
             if(size_s > 0) {
                 word_mapping_code(signs_p, size_s, 0, 1);
             }

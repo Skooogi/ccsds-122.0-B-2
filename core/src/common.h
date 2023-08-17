@@ -56,6 +56,7 @@ int8_t block_get_hmax(Block* block, uint8_t family, uint8_t quadrant);
 inline int32_t max(int32_t a, int32_t b) {  return (a > b) ? a : b; }
 inline int32_t min(int32_t a, int32_t b) {  return (a < b) ? a : b; }
 uint32_t log2_32 (uint32_t value);
+uint32_t log2_32_ceil (uint32_t value);
 uint32_t twos_complement(int32_t value, size_t num_bits);
 
 #ifdef __cplusplus

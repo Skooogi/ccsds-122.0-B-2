@@ -40,7 +40,6 @@ def split_coding(diffs, first, size, N):
 
         k = select_coding(gaggle_sum, J, N)
         code_word_length = math.ceil(math.log(N,2))
-        print(N)
         if(k < 0):
             file_io.out(2**code_word_length - 1, code_word_length)
 
@@ -125,6 +124,7 @@ def encode_dc_initial(blocks, bitDC, q):
 def encode_ac_magnitudes(blocks, bitACGlobal, q):
 
     N = int(abs(math.log(1 + bitACGlobal,2)) + 1)
+    #print("N",N, bitACGlobal)
     if(N == 0):
         return
 
@@ -227,6 +227,7 @@ def stage_1(blocks, b):
 
         if(size_p > 0):
             word_mapping.code(types_p, size_p, 0)
+            #print(i, types_p, size_p)
             if(size_s > 0):
                 word_mapping.code(signs_p, size_s, 0, -1)
   

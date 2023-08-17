@@ -7,6 +7,7 @@ import file_io
 import run_length_encoding as rle
 from subband_scaling import scale, rescale
 from common import pad_data_to_8
+import c_dwt
 
 def compress_data(data, width, height, bitdepth=8):
 

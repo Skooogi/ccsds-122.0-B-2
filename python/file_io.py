@@ -16,7 +16,7 @@ def load_image(filein, raw_width = 0, raw_height = 0):
 
     return data, width, height
 
-def save_image(fileout, data, width, height, img_format='BMP'):
+def save_image(fileout, data, width, height ,img_format='BMP'):
 
     img_out = Image.fromarray(data.astype('uint8'))
     img_out.save(fileout, format=img_format)

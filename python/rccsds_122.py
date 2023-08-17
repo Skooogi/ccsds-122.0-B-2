@@ -710,8 +710,9 @@ def decompress():
 
     #print("Fixing negatives")
     for i in range(len(blocks)):
-        if(blocks[i].dc & (1 << (bitDC-1))):
-           blocks[i].dc -= 1 << bitDC
+        if(blocks[i].dc & (1 << (bitDC - 1))):
+            blocks[i].dc = common.twos_complement(blocks[i].dc, bitDC)
+            blocks[i].dc *= -1
         
         for j in range(63):
             if blocks[i].ac[j] & (1 << blocks[i].bitAC) > 0:
@@ -724,8 +725,8 @@ def decompress():
 
     #print("IDWT")
     levels = 3
-    dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
-    #file_io.save_image("img_out.bmp", data, width, height) #uncomment if you want to see the result image
+    #dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
+    file_io.save_image("img_out.bmp", data, width, height) #uncomment if you want to see the result image
     return data
 
 if __name__ == '__main__':

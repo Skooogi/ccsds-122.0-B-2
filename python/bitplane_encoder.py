@@ -102,6 +102,7 @@ def encode(data, width, height, pad_width, bitdepth):
 
         bitAC = math.ceil(math.log(bitAC + 1,2))
         blocks[i].bitAC = bitAC
+        #print(i, bitAC, dc)
         bitACGlobal = max(bitACGlobal, bitAC)
 
     #Determine q (4.3.1.2)
@@ -116,6 +117,7 @@ def encode(data, width, height, pad_width, bitdepth):
         q_prime = 1 + int(bitACGlobal/2)
 
     q = max(q_prime, 3)
+    print(f'max bitDC {bitDC}, bitAC_max{bitACGlobal}, q {q}')
 
     #TODO: Separate segment header generation
     header = SegmentHeader()

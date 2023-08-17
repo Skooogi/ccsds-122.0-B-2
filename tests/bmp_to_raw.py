@@ -1,6 +1,7 @@
+import os,sys
+sys.path.append(os.path.abspath('../python'))
 import file_io
 import numpy as np
-import os
 
 
 if __name__ == '__main__':
@@ -15,14 +16,18 @@ if __name__ == '__main__':
         "../res/noise/test_image_noise_2k.bmp",
         "../res/noise/test_image_noise_4k.bmp"
     ]
+    """
+
     files = [
         "../res/space/test_image_space_1.bmp",
         "../res/space/test_image_space_2.bmp",
         "../res/space/test_image_space_3.bmp",
-        "../res/space/test_image_space_4.bmp"
+        "../res/space/test_image_space_4.bmp",
+        "../res/space/test_image_space_5.bmp",
+        "../res/space/test_image_space_6.bmp",
+        "../res/space/test_image_space_7.bmp",
     ]
     """
-
     files = [
 		"../res/pattern/test_image_black_32.bmp",
 		"../res/pattern/test_image_black_256.bmp",
@@ -31,6 +36,7 @@ if __name__ == '__main__':
 		"../res/pattern/test_image_white_32.bmp",
 		"../res/pattern/test_image_white_256.bmp"
     ]
+    """
 
     for filename in files:
         data, width, height = file_io.load_image(filename)
