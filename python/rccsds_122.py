@@ -3,12 +3,16 @@ import math
 import run_length_encoding as rle
 import word_mapping
 import common
-import sys
 import segment_header
 import file_io
 import discrete_wavelet_transform as dwt
 from dataclasses import dataclass
 from subband_scaling import rescale
+
+import os, sys
+sys.path.append(os.path.abspath('./cython'))
+import c_dwt as c_dwt
+import struct
 
 decode_trees = []
 def readb(num):
@@ -724,8 +728,25 @@ def decompress():
     rescale(data, width, height)
 
     #print("IDWT")
-    levels = 3
+    #levels = 3
     #dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
+    #Do DWT in Cython
+    num_pixels = width*height
+    c_data = np.zeros(num_pixels, dtype='int32')
+    for i in range(height):
+        for j in range(width):
+            c_data[i * width + j] = data[i][j]
+    c_data = struct.pack(f'{num_pixels}i', *c_data)
+
+    levels = 3
+    c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, True)
+
+    c_data = np.array(struct.unpack(f'{num_pixels}I', c_data)).astype('int32')
+    for i in range(height):
+        for j in range(width):
+            data[i][j] = c_data[i * width + j]
+    #end Cython DWT
+
     file_io.save_image("img_out.bmp", data, width, height) #uncomment if you want to see the result image
     return data
 

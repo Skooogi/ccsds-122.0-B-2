@@ -1,4 +1,5 @@
 import os, sys
+sys.path.append(os.path.abspath('../python/cython'))
 sys.path.append(os.path.abspath('../python'))
 import ccsds_122 as comp
 import rccsds_122 as decomp

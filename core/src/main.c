@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef __SAMV71Q21B__
 int main(int argc, char** argv) {
 
     if(argc < 6) {
@@ -78,3 +79,4 @@ int main(int argc, char** argv) {
     free(test_data);
 	return 0;
 }
+#endif

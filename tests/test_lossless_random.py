@@ -1,6 +1,7 @@
 import numpy as np
 import os, sys
 sys.path.append(os.path.abspath('../python'))
+sys.path.append(os.path.abspath('../python/cython'))
 import ccsds_122 as comp
 import rccsds_122 as decomp
 import file_io
@@ -17,7 +18,7 @@ def check_decompressed_data(data_in, width, height, bitdepth):
         print(f'Final result: {bcolors.FAIL}ERROR. ERROR. ERROR. ERROR. ERROR. ERROR. ERROR. ERROR{bcolors.ENDC}.')
         print(f'MSE: {mean_squared_error}, PSNR: {PSNR(mean_squared_error, bitdepth)} dB')
         print("Stopping!")
-        #exit()
+        exit()
 
 def test_data(data, width, height, bitdepth, check_python=1):
 
@@ -43,15 +44,15 @@ def randomtests():
     # The minimum and maximum image width. Note that the image width must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_width = 32
-    max_width = 32
+    max_width = 256
 
     # The minimum and maximum image height. Note that the image height must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_height = 32
-    max_height = 32
+    max_height = 256
 
     # The minimum and maximum bitdepth to use. (Currently only bitdepths up to 14 supported)
-    min_bitdepth = 15
+    min_bitdepth = 1
     max_bitdepth = 15
 
     # The seed to use for the run. Arbitrary. Always setting the same seed so that the
@@ -112,7 +113,7 @@ def randomtests():
 
         print("C:")
         os.system(f'time ../build/ccsds.bin {fname_in} {fname_out} {img_width} {img_height} {img_bitdepth}')
-        check_python = 1
+        check_python = 0
         test_data(orig_img, img_width, img_height, img_bitdepth, check_python)
         print("*"*20)
         os.system(f'rm {fname_in} {fname_out} {fname_in[:-4]+".bmp"}')

@@ -45,6 +45,7 @@ def family(blocks, block_i, data, r, c, index):
 def fill_blocks(blocks, data, width, height):
 
     #Fill blocks with the families making up the DC coefficients
+    data = data.astype('int32')
     for r in range(height):
         for c in range(width):
             block_i = r*width+c
@@ -76,7 +77,7 @@ def encode(data, width, height, pad_width, bitdepth):
         blocks[i] = common.Block()
         blocks[i].dmax = np.ones(3, dtype=int)*-2
         blocks[i].tran_h = np.zeros(3, dtype=int)
-        blocks[i].ac = np.zeros(63, dtype=int)
+        blocks[i].ac = np.zeros(63, dtype='int32')
 
     fill_blocks(blocks, data, int(width/8), int(height/8))
 
@@ -89,7 +90,7 @@ def encode(data, width, height, pad_width, bitdepth):
 
     for i in range(len(blocks)):
         #DC value
-        dc = int(blocks[i].dc)
+        dc = blocks[i].dc
         if dc < 0:
             bitDC = max(1 + int(math.log(abs(dc),2)), bitDC)
         else:
@@ -102,7 +103,6 @@ def encode(data, width, height, pad_width, bitdepth):
 
         bitAC = math.ceil(math.log(bitAC + 1,2))
         blocks[i].bitAC = bitAC
-        #print(i, bitAC, dc)
         bitACGlobal = max(bitACGlobal, bitAC)
 
     #Determine q (4.3.1.2)

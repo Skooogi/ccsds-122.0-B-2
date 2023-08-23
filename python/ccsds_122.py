@@ -1,5 +1,6 @@
 from PIL import Image
 import numpy as np
+import struct
 
 import discrete_wavelet_transform as dwt
 import bitplane_encoder as bpe
@@ -7,7 +8,10 @@ import file_io
 import run_length_encoding as rle
 from subband_scaling import scale, rescale
 from common import pad_data_to_8
-import c_dwt
+
+import os, sys
+sys.path.append(os.path.abspath('./cython'))
+import c_dwt as c_dwt
 
 def compress_data(data, width, height, bitdepth=8):
 
@@ -15,8 +19,23 @@ def compress_data(data, width, height, bitdepth=8):
     width += pad_width
     height += pad_height
 
+    #Do DWT in Cython
+    num_pixels = width*height
+    c_data = np.zeros(num_pixels, dtype='int32')
+    for i in range(height):
+        for j in range(width):
+            c_data[i * width + j] = data[i][j]
+    c_data = struct.pack(f'{num_pixels}I', *c_data)
+
     levels = 3
-    dwt.discrete_wavelet_transform_2D(data, width, height, levels)
+    c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, False)
+
+    c_data = np.array(struct.unpack(f'{num_pixels}i', c_data)).astype('int32')
+    for i in range(height):
+        for j in range(width):
+            data[i][j] = c_data[i * width + j]
+    #end Cython DWT
+
     scale(data, width, height)
 
     file_io.fp = open("output.cmp", "wb")
@@ -31,11 +50,27 @@ def compress(filein="../res/temp_orig_1.bmp", fileout='output'):
     data, pad_width, pad_height = pad_data_to_8(data, width, height)
     width += pad_width
     height += pad_height
+    data = data.astype('int32')
 
     data_in = np.copy(data)
 
+    #Do DWT in Cython
+    num_pixels = width*height
+    c_data = np.zeros(num_pixels, dtype='int32')
+    for i in range(height):
+        for j in range(width):
+            c_data[i * width + j] = data[i][j]
+    c_data = struct.pack(f'{num_pixels}I', *c_data)
+
     levels = 3
-    dwt.discrete_wavelet_transform_2D(data, width, height, levels)
+    c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, False)
+
+    c_data = np.array(struct.unpack(f'{num_pixels}i', c_data)).astype('int32')
+    for i in range(height):
+        for j in range(width):
+            data[i][j] = c_data[i * width + j]
+    #end Cython DWT
+
     scale(data, width, height)
 
     file_io.fp = open(fileout+".cmp", "wb")

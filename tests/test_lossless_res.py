@@ -1,6 +1,7 @@
 import numpy as np
 import os, sys
 sys.path.append(os.path.abspath('../python'))
+sys.path.append(os.path.abspath('../python/cython'))
 import ccsds_122 as comp
 import rccsds_122 as decomp
 import file_io

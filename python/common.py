@@ -22,7 +22,7 @@ class Block(object):
     def __init__(self):
         self.bitAC      = 0 #5 bit uint
         self.dc         = 0
-        self.ac         = np.zeros(63, dtype=int)
+        self.ac         = np.zeros(63, dtype='int32')
 
         #The rest is used in encoding stages 4.5.3.1.7
         self.status1    = 0 #64 bit uint

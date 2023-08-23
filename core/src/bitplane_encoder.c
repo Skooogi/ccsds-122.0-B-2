@@ -42,7 +42,6 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
         bitAC = log2_32_ceil(max_AC + 1);
         blocks[block_index].bitAC = bitAC;
         bitAC_max = max(bitAC_max, bitAC);
-        //printf("%zu %u %i\n", block_index, bitAC, dc_coefficients[block_index]);
     }
     uint8_t q = calculate_q_value(bitDC_max, bitAC_max);
     printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);

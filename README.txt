@@ -26,13 +26,14 @@ Image PIL
 struct
 
 Tests:
-    test_random_images.py #Generates random images and runs ccsds.bin (and ccsds_122.py if enabled) and checks decoded data.
+    test_lossless_random.py #Generates random images and runs ccsds.bin (and ccsds_122.py if enabled) and checks decoded data.
+    test_lossless_res.py    #Same as with random except tested images are from the "res" folder
+    test_compression_ratio.py #Goes through res images and shows time and compression ratio.(noise images are expected to expand in size)
+    test_files.py #Contains common filenames and print colors
 ----------/Python----------
 
 
 -------------C--------------
-There are currently some bitdepth related bugs remaining but all major components work.
-
 bitplane_encoder.c:
     #High level compression code
     TODO:
@@ -53,7 +54,6 @@ encoding_stages.c:
     #Stages [0-4]
     TODO:
     - Clean up and refractor. Some operations are bloat
-    - Fix bitdepth bugs
 
 fifo_queue.c: 
     #Not utilized currently but is for possible future streaming version
@@ -65,7 +65,6 @@ magnitude_encoding.c:
     #DC and bitAC encoding
     TODO:
     - Clean up code
-    - Fix bitdepth bugs
 
 main.c: 
     #Pads data and runs DWT and bitplane encoder
