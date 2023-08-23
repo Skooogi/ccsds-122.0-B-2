@@ -1,0 +1,8 @@
+device ATSAMV71Q21B
+SI SWD
+Speed 4000
+connect ATSAMV71Q21B
+loadbin build/SAMV71.bin,0x0400000
+h
+r
+exit
