@@ -28,23 +28,22 @@ C_INCLUDES +=  \
 -Icore/src \
 -I../core/src \
 -Icore/samv71b/include \
--Idrivers/ \
--Idrivers/config \
--Idrivers/hal/include \
--Idrivers/hal/utils/include \
--Idrivers/hpl/core \
--Idrivers/hpl/pio \
--Idrivers/hpl/pmc \
--Idrivers/hpl/usart \
--Idrivers/hpl/xdmac \
--Idrivers/hpl/sdramc \
--Idrivers/hpl/smc \
--Idrivers/hri \
--Idrivers/CMSIS/Core/Include \
+-Icore/drivers/ \
+-Icore/drivers/config \
+-Icore/drivers/hal/include \
+-Icore/drivers/hal/utils/include \
+-Icore/drivers/hpl/core \
+-Icore/drivers/hpl/pio \
+-Icore/drivers/hpl/pmc \
+-Icore/drivers/hpl/usart \
+-Icore/drivers/hpl/xdmac \
+-Icore/drivers/hpl/sdramc \
+-Icore/drivers/hpl/smc \
+-Icore/drivers/hri \
+-Icore/drivers/CMSIS/Core/Include \
 
 SOURCE_DIR = core
 CCSDS_DIR = ../core
-DRIVER_DIR = drivers
 
 #Pure make. Should work on all platforms
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
@@ -52,7 +51,6 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 # '/' mandatory
 C_SOURCES = $(call rwildcard,$(SOURCE_DIR)/,*.c)
 C_SOURCES += $(call rwildcard,$(CCSDS_DIR)/,*.c)
-C_SOURCES += $(call rwildcard,$(DRIVER_DIR)/,*.c)
 
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall
 CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -g -std=c99

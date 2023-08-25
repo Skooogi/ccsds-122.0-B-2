@@ -27,11 +27,8 @@ crc8_table = [
 
 def calculate(data):
 
-    data = np.append(data, 0)
-    data = data.astype('uint8')
-
     crc = 0 #8bit
-    for i in range(len(data)):
-        crc = crc8_table[(crc ^ data[i]) & 0xFF]
-
+    for byte in data:
+        crc = crc8_table[(crc ^ byte) & 0xFF]
     return crc
+
