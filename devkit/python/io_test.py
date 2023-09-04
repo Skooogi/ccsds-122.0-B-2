@@ -35,7 +35,14 @@ def print_banner():
                                               
           """)
 
+def print_help():
+    print(r"""
+          clear - clears the screen and prints the banner
+          test  - test sending a packet""")
+
 def read_packet(ser):
+
+    retry = 0
 
     while True:
         byte_data = b''
@@ -45,20 +52,29 @@ def read_packet(ser):
             byte_data += ser.read(1)
 
         if(byte_data == b''):
-            ser.write((1).to_bytes(1, 'big'))
+            ser.write((255).to_bytes(1, 'big'))
             continue
 
         packet_length = byte_data[0]
         crc = byte_data[packet_length-1]
         check = crc8.calculate(byte_data[1:packet_length-1])
+        
         if(check - crc):
+
             print("[I]>> requesting resend")
-            ser.write((1).to_bytes(1, 'big'))
+            ser.write((255).to_bytes(1, 'big'))
 
         else:
-            ser.write((0).to_bytes(1, 'big'))
+            ser.write((1).to_bytes(1, 'big'))
             print("[I]>> received 1/1")
             return byte_data
+
+        retry += 1
+        if(retry == 10):
+            ser.write((255).to_bytes(1, 'big'))
+            print("[I]>> packet transmission failed!")
+            return
+
 
 def send_packet(ser, data, packet, num_packets):
 
@@ -72,7 +88,7 @@ def send_packet(ser, data, packet, num_packets):
         ser.write((crc).to_bytes(1, 'big'))
         time.sleep(0.01)
         out = int.from_bytes(ser.read(1))
-        if(out == 0):
+        if(out == 1):
             print(f'[O]>> received {packet + 1}/{num_packets}', end='\r')
             if(packet + 1 == num_packets):
                 print()
@@ -80,7 +96,7 @@ def send_packet(ser, data, packet, num_packets):
         else:
             print(f'[I]>> resending {out}')
 
-    return 1;
+    return 255;
 
 if __name__ == "__main__":
     ser = get_port()
@@ -107,6 +123,20 @@ if __name__ == "__main__":
         elif input_str == 'test':
             send_packet(ser, input_str.encode(), 0, 1);
 
+            time.sleep(0.1)
+            byte_data = read_packet(ser);
+            print(byte_data)
+
+        elif input_str == 'file':
+
+            input_str = input("[I]>> Input file:")
+            file = open(input_str, "rb")
+            data_bytes = file.read()
+            
+            file_data = "file".encode()
+            file_data += len(data_bytes).to_bytes(4, 'little')
+            file_data += ((len(data_bytes)+63)//64).to_bytes(4, 'little')
+            out = send_packet(ser, file_data, 0, 1)
             time.sleep(0.1)
             byte_data = read_packet(ser);
             print(byte_data)

@@ -24,8 +24,8 @@ typedef struct Packet {
 
 static File* file;
 static Packet cached_packet;
-static uint8_t success = 0;
-static uint8_t fail = 1;
+static uint8_t success = 1;
+static uint8_t fail = 255;
 
 static char error_msg[19] = "UART ERROR!";
 static uint8_t message_length = 0;
@@ -121,9 +121,9 @@ static uint8_t send_packet(Packet* packet) {
     data[packet->length + 1] = packet->crc;
 
     uint8_t ack = 255;
-    for(uint8_t i = 0; i < 20; ++i) {
+    while(1) {
         io_write(&EDBG_COM.io, data, packet->length+2);
-        clear_buffer();
+        delay_ms(10);
         while(1) {
             if(data_arrived == 0) {
                 continue;
@@ -139,7 +139,6 @@ static uint8_t send_packet(Packet* packet) {
         }
         ack = 255;
     }
-    return 1;
 }
 
 static void parse_packet(void) {
@@ -216,6 +215,12 @@ static void parse_packet(void) {
             cached_packet.data[6] = 6;
             cached_packet.data[7] = 7;
             cached_packet.crc = crc8(&cached_packet.data[0], 8);
+            send_packet(&cached_packet);
+        }
+
+        else if(strcmp(token, "file") == 0) {
+            cached_packet.data[0] = 'F';
+            cached_packet.crc = crc8(cached_packet.data, 1);
             send_packet(&cached_packet);
         }
         
