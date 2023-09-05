@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef __SAMV71Q21B__
+#ifndef EMBEDDED
 int main(int argc, char** argv) {
 
     if(argc < 6) {

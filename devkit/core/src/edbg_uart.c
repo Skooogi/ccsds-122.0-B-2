@@ -1,5 +1,6 @@
 #include "atmel_start.h"
 #include "atmel_start_pins.h"
+#include "ccsds_embedded.h"
 #include "driver_init.h"
 #include <string.h>
 #include <stdio.h>
@@ -76,12 +77,14 @@ static void err_cb_EDBG_COM(const struct usart_async_descriptor *const io_descr)
 	io_write(&EDBG_COM.io, (uint8_t*)error_msg, 19);
 }
 
+/*
 static void print(const char* str) {
 
     while(data_sent == 0) {}
     data_sent = 0;
     io_write(&EDBG_COM.io, (uint8_t*)str, strlen(str));
 }
+*/
 
 static void write(uint8_t* data, uint8_t length) {
 
@@ -98,21 +101,6 @@ static uint8_t crc8(uint8_t* data, uint8_t length) {
     return crc;
 }
 
-static void clear_buffer() {
-    uint8_t temp;
-
-    while(1) {
-        if(data_arrived == 0) {
-            continue;
-        }
-
-        while(io_read(&EDBG_COM.io, &temp, 1) == 1) {}
-        data_arrived = 0;
-
-        return;
-    }
-}
-
 static uint8_t send_packet(Packet* packet) {
     
     uint8_t data[packet->length + 2];
@@ -123,7 +111,7 @@ static uint8_t send_packet(Packet* packet) {
     uint8_t ack = 255;
     while(1) {
         io_write(&EDBG_COM.io, data, packet->length+2);
-        delay_ms(10);
+        //delay_ms(20);
         while(1) {
             if(data_arrived == 0) {
                 continue;
@@ -161,49 +149,6 @@ static void parse_packet(void) {
     char* token = strtok((char*)&message_cache, " \0\n");
     while(token) {
 
-        /*
-        if(strcmp(token, "upload") == 0) {
-
-            char msg[100] = {};
-
-            file->received_packets = 0;
-            file->num_packets = 0;
-            if(file->data) {
-                free(file->data);
-                file->data = NULL;
-            }
-
-            file->data_length = *(uint32_t*)&message_cache[8];
-            file->num_packets = *(uint32_t*)&message_cache[12];
-            
-            if(file->data_length <= 300000) {
-                file->data = malloc(file->data_length);
-            }
-
-            if(file->data) {
-                sprintf(msg, "Allocated file of size %lu B!", file->data_length);
-                receiving_file = 1;
-            }
-
-            else {
-                sprintf(msg, "Failed allocating file of size %lu B!", file->data_length);
-            }
-
-            print(msg);
-        }
-
-        else if(strcmp(token, "download") == 0) {
-            print("sending");
-            delay_ms(10);
-
-            cached_packet.length = 8;
-            *(uint32_t*)&cached_packet.data[0] = file->data_length;
-            *(uint32_t*)&cached_packet.data[4] = file->num_packets;
-            cached_packet.crc = crc8(&cached_packet.data[0], cached_packet.length);
-            send_packet(&cached_packet);
-        }
-        */
-
         if(strcmp(token, "test") == 0) {
             cached_packet.length = 8;
             cached_packet.data[0] = 0;
@@ -219,8 +164,70 @@ static void parse_packet(void) {
         }
 
         else if(strcmp(token, "file") == 0) {
-            cached_packet.data[0] = 'F';
-            cached_packet.crc = crc8(cached_packet.data, 1);
+
+            if(file->data) {
+                free(file->data);
+            }
+
+            file->data_length = *(uint32_t*)&message_data[5];
+            file->num_packets = *(uint32_t*)&message_data[9];
+            file->data = malloc(file->data_length);
+
+            cached_packet.data[0] = file->data ? 1 : 0;
+            receiving_file = cached_packet.data[0];
+
+            cached_packet.length = 1;
+            cached_packet.crc = crc8((uint8_t*)&cached_packet.data, 1);
+            send_packet(&cached_packet);
+        }
+
+        else if(strcmp(token, "download") == 0) {
+
+            cached_packet.data[8] = file->data ? 1 : 0;
+            sending_file = cached_packet.data[8];
+
+            *(uint32_t*)&cached_packet.data[0] = file->data_length;
+            *(uint32_t*)&cached_packet.data[4] = file->num_packets;
+
+            cached_packet.length = 9;
+            cached_packet.crc = crc8((uint8_t*)&cached_packet.data, cached_packet.length);
+            send_packet(&cached_packet);
+
+            uint8_t mod = file->data_length % 64;
+
+            file->data_index = 0;
+            if(mod) {
+                file->num_packets -= 1;
+                mod = mod ? 64 - mod : 0;
+            }
+
+            for(size_t i = 0;i < file->num_packets; ++i) {
+
+                memcpy(&cached_packet.data[0], &file->data[file->data_index], 64);
+                cached_packet.length = 64;
+                cached_packet.crc = crc8((uint8_t*)&cached_packet.data, cached_packet.length);
+
+                send_packet(&cached_packet);
+                file->data_index += 64;
+            } 
+
+            if(mod) {
+                memcpy(&cached_packet.data[0], &file->data[file->data_index], mod);
+                cached_packet.length = mod;
+                cached_packet.crc = crc8((uint8_t*)&cached_packet.data, cached_packet.length);
+
+                send_packet(&cached_packet);
+                file->data_index += mod;
+            }
+        }
+
+        else if(strcmp(token, "compress") == 0) {
+            
+            ccsds_compress((int32_t*)file->data, 128, 128, 8); 
+
+            cached_packet.data[0] = 1;
+            cached_packet.length = 1;
+            cached_packet.crc = crc8((uint8_t*)&cached_packet.data, 1);
             send_packet(&cached_packet);
         }
         

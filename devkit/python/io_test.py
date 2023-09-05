@@ -60,13 +60,11 @@ def read_packet(ser):
         check = crc8.calculate(byte_data[1:packet_length-1])
         
         if(check - crc):
-
             print("[I]>> requesting resend")
             ser.write((255).to_bytes(1, 'big'))
 
         else:
             ser.write((1).to_bytes(1, 'big'))
-            print("[I]>> received 1/1")
             return byte_data
 
         retry += 1
@@ -76,7 +74,7 @@ def read_packet(ser):
             return
 
 
-def send_packet(ser, data, packet, num_packets):
+def send_packet(ser, data):
 
     crc = crc8.calculate(data)
     
@@ -89,12 +87,10 @@ def send_packet(ser, data, packet, num_packets):
         time.sleep(0.01)
         out = int.from_bytes(ser.read(1))
         if(out == 1):
-            print(f'[O]>> received {packet + 1}/{num_packets}', end='\r')
-            if(packet + 1 == num_packets):
-                print()
             return 0;
+
         else:
-            print(f'[I]>> resending {out}')
+            print(f'[I]>> resending packet')
 
     return 255;
 
@@ -121,7 +117,7 @@ if __name__ == "__main__":
             print("Connected: yes, port: "+ ser.port + ", baud: " + str(ser.baudrate))
 
         elif input_str == 'test':
-            send_packet(ser, input_str.encode(), 0, 1);
+            send_packet(ser, input_str.encode());
 
             time.sleep(0.1)
             byte_data = read_packet(ser);
@@ -136,13 +132,60 @@ if __name__ == "__main__":
             file_data = "file".encode()
             file_data += len(data_bytes).to_bytes(4, 'little')
             file_data += ((len(data_bytes)+63)//64).to_bytes(4, 'little')
-            out = send_packet(ser, file_data, 0, 1)
+            send_packet(ser, file_data)
+            time.sleep(0.1)
+            byte_data = read_packet(ser);
+
+            if(byte_data[1] == 0):
+                print("[O]>> Not enough space for file of size", len(data_bytes))
+                continue
+
+            print("[I]>> Sending file")
+            num_packets = (len(data_bytes)+63)//64
+            for i in range(0, len(data_bytes), 64):
+                out = send_packet(ser, data_bytes[i:i+64])
+                if(out > 0):
+                    print(f'[O]>> failed at packet {i//64 + 1}')
+                print(f'[O]>> received packet {i//64 + 1}/{num_packets}', end='\r')
+            print()
+
+        elif input_str == 'download':
+
+            filename = input("[I]>> Output file:")
+
+            send_packet(ser, input_str.encode())
+            time.sleep(0.1)
+            byte_data = read_packet(ser);
+
+            if(byte_data[10] == 0):
+                print("[O]>> No file to download")
+                continue
+            print("[O]>> Sending file")
+
+            data_length = int.from_bytes(byte_data[1:5], 'little')
+            num_packets = int.from_bytes(byte_data[5:9], 'little')
+
+            fp = open(filename, "wb")
+
+            for i in range(0, len(data_bytes), 64):
+                byte_data = read_packet(ser);
+                if(byte_data == None):
+                    print(f'[O]>> failed at packet {i//64 + 1}')
+                print(f'[O]>> received packet {i//64 + 1}/{num_packets}', end='\r')
+                fp.write(byte_data[1:-2])
+
+            fp.close()
+            print()
+
+        elif input_str == 'compress':
+            send_packet(ser, input_str.encode());
+
             time.sleep(0.1)
             byte_data = read_packet(ser);
             print(byte_data)
 
         else: 
-            send_packet(ser, input_str.encode(), 0, 1);
+            send_packet(ser, input_str.encode());
         """
         else:
             # send the character to the device

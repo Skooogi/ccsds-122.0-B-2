@@ -1,4 +1,6 @@
 #include "file_io.h"
+
+#ifndef EMBEDDED
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -34,3 +36,4 @@ void file_io_close_output_file() {
     file_io_write_bits(0, 8);
     fclose(fp);
 }
+#endif//EMBEDDED

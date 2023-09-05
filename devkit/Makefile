@@ -19,7 +19,8 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 
 C_DEFS = \
 -DDEBUG \
--D__SAMV71Q21B__
+-D__SAMV71Q21B__ \
+-DEMBEDDED
 
 AS_INCLUDES = 
 
