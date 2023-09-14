@@ -54,8 +54,8 @@ void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_
 }
 
 void block_set_status(Block* block, uint8_t ac_index, int8_t value) {
-    block->high_status_bit = (block->high_status_bit & ~(1L << ac_index)) | (state_map_inv_1[value] << ac_index);
-    block->low_status_bit = (block->low_status_bit & ~(1L << ac_index)) | (state_map_inv_2[value] << ac_index);
+    block->high_status_bit = (block->high_status_bit & ~(1LL << ac_index)) | (state_map_inv_1[value] << ac_index);
+    block->low_status_bit = (block->low_status_bit & ~(1LL << ac_index)) | (state_map_inv_2[value] << ac_index);
 }
 
 int8_t block_get_status(Block* block, uint8_t ac_index) {

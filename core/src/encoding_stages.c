@@ -16,6 +16,7 @@ void stage_0(Block* blocks, size_t num_blocks, uint8_t q, uint8_t bitplane) {
 void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
 
     uint32_t bitAC = headers->header_1.bitAC;
+    uint64_t test[16] = {};
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
         if(blocks[block_index].bitAC < bitplane) {
@@ -28,17 +29,19 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             uint32_t ac_coefficient = blocks[block_index].ac[ac_index] & ~(1<<bitAC);
             if(subband_lim(ac_index, bitplane)) {
-                new_high_status_bit |= 1L << ac_index;
-                new_low_status_bit |= 1L << ac_index;
+                new_high_status_bit |= 1LL << ac_index;
+                new_low_status_bit |= 1LL << ac_index;
             }
             else if((1<<(bitplane+1)) <= ac_coefficient) {
-                new_high_status_bit |= 1L << ac_index;
+                new_high_status_bit |= 1LL << ac_index;
             }
             else if((1<<bitplane) <= ac_coefficient && ac_coefficient < (1<<(bitplane+1))) {
-                new_low_status_bit |= 1L << ac_index;
+                new_low_status_bit |= 1LL << ac_index;
             }
         }
         block_set_status_with(&blocks[block_index], new_high_status_bit, new_low_status_bit);
+        test[block_index] = new_low_status_bit;
+        printf("%i, %zu 0x%lx\n", bitplane, block_index, new_low_status_bit);
         
         //types_p and signs_p
         uint8_t types_p = 0;
