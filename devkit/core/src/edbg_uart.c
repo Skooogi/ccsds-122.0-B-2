@@ -61,10 +61,6 @@ static uint8_t const crc8_table[] = {
     0xbd, 0x83, 0xc1, 0xff
 };
 
-void _read(void) {}
-void _write(void) {}
-void _open(void) {}
-
 static void tx_cb_EDBG_COM(const struct usart_async_descriptor *const io_descr) {
     data_sent = 1;
 }
@@ -93,7 +89,7 @@ static void write(uint8_t* data, uint8_t length) {
     io_write(&EDBG_COM.io, data, length);
 }
 
-static uint8_t crc8(uint8_t* data, uint8_t length) {
+uint8_t crc8(uint8_t* data, uint8_t length) {
     uint8_t crc = 0;
     for(size_t i = 0; i < length; ++i) {
         crc = crc8_table[crc ^ data[i]];
@@ -101,7 +97,7 @@ static uint8_t crc8(uint8_t* data, uint8_t length) {
     return crc;
 }
 
-static uint8_t send_packet(Packet* packet) {
+uint8_t send_packet(Packet* packet) {
     
     uint8_t data[packet->length + 2];
     data[0] = packet->length+2;
@@ -171,7 +167,7 @@ static void parse_packet(void) {
 
             file->data_length = *(uint32_t*)&message_data[5];
             file->num_packets = *(uint32_t*)&message_data[9];
-            file->data = malloc(file->data_length);
+            file->data = calloc(file->data_length, 1);
 
             cached_packet.data[0] = file->data ? 1 : 0;
             receiving_file = cached_packet.data[0];
@@ -223,7 +219,7 @@ static void parse_packet(void) {
 
         else if(strcmp(token, "compress") == 0) {
             
-            ccsds_compress((int32_t*)file->data, 128, 128, 8); 
+            ccsds_compress((int32_t*)&file->data[0], 32, 32, 8); 
 
             cached_packet.data[0] = 1;
             cached_packet.length = 1;
@@ -246,7 +242,6 @@ int main(void)
 
     file = calloc(1, sizeof(File));
     data_sent = 1;
-
 
     size_t received = 0; 
 	while (1) {
