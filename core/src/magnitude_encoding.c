@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int8_t select_coding(int32_t gaggle_sum, size_t J, size_t N) {
+static int32_t select_coding(int32_t gaggle_sum, size_t J, size_t N) {
     //Heuristic way of selecting coding option k as in figure 4-10
-    if(64*gaggle_sum > 23 * J * (1<<N)) {
+    if(64*gaggle_sum >= 23 * J * (1<<N)) {
         return -1;
     }
 
@@ -13,16 +13,16 @@ static int8_t select_coding(int32_t gaggle_sum, size_t J, size_t N) {
         return 0;
     }
 
-    else if(J*(1<<(N+5)) <= 128 * gaggle_sum + 49 * J) {
+    else if((int64_t)(J*(1<<(N+5))) <= (int64_t)(128 * gaggle_sum + 49 * J)) {
         return N-2;
     }
 
-    uint8_t k = 1;
-    while(J * (1<<(k+7)) <= 128 * gaggle_sum + 49) {
+    int32_t k = 0;
+    while((int64_t)(J * (1<<(k+7))) <= (int64_t)(128 * gaggle_sum + 49 * J)) {
         k += 1;
     }
 
-    return k;
+    return k-1;
 }
 
 static void split_coding(int32_t* differences, size_t num_differences, uint32_t N, int32_t* first) {
@@ -42,7 +42,7 @@ static void split_coding(int32_t* differences, size_t num_differences, uint32_t 
         
         size_t J = i == 0 ? 15 : 16;
 
-        size_t k = select_coding(gaggle_sum, J, N);
+        int32_t k = select_coding(gaggle_sum, J, N);
         size_t code_word_length = log2_32_ceil(N);
         if(k < 0){
             file_io_write_bits((1<<code_word_length) - 1, code_word_length);
@@ -105,7 +105,8 @@ void encode_dc_magnitudes(int32_t* dc_coefficients, int32_t num_coeffs, int32_t 
     int32_t shifted[num_coeffs];
     int32_t mask_N_bits = (1 << N) - 1;
     for(size_t i = 0;  i < num_coeffs; ++i) {
-        shifted[i] = dc_coefficients[i] >> q;
+        //printf("%b\n", dc_coefficients[i]);
+        shifted[i] = (dc_coefficients[i] >> q) & ((1<<20) - 1);
         if((shifted[i] & (1 << (N-1))) == 0) {
             continue;
         }

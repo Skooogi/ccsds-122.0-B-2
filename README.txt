@@ -30,6 +30,16 @@ Tests:
     test_lossless_res.py    #Same as with random except tested images are from the "res" folder
     test_compression_ratio.py #Goes through res images and shows time and compression ratio.(noise images are expected to expand in size)
     test_files.py #Contains common filenames and print colors
+
+/devkit/python includes io_test.py which can be used to test the softare on the SAMV71 Xplained Ultra devkit
+The devkit communicates using packets {length = 1 B, data = max 64 B, CRC = 1 B}
+Usage:
+python3 io_test.py
+    - test #Sends a packet and should receive numbers 0-7
+    - clear #Clears console
+    - file #Sends a file with given width, height and bitdepth. Must be .raw file!
+    - compress #Compresses the previously sent file and streams compressed data packets.
+    - download #Downloads the sent file data back from the devkit (this data is not compressed)
 ----------/Python----------
 
 
@@ -81,3 +91,7 @@ subband.c:
 word_mapping.c: 
     #Handles mapping words as described in the ccsds standard
 -------------/C--------------
+
+//Changes
+Fixed heuristic k value calculation in magnitude_encoding.c
+Embedded pipeline with python client. Added some ifdefs for file_io.c and main.c Changed long literals from 1L to 1LL
