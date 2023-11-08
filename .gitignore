@@ -1,4 +1,5 @@
 res
 perf.*
 build
+devkit/python/__pycache__
 tests/results
