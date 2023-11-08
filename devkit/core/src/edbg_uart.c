@@ -15,6 +15,8 @@ typedef struct File {
     size_t data_index;
     uint32_t data_length;
     uint8_t* data;
+    uint32_t width, height;
+    uint8_t bitdepth;
 } File;
 
 typedef struct Packet {
@@ -167,6 +169,9 @@ static void parse_packet(void) {
 
             file->data_length = *(uint32_t*)&message_data[5];
             file->num_packets = *(uint32_t*)&message_data[9];
+            file->width = *(uint32_t*)&message_data[13];
+            file->height = *(uint32_t*)&message_data[17];
+            file->bitdepth = *(uint8_t*)&message_data[21];
             file->data = calloc(file->data_length, 1);
 
             cached_packet.data[0] = file->data ? 1 : 0;
@@ -219,7 +224,7 @@ static void parse_packet(void) {
 
         else if(strcmp(token, "compress") == 0) {
             
-            ccsds_compress((int32_t*)&file->data[0], 32, 32, 8); 
+            ccsds_compress((int32_t*)&file->data[0], file->width, file->height, file->bitdepth); 
 
             cached_packet.data[0] = 1;
             cached_packet.length = 1;
@@ -242,6 +247,13 @@ int main(void)
 
     file = calloc(1, sizeof(File));
     data_sent = 1;
+
+    //Uncomment to halt mcu to check baseline power consumption
+    /*
+    __DSB();
+    __WFI();
+    __ISB();
+    */
 
     size_t received = 0; 
 	while (1) {

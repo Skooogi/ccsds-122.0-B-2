@@ -22,7 +22,6 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     Block* blocks = calloc(num_blocks, sizeof(Block));
 
     block_transform_pack(blocks, num_blocks, data, headers->header_4.image_width);
-
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
         dc_coefficients[block_index] = blocks[block_index].dc;
@@ -44,14 +43,12 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
         bitAC_max = max(bitAC_max, bitAC);
     }
     uint8_t q = calculate_q_value(bitDC_max, bitAC_max);
-    printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
+    //printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
 
     //Transform ac coefficients to sign-magnitude representation
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
         blocks[block_index].tran.packed = 0; 
-        //blocks[block_index].dc = twos_complement(blocks[block_index].dc, bitDC_max);
         blocks[block_index].dc &= (1<<bitDC_max) - 1;
-        //memset(&blocks[block_index].tran, 0, sizeof(Tran));
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             int32_t ac_coefficient = blocks[block_index].ac[ac_index];
             blocks[block_index].ac[ac_index] = twos_complement(ac_coefficient, bitAC_max);
@@ -61,6 +58,7 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
 
     headers->header_1.bitDC = bitDC_max;
     headers->header_1.bitAC = bitAC_max;
+
     segment_header_write_data(headers);
 
     encode_dc_magnitudes(dc_coefficients, num_blocks, bitDC_max, q);
@@ -91,6 +89,8 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
         }
         stage_4(headers, blocks, num_blocks, bitplane);
     }
+    free(dc_coefficients);
+    free(blocks);
 }
 
 static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max) {

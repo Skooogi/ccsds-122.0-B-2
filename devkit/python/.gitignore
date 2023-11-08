@@ -1,0 +1,8 @@
+!*.py
+*.cmp
+*.png
+*.bmp
+*.raw
+perf*
+
+__pycache__

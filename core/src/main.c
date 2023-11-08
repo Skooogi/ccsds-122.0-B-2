@@ -64,8 +64,9 @@ int main(int argc, char** argv) {
     headers->header_3.segment_size = (width>>3)*(height>>3);
 
     headers->header_4.dwt_type = 1;
-    headers->header_4.pixel_bitdepth = bitdepth;
+    headers->header_4.pixel_bitdepth = bitdepth % 16;
     headers->header_4.image_width = width;
+    headers->header_4.extended_pixel_depth = bitdepth & 16 ? 1 : 0;
     //TEST PARAMETERS END
     
     discrete_wavelet_transform_2D(test_data, width, height, 3, 0);

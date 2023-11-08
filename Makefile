@@ -20,9 +20,9 @@ OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 all: $(BUILD_DIR)/$(PROJECT).bin 
 
-TEST_IN_FILE = "../res/space/raw/test_image_space_1.raw"
+TEST_IN_FILE = "../res/temp_orig_12.raw"
 TEST_OUT_FILE = "../python/output.cmp"
-TEST_SIZE = 786 604 8
+TEST_SIZE = 32 32 16
 RUN_BIN = ./$(PROJECT).bin $(TEST_IN_FILE) $(TEST_OUT_FILE) $(TEST_SIZE)
 
 run: all

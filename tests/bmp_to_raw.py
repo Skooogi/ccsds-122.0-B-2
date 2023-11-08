@@ -18,6 +18,7 @@ if __name__ == '__main__':
     ]
     """
 
+    """
     files = [
         "../res/space/test_image_space_1.bmp",
         "../res/space/test_image_space_2.bmp",
@@ -26,6 +27,17 @@ if __name__ == '__main__':
         "../res/space/test_image_space_5.bmp",
         "../res/space/test_image_space_6.bmp",
         "../res/space/test_image_space_7.bmp",
+    ]
+    """
+
+    files = [
+		"bmp_picture_1k.bmp",
+		"bmp_picture_2k.bmp",
+		"bmp_picture_1024x10_1.bmp",
+		"bmp_picture_1024x10_2.bmp",
+		"bmp_picture_1024x10_3.bmp",
+		"bmp_picture_1024x30_1.bmp",
+		"bmp_picture_1024x30_2.bmp",
     ]
     """
     files = [

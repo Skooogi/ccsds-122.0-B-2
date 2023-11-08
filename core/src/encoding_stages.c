@@ -5,18 +5,18 @@
 #include <stdlib.h>
 
 void stage_0(Block* blocks, size_t num_blocks, uint8_t q, uint8_t bitplane) {
+    if(3 > bitplane || bitplane >= q) {
+        return;
+    }
     //Any remaining DC bits
     for(size_t i = 0; i < num_blocks; ++i) {
-        if(3 <= bitplane && bitplane < q) {
             word_mapping_code((blocks[i].dc >> bitplane) & 1, 1, 0, 1);
-        }
     }
 }
 
 void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
 
     uint32_t bitAC = headers->header_1.bitAC;
-    uint64_t test[16] = {};
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
         if(blocks[block_index].bitAC < bitplane) {
@@ -40,8 +40,6 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             }
         }
         block_set_status_with(&blocks[block_index], new_high_status_bit, new_low_status_bit);
-        test[block_index] = new_low_status_bit;
-        printf("%i, %zu 0x%lx\n", bitplane, block_index, new_low_status_bit);
         
         //types_p and signs_p
         uint8_t types_p = 0;
@@ -89,7 +87,6 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 
         if(size_p > 0) {
             word_mapping_code(types_p, size_p, 0, 0);
-            //printf("%zu %u %u\n",block_index,types_p,size_p);
             if(size_s > 0) {
                 word_mapping_code(signs_p, size_s, 0, 1);
             }

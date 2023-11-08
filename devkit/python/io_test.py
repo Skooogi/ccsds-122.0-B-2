@@ -55,6 +55,9 @@ def read_packet(ser):
             ser.write((255).to_bytes(1, 'big'))
             continue
 
+        while(len(byte_data) < byte_data[0]):
+            byte_data += ser.read(1)
+
         packet_length = byte_data[0]
         crc = byte_data[packet_length-1]
         check = crc8.calculate(byte_data[1:packet_length-1])
@@ -126,12 +129,17 @@ if __name__ == "__main__":
         elif input_str == 'file':
 
             input_str = input("[I]>> Input file:")
+            width, height, bitdepth = input("[I]>> width, height, bitdepth:").split()
+
             file = open(input_str, "rb")
             data_bytes = file.read()
             
             file_data = "file".encode()
             file_data += len(data_bytes).to_bytes(4, 'little')
             file_data += ((len(data_bytes)+63)//64).to_bytes(4, 'little')
+            file_data += int(width).to_bytes(4, 'little')
+            file_data += int(height).to_bytes(4, 'little')
+            file_data += int(bitdepth).to_bytes(4, 'little')
             send_packet(ser, file_data)
             time.sleep(0.1)
             byte_data = read_packet(ser);
@@ -172,17 +180,34 @@ if __name__ == "__main__":
                 if(byte_data == None):
                     print(f'[O]>> failed at packet {i//64 + 1}')
                 print(f'[O]>> received packet {i//64 + 1}/{num_packets}', end='\r')
-                fp.write(byte_data[1:-2])
+                fp.write(byte_data[1:-1])
 
             fp.close()
             print()
 
         elif input_str == 'compress':
             send_packet(ser, input_str.encode());
+            start = time.time() * 1000;
+            length = 0
+            fp = open("output.cmp", "wb")
+            byte_data = b''
 
+            packets = 1
+            data = 0
             time.sleep(0.1)
-            byte_data = read_packet(ser);
-            print(byte_data)
+            while length != 3:
+                byte_data = read_packet(ser);
+                length = byte_data[0]
+                data += length - 2
+                print(f'[O]>> received {packets} packets ({data} B)', end='\r')
+                packets += 1
+                if(length != 3):
+                    fp.write(byte_data[1:-1])
+            end = time.time() * 1000;
+            fp.close()
+            print()
+            print("[O]>>",end-start, 'ms')
+            continue
 
         else: 
             send_packet(ser, input_str.encode());

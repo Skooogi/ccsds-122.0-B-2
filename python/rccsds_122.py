@@ -371,13 +371,11 @@ def update_ac_values(bitplane, block, offset, span, decoded, signs, families = r
                     block.ac[start_index + i] |= 1 << block.bitAC
 
 def stage_0(blocks, bitplane, q):
+    if(3 > bitplane or bitplane >= q):
+        return;
     for i in range(len(blocks)):
-        if(3 <= bitplane < q):
             temp = int(readb(1))
             blocks[i].dc |= temp << bitplane
-            #print(temp, end='')
-
-    #print()
 
 def stage_1(blocks, bitplane, code_words):
 
@@ -395,16 +393,6 @@ def stage_1(blocks, bitplane, code_words):
                 new_status_1 |= 1 << j
         blocks[i].set_status_with(new_status_1, new_status_2)
 
-        """
-        for j in range(63):
-            if(common.subband_lim(j, bitplane)):
-                blocks[i].set_status(j, -1)
-            elif(blocks[i].get_status(j) == 1 or blocks[i].get_status(j) == 2):
-                blocks[i].set_status(j, 2)
-            else:
-                blocks[i].set_status(j, 0)
-        """
-
         num_zeros  = 1 if blocks[i].get_status(0) == 0 else 0
         num_zeros += 1 if blocks[i].get_status(21) == 0 else 0
         num_zeros += 1 if blocks[i].get_status(42) == 0 else 0
@@ -413,6 +401,7 @@ def stage_1(blocks, bitplane, code_words):
 
         symbol_option = 0
         decoded, signs = decode_word(num_zeros, symbol_option, code_words)
+        #print(i, decoded, bitplane)
 
         offset = 0
         span = 1
@@ -661,7 +650,6 @@ def decompress():
     bitACGlobal = header.bitAC
     width = header.header_4.image_width
     pad_width = header.pad_width
-    #print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, width:{width}, padding:{pad_width}]')
     
     blocks = np.empty(header.header_3.segment_size, dtype=object)
     for i in range(len(blocks)):
@@ -683,6 +671,7 @@ def decompress():
     else:
         q = 1 + int(bitACGlobal/2)
     q = max(q, 3)
+    #print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, q:{q}, width:{width}, padding:{pad_width}]')
 
     decode_dc_initial(blocks, bitDC, q)
     decode_ac_magnitudes(blocks, bitACGlobal, q)
@@ -722,14 +711,11 @@ def decompress():
             if blocks[i].ac[j] & (1 << blocks[i].bitAC) > 0:
                 blocks[i].ac[j] &= ~(1 << blocks[i].bitAC)
                 blocks[i].ac[j] *= -1
-
+    
     #print("rescaling")
     data = unpack_blocks(blocks, int(width/8), int(height/8))
     rescale(data, width, height)
 
-    #print("IDWT")
-    #levels = 3
-    #dwt.discrete_wavelet_transform_2D(data, width, height, levels, True)
     #Do DWT in Cython
     num_pixels = width*height
     c_data = np.zeros(num_pixels, dtype='int32')

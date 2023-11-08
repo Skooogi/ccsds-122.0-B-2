@@ -13,9 +13,9 @@ HEX = $(CP) -O ihex
 BIN = $(CP) -O binary -S
 
 CPU = -mcpu=cortex-m7
-FPU = -mfpu=fpv4-sp-d16
+FPU = -mfpu=fpv5-sp-d16
 FLOAT-ABI = -mfloat-abi=hard
-MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
+MCU = $(CPU) $(FPU) $(FLOAT-ABI)
 
 C_DEFS = \
 -DDEBUG \
@@ -54,11 +54,11 @@ C_SOURCES = $(call rwildcard,$(SOURCE_DIR)/,*.c)
 C_SOURCES += $(call rwildcard,$(CCSDS_DIR)/,*.c)
 
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall
-CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -g -std=c99
+CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -g -Wno-format
 CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 
 # -lm -lnosys
-LIBS = -lnosys
+LIBS =
 LDSCRIPT = \
 	   -T"$(SOURCE_DIR)/samv71b/gcc/gcc/samv71q21b_flash.ld" \
 	   -L"$(SOURCE_DIR)/samv71b/gcc/gcc"

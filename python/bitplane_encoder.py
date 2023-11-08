@@ -100,7 +100,6 @@ def encode(data, width, height, pad_width, bitdepth):
         #Iterate through AC values
         for j in range(63):
             bitAC = max(bitAC, abs(blocks[i].ac[j]))
-
         bitAC = math.ceil(math.log(bitAC + 1,2))
         blocks[i].bitAC = bitAC
         bitACGlobal = max(bitACGlobal, bitAC)

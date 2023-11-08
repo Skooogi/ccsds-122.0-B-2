@@ -197,6 +197,9 @@ def stage_1(blocks, b):
         p0 = blocks[i].get_status(0)
         p1 = blocks[i].get_status(21)
         p2 = blocks[i].get_status(42)
+        if(i == 2 and b == 9):
+            for h in range(len(blocks[i].ac)):
+                print(blocks[i].ac[h])
         if(0 <= p0 <= 1):
             types_p |= p0
             size_p += 1
@@ -227,7 +230,6 @@ def stage_1(blocks, b):
 
         if(size_p > 0):
             word_mapping.code(types_p, size_p, 0)
-            #print(i, types_p, size_p)
             if(size_s > 0):
                 word_mapping.code(signs_p, size_s, 0, -1)
   
