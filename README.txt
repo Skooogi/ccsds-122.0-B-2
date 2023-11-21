@@ -93,5 +93,6 @@ word_mapping.c:
 -------------/C--------------
 
 //Changes
+Testing revamp and res folder is now hosted in teams
 Fixed heuristic k value calculation in magnitude_encoding.c
 Embedded pipeline with python client. Added some ifdefs for file_io.c and main.c Changed long literals from 1L to 1LL
