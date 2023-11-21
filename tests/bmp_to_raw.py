@@ -2,56 +2,21 @@ import os,sys
 sys.path.append(os.path.abspath('../python'))
 import file_io
 import numpy as np
+from pathlib import Path
 
-
+"""
+Searches for all *.bmp files in root_folder recursively and
+converts them to *.raw files
+"""
 if __name__ == '__main__':
-    """
-    files = [
-        "../res/noise/test_image_noise_32.bmp",
-        "../res/noise/test_image_noise_64.bmp",
-        "../res/noise/test_image_noise_128.bmp",
-        "../res/noise/test_image_noise_256.bmp",
-        "../res/noise/test_image_noise_512.bmp",
-        "../res/noise/test_image_noise_1k.bmp",
-        "../res/noise/test_image_noise_2k.bmp",
-        "../res/noise/test_image_noise_4k.bmp"
-    ]
-    """
 
-    """
-    files = [
-        "../res/space/test_image_space_1.bmp",
-        "../res/space/test_image_space_2.bmp",
-        "../res/space/test_image_space_3.bmp",
-        "../res/space/test_image_space_4.bmp",
-        "../res/space/test_image_space_5.bmp",
-        "../res/space/test_image_space_6.bmp",
-        "../res/space/test_image_space_7.bmp",
-    ]
-    """
+    #Root folder for recursive search
+    root_folder = "../res"
 
-    files = [
-		"bmp_picture_1k.bmp",
-		"bmp_picture_2k.bmp",
-		"bmp_picture_1024x10_1.bmp",
-		"bmp_picture_1024x10_2.bmp",
-		"bmp_picture_1024x10_3.bmp",
-		"bmp_picture_1024x30_1.bmp",
-		"bmp_picture_1024x30_2.bmp",
-    ]
-    """
-    files = [
-		"../res/pattern/test_image_black_32.bmp",
-		"../res/pattern/test_image_black_256.bmp",
-		"../res/pattern/test_image_checker_32.bmp",
-		"../res/pattern/test_image_gradient_3.bmp",
-		"../res/pattern/test_image_white_32.bmp",
-		"../res/pattern/test_image_white_256.bmp"
-    ]
-    """
+    files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
 
     for filename in files:
-        data, width, height = file_io.load_image(filename)
+        data, width, height = file_io.load_image(str(filename))
 
         print(filename)
         data_out = np.zeros([width*height], dtype='int32')
