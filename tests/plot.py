@@ -1,39 +1,52 @@
 from matplotlib import pyplot as plt
 import numpy as np
+from cycler import cycler
+
+plt.rcParams['axes.prop_cycle'] = cycler('color', plt.get_cmap('Set3').colors)
 
 if __name__ == "__main__":
-    
-    with open("results.txt", "r") as fp:
-        lines = fp.readlines()
+    try:
+        with open("results.txt", "r") as fp:
+            lines = fp.readlines()
+    except:
+        print("No file named 'results.txt' found!")
+        exit()
 
-    i = -1
-    names = []
-    values = np.array([], dtype=float)
-    for line in lines:
-        line = line[:-1]
-        if 'x' in line:
-            i += 1
-            names.append(line)
-        else:
-            values = np.append(values, float(line)*100)
 
-    values = values.reshape(len(names), len(values)//len(names))
+    #Data is stored as:
+    #Filename, Category, Width, Height, Bitdetph, Compression ratio
+    data_lines = []
+    for i in range(2, len(lines)):
+        data_lines.append(lines[i][:-1].split(','))
 
-    x = np.array(range(7))
-    x = x + 1
+    #Group data by group
+    data = {}
+    for filename, group, width, height, bitdepth, ratio in data_lines:
+        data.setdefault(group, []).append([filename, int(width), int(height), int(bitdepth), float(ratio)])
 
-    print("Average compression difference from padding")
-    print((values[1]/values[0])*100-100)
+    x = np.arange(len(data.keys()))
+    category_index = 0
+    width = 0.8
+    max_length = -1
+    for category, results in data.items():
+        length = len([row[-1] for row in results])
+        max_length = max(length, max_length)
 
-    plt.bar(x-0.3, values[0], width=0.2, color='gold', label=names[0])
-    plt.bar(x-0.1, values[1], width=0.2, color='turquoise', label=names[1])
-    plt.bar(x+0.1, values[2], width=0.2, color='darkturquoise', label=names[2])
-    plt.bar(x+0.3, values[3], width=0.2, color='lightseagreen', label=names[3])
+
+    offset = width/max_length
+    for category, results in data.items():
+        values = [row[-1] for row in results]
+
+        for i,value in enumerate(values):
+            plt.bar(x[category_index]+len(values)*offset/2 - offset/2 -offset*i, value*100, width=offset)
+
+        category_index += 1
+
+
+    plt.xticks(x, data.keys())
+    plt.yticks(range(0,130,10))
     plt.grid()
-    plt.yticks(np.arange(0, 110, 10))
-    plt.ylim(0,100)
-    plt.title("Average compression ratio of 100 strip images")
     plt.ylabel("Compressed filesize/original filesize (%)")
-    plt.xlabel("Image index in res/space folder")
-    plt.legend()
+    plt.xlabel("Category")
+    plt.title(lines[0])
     plt.show()

@@ -11,7 +11,7 @@ converts them to *.raw files
 if __name__ == '__main__':
 
     #Root folder for recursive search
-    root_folder = "../res"
+    root_folder = "../res/space"
 
     files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
 

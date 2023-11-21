@@ -7,6 +7,7 @@ import rccsds_122 as decomp
 import file_io
 from common import MSE, PSNR, pad_data_to_8
 from test_files import *
+from pathlib import Path
 
 def generate_strips(data, width, height, strip_height, num_strips, combinations): 
 
@@ -27,7 +28,6 @@ def generate_strips(data, width, height, strip_height, num_strips, combinations)
 
     return images
 
-
 def test_strips(images):
 
     file_out = 'output.cmp'
@@ -47,9 +47,7 @@ def test_strips(images):
 
     os.system(f'rm {file_out}')
     ratio /= len(images)
-
-    with open("results.txt", "a") as f:
-        print(ratio, file=f)
+    print(ratio, file=f)
 
     if(ratio > 0.8):
         print(f'ratio: {bcolors.FAIL}{ratio:.3f}{bcolors.ENDC}')
@@ -59,9 +57,24 @@ def test_strips(images):
         print(f'ratio: {bcolors.OKGREEN}{ratio:.3f}{bcolors.ENDC}')
 
 if __name__ == "__main__":
-    for img in bmp_images[-7:]:
-        print("Strips generated from: ", img)
-        data, width, height = file_io.load_image(img)
-        images = generate_strips(data, int(width), int(height), 24, 100, 1)
-        test_strips(images)
+
+    strip_height = 24
+    num_strips = 100
+
+    root_folder = "../res"
+    bmp_files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
+
+    with open("results.txt", "w") as f:
+        
+        print(f'Average compression ratio from {num_strips} strips of height {strip_height}', file=f)
+        print("Filename, Category, width, height, bitdepth, compression ratio", file=f)
+
+        for img in bmp_files:
+            data, width, height = file_io.load_image(str(img))
+            if(height < strip_height):
+                continue;
+
+            print(os.path.basename(img), str(img).split('/')[-2], width, strip_height, 8, sep=',', end=',', file=f)
+            images = generate_strips(data, int(width), int(height), strip_height, num_strips, 1)
+            test_strips(images)
 

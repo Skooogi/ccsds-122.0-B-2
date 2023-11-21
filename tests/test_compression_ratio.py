@@ -5,12 +5,35 @@ import ccsds_122 as comp
 import rccsds_122 as decomp
 import file_io
 from test_files import *
+from pathlib import Path
 
 def test_images(check_python=0):
 
     file_out = "output.cmp"
 
-    with open("results_compression_ratio.txt", "w") as res_file:
+    root_folder = "../res"
+    bmp_files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
+    raw_files = list(Path(root_folder).rglob("*.[rR][aA][wW]"))
+
+    raw_images = []
+    
+    #Match metadata from bmp to raw file
+    for i in range(len(raw_files)):
+        filename = os.path.basename(str(raw_files[i]))[:-4]
+        bmp_file = next((str(s) for s in bmp_files if filename in str(s)), None)
+        #metadata = (os.system(f'identify {bmp_file}'))
+        metadata = os.popen(f'identify {bmp_file}').read()[:-1].split(' ')
+
+        width = int(metadata[2].split('x')[0])
+        height = int(metadata[2].split('x')[1])
+        bitdepth = int(metadata[4].split('-')[0])
+
+        raw_images.append([str(raw_files[i]), width, height, bitdepth])
+
+    with open("results.txt", "w") as res_file:
+
+        print("Compression ratio per category", file=res_file)
+        print("Filename, Category, width, height, bitdepth, compression ratio", file=res_file)
 
         for i,file in enumerate(raw_images):
             print('Testing image ' + file[0])
@@ -25,6 +48,9 @@ def test_images(check_python=0):
                 print(f'ratio: {bcolors.WARNING}{ratio:.3f}{bcolors.ENDC}')
             else:
                 print(f'ratio: {bcolors.OKGREEN}{ratio:.3f}{bcolors.ENDC}')
+
+            path = file[0].split('/')
+            print(path[-1], path[2], file[1], file[2], file[3], ratio, sep=',', file=res_file)
 
             if(check_python):
                 print("Python:")
