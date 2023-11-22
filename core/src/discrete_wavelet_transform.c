@@ -3,19 +3,9 @@
 #include <string.h>
 #include <stdio.h>
 
-
-//Fast floating point conversion from http://stereopsis.com/FPU.html
-static const float _double2fixmagic = 68719476736.0*1.5;     //2^36 * 1.5,  (52-_shiftamt=36) uses limited precisicion to floor
-static const int32_t _shiftamt      = 16;                    //16.16 fixed point representation
-static inline int32_t to_int(double value) {
-    value = value + _double2fixmagic;
-	return ((int32_t*)&value)[0] >> _shiftamt;
+static inline int32_t round_int(int32_t numerator, int32_t denominator) {
+    return (numerator) < 0 ? ((numerator) - ((denominator)/2)) / (denominator) : ((numerator) + ((denominator)/2)) / (denominator);
 }
-
-//Multiplication is faster than division
-static const float per16 = 0.0625f;
-static const float per8 = 0.125f;
-static const float per4 = 0.25f;
 
 static void forward_DWT(int32_t* data, size_t width) {
 
@@ -27,20 +17,20 @@ static void forward_DWT(int32_t* data, size_t width) {
 	int32_t* highpass = &data[n];
 	int32_t* lowpass = &data[0];
 
-    highpass[0] = cache[1] - to_int((9 * (cache[0] + cache[2]) - (cache[2] + cache[4])) * per16 + 0.5);
-    lowpass[0] = cache[0] - to_int(-highpass[0]*0.5 + 0.5);
+    highpass[0] = cache[1] - round_int((9 * (cache[0] + cache[2]) - (cache[2] + cache[4])), 16);
+    lowpass[0] = cache[0] - round_int(-highpass[0], 2);
 
-    highpass[n-2] = cache[2*n-3] - to_int((9 * (cache[2*n-4] + cache[2*n-2]) - (cache[2*n-6] + cache[2*n-2])) * per16 + 0.5);
-    highpass[n-1] = cache[2*n-1] - to_int((9 * cache[2*n-2] - cache[2*n-4]) * per8 + 0.5);
+    highpass[n-2] = cache[2*n-3] - round_int((9 * (cache[2*n-4] + cache[2*n-2]) - (cache[2*n-6] + cache[2*n-2])), 16);
+    highpass[n-1] = cache[2*n-1] - round_int((9 * cache[2*n-2] - cache[2*n-4]), 8);
 
 	for(size_t i = 1; i < n - 2; ++i) {
-        highpass[i] = cache[2*i+1] - to_int((9 * (cache[2*i] + cache[2*i+2]) - (cache[2*i-2] + cache[2*i+4])) * per16 + 0.5);
-        lowpass[i] = cache[2*i] - to_int(-(highpass[i-1] + highpass[i]) * per4 + 0.5);
+        highpass[i] = cache[2*i+1] - round_int((9 * (cache[2*i] + cache[2*i+2]) - (cache[2*i-2] + cache[2*i+4])), 16);
+        lowpass[i] = cache[2*i] - round_int(-(highpass[i-1] + highpass[i]), 4);
         
 	}
 
-    lowpass[n-2] = cache[2*n-4] - to_int(-(highpass[n-3] + highpass[n-2]) * per4 + 0.5);
-    lowpass[n-1] = cache[2*n-2] - to_int(-(highpass[n-2] + highpass[n-1]) * per4 + 0.5);
+    lowpass[n-2] = cache[2*n-4] - round_int(-(highpass[n-3] + highpass[n-2]), 4);
+    lowpass[n-1] = cache[2*n-2] - round_int(-(highpass[n-2] + highpass[n-1]), 4);
 }
 
 static void backward_DWT(int32_t* data, size_t width) {
@@ -51,20 +41,20 @@ static void backward_DWT(int32_t* data, size_t width) {
 	int32_t* highpass = &cache[n];
     memcpy(&cache, data, width * sizeof(int32_t));
     
-    data[0] = lowpass[0] + to_int(-highpass[0]*0.5 + 0.5);
+    data[0] = lowpass[0] + round_int(-highpass[0], 2);
 
     for(size_t i = 1; i < n; ++i) {
-        data[2*(i+0)] = lowpass[i+0] + to_int(-(highpass[i-1]+highpass[i+0])*per4 + 0.5);
+        data[2*(i+0)] = lowpass[i+0] + round_int(-(highpass[i-1]+highpass[i+0]), 4);
 	}
 
-    data[1] = highpass[0] + to_int(9.f/16*(data[0] + data[2])-1.f/16*(data[2] + data[4]) + 0.5);
+    data[1] = highpass[0] + round_int(9 *(data[0] + data[2]) - (data[2] + data[4]), 16);
 
     for(size_t i = 1; i < n - 2; ++i) {
-        data[2*i+1] = highpass[i] + to_int(9.f/16*(data[2*i] + data[2*i+2]) - 1.f/16*(data[2*i-2] + data[2*i+4]) + 0.5);
+        data[2*i+1] = highpass[i] + round_int(9 * (data[2*i] + data[2*i+2]) - (data[2*i-2] + data[2*i+4]), 16);
 	}
     
-    data[2*n-3] = highpass[n-2] + to_int(9.f/16*(data[2*n-4] + data[2*n-2]) - 1.f/16*(data[2*n-6] + data[2*n-2]) + 0.5);
-    data[2*n-1] = highpass[n-1] + to_int(9.f/8*data[2*n-2] - 1.f/8*data[2*n-4] + 0.5);
+    data[2*n-3] = highpass[n-2] + round_int(9 * (data[2*n-4] + data[2*n-2]) - (data[2*n-6] + data[2*n-2]), 16);
+    data[2*n-1] = highpass[n-1] + round_int(9 * data[2*n-2] - data[2*n-4], 8);
 }
 
 void discrete_wavelet_transform_2D(int32_t* data, size_t data_width, size_t data_height, uint8_t transform_levels, uint8_t inverse_flag) {
