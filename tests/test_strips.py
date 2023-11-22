@@ -1,13 +1,14 @@
-import numpy as np
 import os, sys
 sys.path.append(os.path.abspath('../python'))
 sys.path.append(os.path.abspath('../python/cython'))
-import ccsds_122 as comp
-import rccsds_122 as decomp
-import file_io
 from common import MSE, PSNR, pad_data_to_8
-from test_files import *
+from common_testing import *
 from pathlib import Path
+from common_testing import *
+import ccsds_122 as comp
+import file_io
+import numpy as np
+import rccsds_122 as decomp
 
 def generate_strips(data, width, height, strip_height, num_strips, combinations): 
 
@@ -64,7 +65,7 @@ if __name__ == "__main__":
     root_folder = "../res"
     bmp_files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
 
-    with open("results.txt", "w") as f:
+    with open("results.csv", "w") as f:
         
         print(f'Average compression ratio from {num_strips} strips of height {strip_height}', file=f)
         print("Filename, Category, width, height, bitdepth, compression ratio", file=f)

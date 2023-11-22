@@ -1,12 +1,12 @@
-import numpy as np
 import os, sys
 sys.path.append(os.path.abspath('../python'))
 sys.path.append(os.path.abspath('../python/cython'))
-import ccsds_122 as comp
-import rccsds_122 as decomp
-import file_io
 from common import MSE, PSNR, pad_data_to_8
-from test_files import *
+from common_testing import *
+import ccsds_122 as comp
+import file_io
+import numpy as np
+import rccsds_122 as decomp
 
 def check_decompressed_data(data_in, width, height, bitdepth):
     decompressed_data = decomp.decompress()

@@ -1,11 +1,11 @@
 import os, sys
 sys.path.append(os.path.abspath('../python/cython'))
 sys.path.append(os.path.abspath('../python'))
-import ccsds_122 as comp
-import rccsds_122 as decomp
-import file_io
-from test_files import *
+from common_testing import *
 from pathlib import Path
+import ccsds_122 as comp
+import file_io
+import rccsds_122 as decomp
 
 def test_images(check_python=0):
 
@@ -30,7 +30,7 @@ def test_images(check_python=0):
 
         raw_images.append([str(raw_files[i]), width, height, bitdepth])
 
-    with open("results.txt", "w") as res_file:
+    with open("results.csv", "w") as res_file:
 
         print("Compression ratio per category", file=res_file)
         print("Filename, Category, width, height, bitdepth, compression ratio", file=res_file)

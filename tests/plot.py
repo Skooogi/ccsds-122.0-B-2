@@ -1,15 +1,15 @@
+from cycler import cycler
 from matplotlib import pyplot as plt
 import numpy as np
-from cycler import cycler
 
 plt.rcParams['axes.prop_cycle'] = cycler('color', plt.get_cmap('Set3').colors)
 
 if __name__ == "__main__":
     try:
-        with open("results.txt", "r") as fp:
+        with open("results.csv", "r") as fp:
             lines = fp.readlines()
     except:
-        print("No file named 'results.txt' found!")
+        print("No file named 'results.csv' found!")
         exit()
 
 
@@ -36,12 +36,17 @@ if __name__ == "__main__":
     offset = width/max_length
     for category, results in data.items():
         values = [row[-1] for row in results]
+        names = [row[0] for row in results]
 
         for i,value in enumerate(values):
-            plt.bar(x[category_index]+len(values)*offset/2 - offset/2 -offset*i, value*100, width=offset)
+            x_position = x[category_index]+len(values)*offset/2 - offset/2 -offset*i
+
+            plt.bar(x_position, value*100, width=offset)
+            plt.text(x_position, 0, names[i], color='black',ha='center', va='bottom', rotation=90, fontsize=10)
 
         category_index += 1
 
+    plt.axhline(75, color='r', linestyle='--')
 
     plt.xticks(x, data.keys())
     plt.yticks(range(0,130,10))
