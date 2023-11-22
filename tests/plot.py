@@ -42,7 +42,7 @@ if __name__ == "__main__":
             x_position = x[category_index]+len(values)*offset/2 - offset/2 -offset*i
 
             plt.bar(x_position, value*100, width=offset)
-            plt.text(x_position, 0, names[i], color='black',ha='center', va='bottom', rotation=90, fontsize=10)
+            plt.text(x_position, 1, names[i], color='black',ha='center', va='bottom', rotation=90, fontsize=10)
 
         category_index += 1
 
