@@ -11,18 +11,19 @@ converts them to *.raw files
 if __name__ == '__main__':
 
     #Root folder for recursive search
-    root_folder = "../res/space"
+    root_folder = "../res"
 
     files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
 
     for filename in files:
         data, width, height = file_io.load_image(str(filename))
 
-        print(filename)
+        #print(filename)
         data_out = np.zeros([width*height], dtype='int32')
         for i in range(height):
             for j in range(width):
                 data_out[i*width+j] = data[i][j]
 
-        out_filename = (os.path.basename(filename)[:-3] + "raw")
+        out_filename = os.path.dirname(filename) + "/raw/" + (os.path.basename(filename)[:-3] + "raw")
+        print(out_filename)
         data_out.tofile(out_filename)
