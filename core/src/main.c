@@ -53,20 +53,35 @@ int main(int argc, char** argv) {
     SegmentHeader* headers = segment_header_init_values();
     width += pad_width;
     height += pad_height;
+
     //TEST PARAMETERS START
     headers->header_1.first_segment = 1;
     headers->header_1.last_segment = 1;
     headers->header_1.num_segments = 1;
+    headers->header_1.has_header_2 = 1;
     headers->header_1.has_header_3 = 1;
     headers->header_1.has_header_4 = 1;
     headers->header_1.pad_width = pad_width;
 
+    headers->header_2.stage_stop = 3;
+    headers->header_2.seg_byte_limit = (width>>3)*(height>>3);
+    headers->header_2.dc_stop = 1;
+    headers->header_2.use_fill = 0;
+    headers->header_2.bitplane_stop = 0;
+
+
     headers->header_3.segment_size = (width>>3)*(height>>3);
+    headers->header_3.optimal_ac_select = 0;
+    headers->header_3.optimal_dc_select = 0;
 
     headers->header_4.dwt_type = 1;
+    headers->header_4.extended_pixel_depth = bitdepth & 16 ? 1 : 0;
+    headers->header_4.signed_pixels = 0;
     headers->header_4.pixel_bitdepth = bitdepth % 16;
     headers->header_4.image_width = width;
-    headers->header_4.extended_pixel_depth = bitdepth & 16 ? 1 : 0;
+    headers->header_4.transpose_image = 0;
+    headers->header_4.code_word_length = 0;
+    headers->header_4.custom_weights = 0;
     //TEST PARAMETERS END
     
     discrete_wavelet_transform_2D(test_data, width, height, 3, 0);

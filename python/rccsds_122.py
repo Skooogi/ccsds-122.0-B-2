@@ -401,7 +401,7 @@ def stage_1(blocks, bitplane, code_words):
 
         symbol_option = 0
         decoded, signs = decode_word(num_zeros, symbol_option, code_words)
-        #print(i, decoded, bitplane)
+        #print(decoded, signs, "p")
 
         offset = 0
         span = 1
@@ -674,13 +674,21 @@ def decompress():
     #print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, q:{q}, width:{width}, padding:{pad_width}]')
 
     decode_dc_initial(blocks, bitDC, q)
-    decode_ac_magnitudes(blocks, bitACGlobal, q)
+
+    end_stage = header.header_2.stage_stop + 1
+    end_bitplane = header.header_2.bitplane_stop - 1
+    if(header.header_2.dc_stop == 0):
+        decode_ac_magnitudes(blocks, bitACGlobal, q)
+    else:
+        end_stage = 0
+        end_bitplane = -1
 
     initialize_binary_trees()
 
-    for bitplane in range(bitACGlobal-1, -1, -1):
+    for bitplane in range(bitACGlobal-1, end_bitplane, -1):
         #print("processing bitplane", bitplane)
-        for stage in range(4):
+        for stage in range(0, end_stage + 1):
+            print(stage)
 
             for gaggle in range(0, len(blocks), 16):
 
@@ -698,8 +706,9 @@ def decompress():
                     #print("S3")
                     stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
 
-        stage_4(blocks, bitplane)
-        #print(blocks[0])
+            if(stage == 4):
+                stage_4(blocks, bitplane)
+                #print(blocks[0])
 
     #print("Fixing negatives")
     for i in range(len(blocks)):

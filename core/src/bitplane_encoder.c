@@ -62,10 +62,22 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
     segment_header_write_data(headers);
 
     encode_dc_magnitudes(dc_coefficients, num_blocks, bitDC_max, q);
-    encode_ac_magnitudes(blocks, num_blocks, bitAC_max, q);
 
-    for(int8_t bitplane = bitAC_max - 1; bitplane > -1; --bitplane) {
-        for(size_t stage = 0; stage < 4; ++stage) {
+    //Make sure user parameters limit the used stages
+    uint8_t end_stage = headers->header_2.stage_stop + 1;
+    int8_t end_bitplane = headers->header_2.bitplane_stop - 1;
+    if(headers->header_2.dc_stop == 0) {
+        encode_ac_magnitudes(blocks, num_blocks, bitAC_max, q);
+    }
+
+    else {
+        end_stage = 0;
+        end_bitplane = -1;
+    }
+
+    for(int8_t bitplane = bitAC_max - 1; bitplane > end_bitplane; --bitplane) {
+        for(size_t stage = 0; stage <= end_stage; ++stage) {
+            printf("%zu\n", stage);
             for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
 
                 reset_block_string();
@@ -80,14 +92,17 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
                 else if(stage == 2) {
                     stage_2(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
                 }
-                else {
+                else if(stage == 3) {
                     stage_3(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
                 }
 
                 write_block_string();
             }
+
+            if(stage == 4) {
+                stage_4(headers, blocks, num_blocks, bitplane);
+            }
         }
-        stage_4(headers, blocks, num_blocks, bitplane);
     }
     free(dc_coefficients);
     free(blocks);
