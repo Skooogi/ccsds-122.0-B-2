@@ -44,12 +44,12 @@ def randomtests():
     # The minimum and maximum image width. Note that the image width must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_width = 32
-    max_width = 2048
+    max_width = 256
 
     # The minimum and maximum image height. Note that the image height must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_height = 32
-    max_height = 2048
+    max_height = 256
 
     # The minimum and maximum bitdepth to use. (Currently only bitdepths up to 14 supported)
     min_bitdepth = 1

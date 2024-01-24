@@ -77,7 +77,7 @@ void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
 
     for(int8_t bitplane = bitAC_max - 1; bitplane > end_bitplane; --bitplane) {
         for(size_t stage = 0; stage <= end_stage; ++stage) {
-            printf("%zu\n", stage);
+            //printf("%zu\n", stage);
             for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
 
                 reset_block_string();

@@ -688,7 +688,7 @@ def decompress():
     for bitplane in range(bitACGlobal-1, end_bitplane, -1):
         #print("processing bitplane", bitplane)
         for stage in range(0, end_stage + 1):
-            print(stage)
+            #print(stage)
 
             for gaggle in range(0, len(blocks), 16):
 

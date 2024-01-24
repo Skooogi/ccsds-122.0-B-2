@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
 
     headers->header_2.stage_stop = 3;
     headers->header_2.seg_byte_limit = (width>>3)*(height>>3);
-    headers->header_2.dc_stop = 1;
+    headers->header_2.dc_stop = 0;
     headers->header_2.use_fill = 0;
     headers->header_2.bitplane_stop = 0;
 
