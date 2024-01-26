@@ -586,7 +586,7 @@ def stage_4(blocks, bitplane):
 
 def unpack_blocks(blocks, width, height):
 
-    data = np.ones([height*8, width*8], np.int32)
+    data = np.ones([height*8, width*8], np.int16)
 
     for row in range(height):
         for column in range(width):
