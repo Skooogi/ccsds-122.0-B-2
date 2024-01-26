@@ -727,16 +727,16 @@ def decompress():
 
     #Do DWT in Cython
     num_pixels = width*height
-    c_data = np.zeros(num_pixels, dtype='int32')
+    c_data = np.zeros(num_pixels, dtype='int16')
     for i in range(height):
         for j in range(width):
             c_data[i * width + j] = data[i][j]
-    c_data = struct.pack(f'{num_pixels}i', *c_data)
+    c_data = struct.pack(f'{num_pixels}h', *c_data)
 
     levels = 3
     c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, True)
 
-    c_data = np.array(struct.unpack(f'{num_pixels}I', c_data)).astype('int32')
+    c_data = np.array(struct.unpack(f'{num_pixels}h', c_data)).astype('int16')
     for i in range(height):
         for j in range(width):
             data[i][j] = c_data[i * width + j]
