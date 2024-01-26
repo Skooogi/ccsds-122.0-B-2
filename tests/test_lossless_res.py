@@ -3,6 +3,7 @@ sys.path.append(os.path.abspath('../python'))
 sys.path.append(os.path.abspath('../python/cython'))
 from common import MSE, PSNR, pad_data_to_8
 from common_testing import *
+from pathlib import Path
 import ccsds_122 as comp
 import file_io
 import numpy as np
@@ -33,6 +34,25 @@ def test_data(data, width, height, bitdepth, check_python=1):
 
 def test_images():
 
+    root_folder = "../res/space"
+    bmp_files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
+    raw_files = list(Path(root_folder).rglob("*.[rR][aA][wW]"))
+
+    raw_images = []
+    
+    #Match metadata from bmp to raw file
+    for i in range(len(raw_files)):
+        filename = os.path.basename(str(raw_files[i]))[:-4]
+        bmp_file = next((str(s) for s in bmp_files if filename in str(s)), None)
+        #metadata = (os.system(f'identify {bmp_file}'))
+        metadata = os.popen(f'identify {bmp_file}').read()[:-1].split(' ')
+
+        width = int(metadata[2].split('x')[0])
+        height = int(metadata[2].split('x')[1])
+        bitdepth = int(metadata[4].split('-')[0])
+
+        raw_images.append([str(raw_files[i]), width, height, bitdepth])
+
     for i,file in enumerate(raw_images):
         print('Testing image ' + file[0])
         print('  Width    = ' + str(file[1]))
@@ -41,7 +61,10 @@ def test_images():
         print("C:")
         os.system(f'time ../build/ccsds.bin {file[0]} {"output.cmp"} {file[1]} {file[2]} {file[3]}')
 
-        data, width, height = file_io.load_image(bmp_images[i])
+        filename = file[0].split('/')[-1][:-4]
+        bmp_file = next((str(s) for s in bmp_files if filename in str(s)), None)
+
+        data, width, height = file_io.load_image(bmp_file)
         data_in, pad_width, pad_height = pad_data_to_8(data, width, height)
         width += pad_width
         height += pad_height

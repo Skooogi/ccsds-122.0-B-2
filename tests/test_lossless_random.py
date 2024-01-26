@@ -44,16 +44,16 @@ def randomtests():
     # The minimum and maximum image width. Note that the image width must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_width = 32
-    max_width = 256
+    max_width = 32
 
     # The minimum and maximum image height. Note that the image height must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_height = 32
-    max_height = 256
+    max_height = 32
 
-    # The minimum and maximum bitdepth to use. (Currently only bitdepths up to 14 supported)
+    # The minimum and maximum bitdepth to use. (Currently only bitdepths up to 12 supported)
     min_bitdepth = 1
-    max_bitdepth = 16
+    max_bitdepth = 12
 
     # The seed to use for the run. Arbitrary. Always setting the same seed so that the
     # results are reproducible.
@@ -100,7 +100,7 @@ def randomtests():
         print('  Maxval   = ' + str(max_pixval))
 
         # Create the actual image contents
-        orig_img = np.random.randint(min_pixval, max_pixval + 1, (img_height, img_width), dtype='uint32')
+        orig_img = np.random.randint(min_pixval, max_pixval + 1, (img_height, img_width), dtype='uint16')
 
         # Temporary file name
         fname_in = "temp_orig_" + str(img_ind + 1) + '.raw'

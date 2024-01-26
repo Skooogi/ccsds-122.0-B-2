@@ -66,7 +66,7 @@ def test_images(check_python=0):
                     print(f'ratio: {bcolors.OKGREEN}{ratio:.3f}{bcolors.ENDC}')
                 print("*"*20)
 
-        os.system(f'rm {file_out}')
+        #os.system(f'rm {file_out}')
 
 if __name__ == '__main__':
     check_python = 0
