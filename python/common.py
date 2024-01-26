@@ -179,7 +179,7 @@ def MSE(data_in, data_out, width, height):
     mean_squared_error = 0
     for i in range(height):
         for j in range(width):
-            temp = data_out[i, j] - data_in[i, j]
+            temp = (data_out[i, j] - data_in[i, j]).astype(np.int32)
             temp = temp * temp
             mean_squared_error += temp
     mean_squared_error /= n

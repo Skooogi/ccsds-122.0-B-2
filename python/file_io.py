@@ -10,7 +10,7 @@ def load_image(filein, raw_width = 0, raw_height = 0):
         return data, raw_width, raw_height
 
     img = Image.open(filein)
-    data = np.array(img.split()[0], dtype=np.int32)
+    data = np.array(img.split()[0], dtype=np.int16)
     width, height = img.size
     img.close()
 
