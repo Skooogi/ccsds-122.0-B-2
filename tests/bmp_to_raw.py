@@ -19,7 +19,7 @@ if __name__ == '__main__':
         data, width, height = file_io.load_image(str(filename))
 
         #print(filename)
-        data_out = np.zeros([width*height], dtype='int32')
+        data_out = np.zeros([width*height], dtype='int16')
         for i in range(height):
             for j in range(width):
                 data_out[i*width+j] = data[i][j]
