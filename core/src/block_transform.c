@@ -1,8 +1,8 @@
 #include "block_transform.h"
 
-static void family(Block* blocks, size_t block_index, int32_t* data, size_t width, size_t row, size_t column, size_t ac_index);
+static void family(Block* blocks, size_t block_index, int16_t* data, size_t width, size_t row, size_t column, size_t ac_index);
 
-void block_transform_pack(Block* blocks, size_t num_blocks, int32_t* data, size_t data_width) {
+void block_transform_pack(Block* blocks, size_t num_blocks, int16_t* data, size_t data_width) {
 
     size_t block_width = data_width>>3;
     size_t block_height = num_blocks / block_width;
@@ -26,7 +26,7 @@ void block_transform_pack(Block* blocks, size_t num_blocks, int32_t* data, size_
     }
 }
 
-static void family(Block* blocks, size_t block_index, int32_t* data, size_t width, size_t row, size_t column, size_t ac_index) {
+static void family(Block* blocks, size_t block_index, int16_t* data, size_t width, size_t row, size_t column, size_t ac_index) {
 
     //Children C_i;
     blocks[block_index].ac[ac_index+0]  = data[(2*row)   * width + 2*column];

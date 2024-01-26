@@ -1,7 +1,7 @@
 #include "subband.h"
 
 
-void subband_scale(int32_t* data, size_t width, size_t height) {
+void subband_scale(int16_t* data, size_t width, size_t height) {
 
     size_t width_2 = width>>1;
     size_t width_4 = width>>2;

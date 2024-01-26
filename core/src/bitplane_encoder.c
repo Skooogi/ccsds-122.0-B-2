@@ -11,7 +11,7 @@
 
 static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max);
 
-void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
+void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
 
     size_t num_blocks = headers->header_3.segment_size;
     int32_t bitDC_max = 1;
