@@ -4,3 +4,4 @@ __pycache__
 *.raw
 *.txt
 *.csv
+*.bin
