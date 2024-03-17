@@ -51,12 +51,12 @@ if __name__ == '__main__':
 
     ax0.set_title("Nebraska")
     ax0.imshow(data_out, cmap='gray')
-    ax1.set_title("Python")
-    ax1.imshow(data_in, cmap='gray')
+    ax1.set_title("Python diff")
+    ax1.imshow(data_out - data_in, cmap='gray')
     ax2.set_title("Original")
     ax2.imshow(data_org, cmap='gray')
     ax3.set_title("Error")
-    ax3.imshow(data_org-data_out, cmap='gray')
+    ax3.imshow(data_org-data_in, cmap='gray')
 
     diff = data_out-data_in
 
@@ -83,11 +83,16 @@ if __name__ == '__main__':
     print(err.min(), err.max())
 
 
+    diff_gl = data_org - data_in
+
     error = 0
+    error_gl = 0
     for i in range(img_height):
         for j in range(img_width):
             error += diff[i][j]**2
+            error += diff_gl[i][j]**2
     print("mse", error/(img_height*img_width))
+    print("mse_gl", error_gl/(img_height*img_width))
 
     #ax2.set_title("Difference")
     #ax2.imshow(diff, cmap='gray')
