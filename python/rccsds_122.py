@@ -300,6 +300,8 @@ def update_code_words(code_words, length):
         return code_words[index]
     
     code_words[index] = int(readb(1 if length < 3 else 2), 2)
+    if(index == 1 and code_words[1] == 3):
+        code_words[1] = 2
     #print('|'+format(code_words[index], f'0{1 if length == 2 else 2}b')+'|',end='')
     return code_words[index]
 
@@ -633,13 +635,11 @@ def unpack_blocks(blocks, width, height):
 
     return data
 
-def decompress():
+def decompress(filename = 'output.cmp'):
     #print("Uncompressing file")
     readb.data = 0
     readb.cache = ""
     readb.i = 0
-
-    filename = "output.cmp"
 
     with open(filename, "rb") as f:
         readb.data = f.read()

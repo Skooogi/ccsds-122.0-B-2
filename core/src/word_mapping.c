@@ -102,7 +102,12 @@ void write_block_string() {
                 break;
             case 2:
                 if((written_code_options & 2) != 2) {
-                    file_io_write_bits(code_option_bit_3, 2);
+                    if(code_option_bit_3 == 2) {
+                        file_io_write_bits(code_option_bit_3+1, 2);
+                    }
+                    else {
+                        file_io_write_bits(code_option_bit_3, 2);
+                    }
                     written_code_options |= 2;
                     //printf("3: %u %u\n", code_option_bit_3, 2);
                 }
