@@ -102,9 +102,9 @@ if __name__ == '__main__':
         f.write(str(error_imp/(img_height*img_width))+'\n')
 
     with open("MSE.txt") as f:
-        data = f.read().split('\n')[:-1]
+        data = np.array(f.read().split('\n')[:-1])
         g = plt.figure(2) 
-        plt.plot(range(len(data)), data, figure=g)
+        plt.plot(range(len(data)), data.astype(float), figure=g)
 
         
 
