@@ -31,15 +31,15 @@ if __name__ == '__main__':
 
     #Decompress with python
     try:
-        data_in = decomp.decompress(fname_out)
+        python_image = decomp.decompress(fname_out)
     except Exception as e:
         traceback.print_exc()
         print(":(")
         exit()
 
-    data_org = np.fromfile(fname_in, dtype=np.uint16).reshape([img_height, img_width])
-    data_out = np.fromfile(decomp_out, dtype= np.uint16 if img_bitdepth > 8 else np.uint8).reshape([img_height, img_width])
-    data_out = data_out.astype(np.int32)
+    original_image = np.fromfile(fname_in, dtype=np.uint16).reshape([img_height, img_width])
+    nebraska_image = np.fromfile(decomp_out, dtype= np.uint16 if img_bitdepth > 8 else np.uint8).reshape([img_height, img_width])
+    nebraska_image = nebraska_image.astype(np.int32)
     print("Visualizing")
     fig = plt.figure(constrained_layout=True)
     gs = GridSpec(2,2,figure=fig)
@@ -50,24 +50,24 @@ if __name__ == '__main__':
     ax3 = fig.add_subplot(gs[1, 1])
 
     ax0.set_title("Nebraska")
-    ax0.imshow(data_out, cmap='gray')
+    ax0.imshow(nebraska_image, cmap='gray')
     ax1.set_title("Python diff")
-    ax1.imshow(data_out - data_in, cmap='gray')
+    ax1.imshow(nebraska_image - python_image, cmap='gray')
     ax2.set_title("Original")
-    ax2.imshow(data_org, cmap='gray')
+    ax2.imshow(original_image, cmap='gray')
     ax3.set_title("Error")
-    ax3.imshow(data_org-data_in, cmap='gray')
+    ax3.imshow(original_image-python_image, cmap='gray')
 
-    diff = data_out-data_in
+    diff = nebraska_image-python_image
 
     x = 0
     xw = 8
     y = 0
     yw = 8
     print("nebraska")
-    print(data_out[y:y+yw,x:x+xw])
+    print(nebraska_image[y:y+yw,x:x+xw])
     print("python")
-    print(data_in[y:y+yw,x:x+xw])
+    print(python_image[y:y+yw,x:x+xw])
 
     #dmax = max(diff.flatten()) 
     #dmin = min(diff.flatten())
@@ -77,24 +77,38 @@ if __name__ == '__main__':
     print(diff[y:y+yw,x:x+xw])
     print(diff.min(), diff.max())
 
-    err = data_org - data_out
-    print("Error from original")
+    err = original_image - nebraska_image
+    print("Nebraska error from original")
     print(err[y:y+yw,x:x+xw])
     print(err.min(), err.max())
 
 
-    diff_gl = data_org - data_in
+    diff_gl = original_image - python_image
+    diff_imp = nebraska_image - python_image
 
     error = 0
     error_gl = 0
+    error_imp = 0
     for i in range(img_height):
         for j in range(img_width):
             error += diff[i][j]**2
-            error += diff_gl[i][j]**2
-    print("mse", error/(img_height*img_width))
-    print("mse_gl", error_gl/(img_height*img_width))
+            error_gl += diff_gl[i][j]**2
+            error_imp += diff_imp[i][j]**2
+    print("mse nebraska", error/(img_height*img_width))
+    print("mse python", error_gl/(img_height*img_width))
+    print("mse diff", error_imp/(img_height*img_width))
 
+    with open("MSE.txt", 'a') as f:
+        f.write(str(error_imp/(img_height*img_width))+'\n')
+
+    with open("MSE.txt") as f:
+        data = f.read().split('\n')[:-1]
+        g = plt.figure(2) 
+        plt.plot(range(len(data)), data, figure=g)
+
+        
+
+    plt.show()
     #ax2.set_title("Difference")
     #ax2.imshow(diff, cmap='gray')
-    plt.show()
 

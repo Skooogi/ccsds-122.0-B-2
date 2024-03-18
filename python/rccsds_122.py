@@ -100,7 +100,7 @@ def decode_dc_initial(blocks, bitDC, q):
     k = 0
 
     diffs = np.zeros(len(blocks), dtype='int')
-    for i in range(int(len(blocks)/16) + 1):
+    for i in range(len(blocks)//16):
         k = int(readb(code_word_bits), 2)
 
         if(i == 0):
@@ -160,7 +160,7 @@ def decode_ac_magnitudes(blocks, bitACGlobal, q):
     #print("Decoding AC magnitudes")
     #AC Magnitudes
     diffs = np.zeros(len(blocks), dtype='int')
-    N = int(abs(math.log(1 + bitACGlobal,2)) + 1)
+    N = int(abs(math.log(1 + bitACGlobal,2)))
     if(N == 0):
         return
     if(N == 1):
@@ -171,7 +171,7 @@ def decode_ac_magnitudes(blocks, bitACGlobal, q):
     code_word_bits = (math.ceil(math.log(N,2)))
     k = 0
 
-    for i in range(int(len(blocks)/16) + 1):
+    for i in range(len(blocks)//16):
         k = int(readb(code_word_bits), 2)
         if(i == 0):
             diffs[i] = int(readb(N), 2)
@@ -397,9 +397,9 @@ def stage_1(blocks, bitplane, code_words):
                 new_status_1 |= 1 << j
         blocks[i].set_status_with(new_status_1, new_status_2)
 
-        num_zeros  = 1 if blocks[i].get_status(0) == 0 else 0
-        num_zeros += 1 if blocks[i].get_status(21) == 0 else 0
-        num_zeros += 1 if blocks[i].get_status(42) == 0 else 0
+        num_zeros  = 1 if bitplane > 2 and blocks[i].get_status(0) == 0 else 0
+        num_zeros += 1 if bitplane > 2 and  blocks[i].get_status(21) == 0 else 0
+        num_zeros += 1 if bitplane > 1 and  blocks[i].get_status(42) == 0 else 0
         if(num_zeros == 0):
             continue
 

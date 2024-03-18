@@ -52,7 +52,7 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
         int8_t p1 = block_get_status(&blocks[block_index], 21);
         int8_t p2 = block_get_status(&blocks[block_index], 42);
 
-        if(0 <= p0 && p0 <= 1) {
+        if(bitplane > 2 && 0 <= p0 && p0 <= 1) {
             types_p |= p0;
             size_p += 1;
 
@@ -62,7 +62,7 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             }
         }
 
-        if(0 <= p1 && p1 <= 1) {
+        if(bitplane > 2 && 0 <= p1 && p1 <= 1) {
             types_p <<= 1;
             types_p |= p1;
             size_p += 1;
@@ -74,7 +74,7 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             }
         }
 
-        if(0 <= p2 && p2 <= 1) {
+        if(bitplane > 1 && 0 <= p2 && p2 <= 1) {
             types_p <<= 1;
             types_p |= p2;
             size_p += 1;

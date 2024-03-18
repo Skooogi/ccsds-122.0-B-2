@@ -29,7 +29,7 @@ static void split_coding(int32_t* differences, size_t num_differences, uint32_t 
 
     int32_t gaggle_sum;
     size_t index;
-    for(size_t i = 0; i < (num_differences>>4) + 1; ++i) {
+    for(size_t i = 0; i < (num_differences>>4); ++i) {
         gaggle_sum = 0;
         
         for(size_t j = i == 0 ? 1 : 0; j < 16; ++j) {
@@ -144,7 +144,7 @@ void encode_dc_magnitudes(int32_t* dc_coefficients, int32_t num_coeffs, int32_t 
 
 void encode_ac_magnitudes(Block* blocks, size_t num_blocks, uint32_t bitAC_max, uint32_t q) {
 
-    uint32_t N = (log2_32(1 + bitAC_max) + 1);
+    uint32_t N = (log2_32(1 + bitAC_max));
     if(N == 0) {
         return;
     }
