@@ -66,13 +66,17 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
 
     //Make sure user parameters limit the used stages
     uint8_t end_stage = headers->header_2.stage_stop;
-    int8_t end_bitplane = headers->header_2.bitplane_stop - 1;
-    if(headers->header_2.dc_stop != 0) {
-        end_stage = 0;
-        end_bitplane = -1;
+    int8_t end_bitplane = headers->header_2.bitplane_stop;
+    //Decode shifted out DC bits
+    for(int8_t bitplane = bitAC_max-1; bitplane >= end_bitplane; --bitplane) {
+        if ((bitplane <= q) && (q > 3) && (3 < bitplane)) {
+            for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
+                file_io_write_bits((dc_coefficients[block_index] >> bitplane) & 1, 1);
+            }
+        }
     }
 
-    for(int8_t bitplane = bitAC_max - 1; bitplane > end_bitplane; --bitplane) {
+    for(int8_t bitplane = bitAC_max - 1; bitplane >= end_bitplane; --bitplane) {
         stage_0(blocks, num_blocks, q, bitplane);
         if(headers->header_2.dc_stop == 1) {
             continue;
