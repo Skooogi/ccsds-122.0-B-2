@@ -10,7 +10,8 @@ void stage_0(Block* blocks, size_t num_blocks, uint8_t q, uint8_t bitplane) {
     }
     //Any remaining DC bits
     for(size_t i = 0; i < num_blocks; ++i) {
-            word_mapping_code((blocks[i].dc >> bitplane) & 1, 1, 0, 1);
+        //word_mapping_code((blocks[i].dc >> bitplane) & 1, 1, 0, 1);
+        file_io_write_bits((blocks[i].dc >> bitplane) & 1, 1); 
     }
 }
 

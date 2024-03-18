@@ -66,29 +66,23 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
 
     //Make sure user parameters limit the used stages
     uint8_t end_stage = headers->header_2.stage_stop;
-    int8_t end_bitplane = headers->header_2.bitplane_stop;
-
-    //Decode shifted out DC bits
-    for(int8_t bitplane = bitAC_max; bitplane > end_bitplane; --bitplane) {
-        if ((bitplane <= q) && (q > 3) && (3 < bitplane)) {
-            for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
-                file_io_write_bits((dc_coefficients[block_index] >> (bitplane-1)) & 1, 1);
-            }
-        }
+    int8_t end_bitplane = headers->header_2.bitplane_stop - 1;
+    if(headers->header_2.dc_stop != 0) {
+        end_stage = 0;
+        end_bitplane = -1;
     }
-    
-    for(int8_t bitplane = bitAC_max; bitplane > end_bitplane; --bitplane) {
 
+    for(int8_t bitplane = bitAC_max - 1; bitplane > end_bitplane; --bitplane) {
         stage_0(blocks, num_blocks, q, bitplane);
         if(headers->header_2.dc_stop == 1) {
             continue;
         }
-
         for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
-            size_t blocks_in_gaggle = gaggle + 16 < num_blocks ? 16 : num_blocks - gaggle;
             reset_block_string();
+            
             for(size_t stage = 0; stage <= end_stage; ++stage) {
-                //printf("%zu %hhu\n", stage, bitplane);
+
+                size_t blocks_in_gaggle = gaggle + 16 < num_blocks ? 16 : num_blocks - gaggle;
 
                 if(stage == 0) {
                     stage_1(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
@@ -99,13 +93,13 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
                 else if(stage == 2) {
                     stage_3(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
                 }
-            }
 
+            }
             write_block_string();
         }
+
         if(end_stage == 3) {
             stage_4(headers, blocks, num_blocks, bitplane);
-            //printf("Written in stage (%u): %u\n\n", 4, get_bits_written() - start_bits);
         }
     }
     free(dc_coefficients);
