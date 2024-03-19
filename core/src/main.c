@@ -57,13 +57,13 @@ int main(int argc, char** argv) {
     //TEST PARAMETERS START
     headers->header_1.first_segment = 1;
     headers->header_1.last_segment = 1;
-    headers->header_1.num_segments = 1;
+    headers->header_1.num_segments = 0;
     headers->header_1.has_header_2 = 1;
     headers->header_1.has_header_3 = 1;
     headers->header_1.has_header_4 = 1;
     headers->header_1.pad_width = pad_width;
 
-    headers->header_2.stage_stop = 3;
+    headers->header_2.stage_stop = 0;
     headers->header_2.seg_byte_limit = (width>>3)*(height>>3);
     headers->header_2.dc_stop = 0;
     headers->header_2.use_fill = 0;

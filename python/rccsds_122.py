@@ -384,7 +384,7 @@ def stage_0(blocks, bitplane, q):
 def stage_1(blocks, bitplane, code_words):
 
     for i in range(len(blocks)):
-        if blocks[i].bitAC < bitplane:
+        if blocks[i].bitAC <= bitplane:
             continue
 
         new_status_1 = 0
@@ -398,8 +398,8 @@ def stage_1(blocks, bitplane, code_words):
         blocks[i].set_status_with(new_status_1, new_status_2)
 
         num_zeros  = 1 if bitplane > 2 and blocks[i].get_status(0) == 0 else 0
-        num_zeros += 1 if bitplane > 2 and  blocks[i].get_status(21) == 0 else 0
-        num_zeros += 1 if bitplane > 1 and  blocks[i].get_status(42) == 0 else 0
+        num_zeros += 1 if bitplane > 2 and blocks[i].get_status(21) == 0 else 0
+        num_zeros += 1 if bitplane > 1 and blocks[i].get_status(42) == 0 else 0
         if(num_zeros == 0):
             continue
 
@@ -676,16 +676,22 @@ def decompress(filename = 'output.cmp'):
     #print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, q:{q}, width:{width}, padding:{pad_width}]')
 
     decode_dc_initial(blocks, bitDC, q)
-    decode_ac_magnitudes(blocks, bitACGlobal, q)
-
     end_stage = header.header_2.stage_stop
     end_bitplane = header.header_2.bitplane_stop
-    for bitplane in range(bitACGlobal-1, -1, -1):
-        if (bitplane <= q) and (q > 3) and (3 < bitplane):
-            for i in range(len(blocks)):
+    if(q > bitACGlobal):
+        limit = 0
+        if(bitACGlobal > 2):
+            limit = q - bitAC_max
+        else:
+            limit = q - 2
+
+        for offset in range(limit):
+            print("Bit %u\n", q-offset);
+            for block_index in range(len(blocks)):
                 temp = int(readb(1))
                 blocks[i].dc |= temp << bitplane
 
+    decode_ac_magnitudes(blocks, bitACGlobal, q)
     initialize_binary_trees()
 
     for bitplane in range(bitACGlobal-1, end_bitplane-1, -1):
@@ -696,7 +702,7 @@ def decompress(filename = 'output.cmp'):
         code_words = [-1, -1, -1]
         for gaggle in range(0, len(blocks), 16):
 
-            for stage in range(0, end_stage):
+            for stage in range(0, end_stage+1):
 
                 if(stage == 0):
                     #print("S1")

@@ -3,22 +3,23 @@
 #include <string.h>
 #include <stdio.h>
 
-static inline int16_t round_int(int32_t numerator, int32_t denominator) {
-    return (numerator) < 0 ? ((numerator) - ((denominator)/2)) / (denominator) : ((numerator) + ((denominator)/2)) / (denominator);
-}
+//static inline int16_t round_int(int32_t numerator, int32_t denominator) {
+//    return (numerator) < 0 ? ((numerator) - ((denominator)/2)) / (denominator) : ((numerator) + ((denominator)/2)) / (denominator);
+//}
 
-/*
 static inline int16_t round_int(int32_t numerator, int32_t denominator) {
-
-    float temp = ((float)numerator/denominator) + 0.5f;
-    if(temp < 0) {
-        if(temp != (int)temp) {
-            temp -= 1;
+    float rounding = ((float)numerator)/denominator + 0.5f;
+    if(rounding > 0) {
+        rounding = (int16_t)rounding;
+    }
+    else {
+        if(rounding != (int16_t)rounding) {
+            rounding = (int16_t)(rounding - 1);
         }
-    }    
-    return (int16_t)temp;
+    }
+    return rounding;
 }
-*/
+
 static void forward_DWT(int16_t* data, size_t width) {
 
 	//cache line for in place operation

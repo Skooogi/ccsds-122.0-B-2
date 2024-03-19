@@ -60,27 +60,36 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
     headers->header_1.bitAC = bitAC_max;
 
     segment_header_write_data(headers);
-
     encode_dc_magnitudes(dc_coefficients, num_blocks, bitDC_max, q);
-    encode_ac_magnitudes(blocks, num_blocks, bitAC_max, q);
 
     //Make sure user parameters limit the used stages
     uint8_t end_stage = headers->header_2.stage_stop;
     int8_t end_bitplane = headers->header_2.bitplane_stop;
     //Decode shifted out DC bits
-    for(int8_t bitplane = bitAC_max-1; bitplane >= end_bitplane; --bitplane) {
-        if ((bitplane <= q) && (q > 3) && (3 < bitplane)) {
+    if(q > bitAC_max) {
+        uint8_t limit = 0;
+        if(bitAC_max > 2) {
+            limit = q - bitAC_max;
+        }
+        else {
+            limit = q - 2;
+        }
+
+        for(int8_t offset = 0; offset < limit; ++offset) {
             for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
-                file_io_write_bits((dc_coefficients[block_index] >> bitplane) & 1, 1);
+                file_io_write_bits((dc_coefficients[block_index] >> (q - offset)) & 1, 1);
             }
         }
     }
+
+    encode_ac_magnitudes(blocks, num_blocks, bitAC_max, q);
 
     for(int8_t bitplane = bitAC_max - 1; bitplane >= end_bitplane; --bitplane) {
         stage_0(blocks, num_blocks, q, bitplane);
         if(headers->header_2.dc_stop == 1) {
             continue;
         }
+        printf("Bitplane %u:\n", bitplane);
         for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
             reset_block_string();
             
