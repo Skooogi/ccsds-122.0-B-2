@@ -11,6 +11,7 @@ void write_block_string(void);
 void reset_block_string(void);
 void block_string_initialize(void);
 void block_string_free(void);
+uint32_t get_bitstring_length();
 
 #ifdef __cplusplus
 }

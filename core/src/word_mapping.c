@@ -129,6 +129,65 @@ void write_block_string() {
     } 
 }
 
+uint32_t get_bitstring_length() {
+
+    uint8_t code_option_bit_2 = string_length_bit_2[0] <= string_length_bit_2[1] ? 0 : 1;
+    uint8_t code_option_bit_3 = 0;
+    uint8_t code_option_bit_4 = 0;
+    uint8_t written_code_options = 0;
+
+    for(uint8_t i = 1; i < 4; ++i) {
+        if(i < 3 && string_length_bit_3[i] < string_length_bit_3[code_option_bit_3]){
+            code_option_bit_3 = i;
+        }
+
+        if(string_length_bit_4[i] < string_length_bit_4[code_option_bit_4]){
+            code_option_bit_4 = i;
+        }
+    }
+
+    uint64_t total_out_bits = 0;
+
+    for(size_t word_index = 0; word_index < block_string.index; ++word_index) {
+        MappedWord current = block_string.mapped_words[word_index];
+        uint8_t word, length;
+
+        if(current.length == 0 || current.uncoded) {
+            total_out_bits += current.length + 1;
+            continue;
+        }
+
+        switch(current.length) {
+            case 1:
+                if((written_code_options & 1) != 1) {
+                    total_out_bits += 1;
+                    written_code_options |= 1;
+                }
+                length = code_option_bit_2 == 1 ? 2 : word_length_bit_2[current.mapped_symbol];
+                total_out_bits += length;
+                break;
+            case 2:
+                if((written_code_options & 2) != 2) {
+                    total_out_bits += 2;
+                    written_code_options |= 2;
+                }
+                length = code_option_bit_3 == 2 ? 3 : word_length_bit_3[code_option_bit_3][current.mapped_symbol];
+                total_out_bits += length;
+                break;
+            case 3:
+                if((written_code_options & 4) != 4) {
+                    total_out_bits += 2;
+                    written_code_options |= 4;
+                }
+                length = code_option_bit_4 == 3 ? 4 : word_length_bit_4[code_option_bit_4][current.mapped_symbol];
+                total_out_bits += length;
+                break;
+        }
+    } 
+
+    return total_out_bits;
+}
+
 void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option, uint8_t uncoded) {
     
     MappedWord* current = &block_string.mapped_words[block_string.index];

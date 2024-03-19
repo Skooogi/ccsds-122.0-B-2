@@ -4,14 +4,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 static FILE* fp;
+static uint32_t bits_written = 0;
 #else
 extern void put_word(uint8_t word);
 #endif//EMBEDDED
+
+uint32_t get_bits_written() { return bits_written; }
 
 void file_io_write_bits(uint64_t bits, size_t length) {
 
     static uint8_t cache = 0;
     static uint8_t size = 0;
+    bits_written += length;
 
     for(int32_t i = length - 1; i > -1; --i) {
         cache <<= 1;
