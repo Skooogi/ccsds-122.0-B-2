@@ -99,9 +99,9 @@ if __name__ == '__main__':
     mse = error/(img_height*img_width)
     mse_gl = error_gl/(img_height*img_width)
     mse_imp = error_imp/(img_height*img_width)
-    psnr = 10*np.log10(2**img_bitdepth**2/mse) if mse != 0 else 0
-    psnr_gl = 10*np.log10(2**img_bitdepth**2/mse_gl) if mse_gl != 0 else 0
-    psnr_imp = 10*np.log10(2**img_bitdepth**2/mse_imp) if mse_imp != 0 else 0
+    psnr = 10*np.log10((2**img_bitdepth-1)**2/mse) if mse != 0 else 0
+    psnr_gl = 10*np.log10((2**img_bitdepth-1)**2/mse_gl) if mse_gl != 0 else 0
+    psnr_imp = 10*np.log10((2**img_bitdepth-1)**2/mse_imp) if mse_imp != 0 else 0
 
     print("PSNR nebraska", psnr)
     print("PSNR python", psnr_gl)
@@ -109,22 +109,44 @@ if __name__ == '__main__':
 
     with open("PSNR.txt", 'a') as f:
         f.write(str(psnr_imp)+',')
-        f.write(str(psnr_gl)+'\n')
+        if(len(sys.argv) > 1 and sys.argv[1] == 'f'):
+            f.write(str(psnr_gl)+',f\n')
+        else:
+            f.write(str(psnr_gl)+'\n')
 
     with open("PSNR.txt") as f:
         temp = np.array(f.read().split('\n')[:-1])
-        data_1 = np.array([i.split(',')[0] for i in temp])
-        data_2 = np.array([i.split(',')[1] for i in temp])
-        print(data_1)
-        print(data_2)
+        data_1 = np.array([i.split(',')[0] if len(i.split(',')) != 3 else None for i in temp]).astype(float)
+        d1mask = np.isfinite(data_1)
+
+        data_2 = np.array([i.split(',')[1] if len(i.split(',')) != 3 else None for i in temp]).astype(float)
+        d2mask = np.isfinite(data_2)
+
+        data_3 = np.array([i.split(',')[0] if len(i.split(',')) == 3 else None for i in temp]).astype(float)
+        d3mask = np.isfinite(data_3)
+
+        data_4 = np.array([i.split(',')[1] if len(i.split(',')) == 3 else None for i in temp]).astype(float)
+        d4mask = np.isfinite(data_4)
+
         g = plt.figure(2) 
-        plt.plot(range(len(temp)), data_1.astype(float), figure=g, label='PSNR python/nebraska')
-        plt.plot(range(len(temp)), data_2.astype(float), figure=g, label='PSNR python lossless')
+        fs = GridSpec(2,1,figure=g)
+        ax0 = g.add_subplot(fs[0, 0])
+        ax1 = g.add_subplot(fs[1, 0])
+
+        ax0.set_title("Partial")
+        ax0.plot(range(len(temp[d1mask])), data_1[d1mask], figure=g, label='PSNR python/nebraska')
+        ax0.plot(range(len(temp[d2mask])), data_2[d2mask], figure=g, label='PSNR python lossless')
+        ax0.grid()
+        ax0.legend()
+
+        ax1.set_title("Full")
+        ax1.plot(range(len(temp[d3mask])), data_3[d3mask], figure=g, label='PSNR python/nebraska')
+        ax1.plot(range(len(temp[d4mask])), data_4[d4mask], figure=g, label='PSNR python lossless')
+        ax1.grid()
+        ax1.legend()
 
         
 
-    plt.grid()
-    plt.legend()
     plt.show()
     #ax2.set_title("Difference")
     #ax2.imshow(diff, cmap='gray')
