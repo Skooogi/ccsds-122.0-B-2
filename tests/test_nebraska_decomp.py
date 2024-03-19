@@ -39,80 +39,86 @@ if __name__ == '__main__':
         exit()
 
     original_image = np.fromfile(fname_in, dtype=np.uint16).reshape([img_height, img_width])
+
     nebraska_image = np.fromfile(decomp_out, dtype= np.uint16 if img_bitdepth > 8 else np.uint8).reshape([img_height, img_width])
     nebraska_image = nebraska_image.astype(np.int32)
     print("Visualizing")
     fig = plt.figure(constrained_layout=True)
-    gs = GridSpec(2,2,figure=fig)
+    gs = GridSpec(2,3,figure=fig)
 
     ax0 = fig.add_subplot(gs[0, 0])
     ax1 = fig.add_subplot(gs[1, 0])
     ax2 = fig.add_subplot(gs[0, 1])
     ax3 = fig.add_subplot(gs[1, 1])
+    ax4 = fig.add_subplot(gs[0, 2])
+    ax5 = fig.add_subplot(gs[1, 2])
 
     ax0.set_title("Nebraska")
     ax0.imshow(nebraska_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
-    ax1.set_title("Python diff")
-    ax1.imshow(nebraska_image - python_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
+    ax1.set_title("Error")
+    ax1.imshow(original_image - nebraska_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
     ax2.set_title("Original")
     ax2.imshow(original_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
-    ax3.set_title("Error")
-    ax3.imshow(original_image-python_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
+    ax3.set_title("Nebraska - Python")
+    ax3.imshow(nebraska_image-python_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
+    ax4.set_title("Python")
+    ax4.imshow(python_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
+    ax5.set_title("Error")
+    ax5.imshow(original_image - python_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
     mpl.cursor(hover=True)
-    diff = nebraska_image-python_image
 
-    x = 0
-    xw = 8
-    y = 0
-    yw = 8
+    diff_np = nebraska_image-python_image
+    diff_op = original_image - python_image
+    diff_on = original_image - nebraska_image
+
+
+    x = 8
+    xw = 16
+    y = 8
+    yw = 16
     print("nebraska")
     print(nebraska_image[y:y+yw,x:x+xw])
     print("python")
     print(python_image[y:y+yw,x:x+xw])
 
-    #dmax = max(diff.flatten()) 
-    #dmin = min(diff.flatten())
+    #dmax = max(diff_np.flatten()) 
+    #dmin = min(diff_np.flatten())
 
-    #diff = diff - dmin
-    print("diff")
-    print(diff[y:y+yw,x:x+xw])
-    print(diff.min(), diff.max())
+    #diff_np = diff - dmin
+    print("diff_np")
+    print(diff_np[y:y+yw,x:x+xw])
+    print(diff_np.min(), diff_np.max())
 
-    err = original_image - nebraska_image
-    print("Nebraska error from original")
-    print(err[y:y+yw,x:x+xw])
-    print(err.min(), err.max())
+    print("Nebraska error_np from original")
+    print(diff_on[y:y+yw,x:x+xw])
+    print(diff_on.min(), diff_on.max())
 
-
-    diff_gl = original_image - python_image
-    diff_imp = nebraska_image - python_image
-
-    error = 0
-    error_gl = 0
-    error_imp = 0
+    error_np = 0
+    error_op = 0
+    error_on = 0
     for i in range(img_height):
         for j in range(img_width):
-            error += diff[i][j]**2
-            error_gl += diff_gl[i][j]**2
-            error_imp += diff_imp[i][j]**2
+            error_np += diff_np[i][j]**2
+            error_op += diff_op[i][j]**2
+            error_on += diff_on[i][j]**2
             
-    mse = error/(img_height*img_width)
-    mse_gl = error_gl/(img_height*img_width)
-    mse_imp = error_imp/(img_height*img_width)
-    psnr = 10*np.log10((2**img_bitdepth-1)**2/mse) if mse != 0 else 0
-    psnr_gl = 10*np.log10((2**img_bitdepth-1)**2/mse_gl) if mse_gl != 0 else 0
-    psnr_imp = 10*np.log10((2**img_bitdepth-1)**2/mse_imp) if mse_imp != 0 else 0
+    mse_np = error_np/(img_height*img_width)
+    mse_op = error_op/(img_height*img_width)
+    mse_on = error_on/(img_height*img_width)
+    psnr_np = 10*np.log10((2**img_bitdepth-1)**2/mse_np) if mse_np != 0 else 0
+    psnr_op = 10*np.log10((2**img_bitdepth-1)**2/mse_op) if mse_op != 0 else 0
+    psnr_on = 10*np.log10((2**img_bitdepth-1)**2/mse_on) if mse_on != 0 else 0
 
-    print("PSNR nebraska", psnr)
-    print("PSNR python", psnr_gl)
-    print("PSNR diff", psnr_imp)
+    print("PSNR diff", psnr_np)
+    print("PSNR python", psnr_op)
+    print("PSNR nebraska", psnr_on)
 
     with open("PSNR.txt", 'a') as f:
-        f.write(str(psnr_imp)+',')
+        f.write(str(psnr_np)+',')
         if(len(sys.argv) > 1 and sys.argv[1] == 'f'):
-            f.write(str(psnr_gl)+',f\n')
+            f.write(str(psnr_op)+',f\n')
         else:
-            f.write(str(psnr_gl)+'\n')
+            f.write(str(psnr_op)+'\n')
 
     with open("PSNR.txt") as f:
         temp = np.array(f.read().split('\n')[:-1])
@@ -145,9 +151,5 @@ if __name__ == '__main__':
         ax1.grid()
         ax1.legend()
 
-        
-
     plt.show()
-    #ax2.set_title("Difference")
-    #ax2.imshow(diff, cmap='gray')
 
