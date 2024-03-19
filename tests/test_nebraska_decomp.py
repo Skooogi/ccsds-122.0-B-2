@@ -1,11 +1,12 @@
-import matplotlib.pyplot as plt
-import traceback
 from matplotlib.gridspec import GridSpec
+import matplotlib.pyplot as plt
+import mplcursors as mpl
 import numpy as np
 import os, sys
 sys.path.append(os.path.abspath('../python'))
 sys.path.append(os.path.abspath('../python/cython'))
 import rccsds_122 as decomp
+import traceback
 
 if __name__ == '__main__':
 
@@ -50,14 +51,14 @@ if __name__ == '__main__':
     ax3 = fig.add_subplot(gs[1, 1])
 
     ax0.set_title("Nebraska")
-    ax0.imshow(nebraska_image, cmap='gray')
+    ax0.imshow(nebraska_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
     ax1.set_title("Python diff")
-    ax1.imshow(nebraska_image - python_image, cmap='gray')
+    ax1.imshow(nebraska_image - python_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
     ax2.set_title("Original")
-    ax2.imshow(original_image, cmap='gray')
+    ax2.imshow(original_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
     ax3.set_title("Error")
-    ax3.imshow(original_image-python_image, cmap='gray')
-
+    ax3.imshow(original_image-python_image, cmap='gray', interpolation='none', extent=[0, img_width, img_height, 0])
+    mpl.cursor(hover=True)
     diff = nebraska_image-python_image
 
     x = 0
@@ -94,20 +95,36 @@ if __name__ == '__main__':
             error += diff[i][j]**2
             error_gl += diff_gl[i][j]**2
             error_imp += diff_imp[i][j]**2
-    print("mse nebraska", error/(img_height*img_width))
-    print("mse python", error_gl/(img_height*img_width))
-    print("mse diff", error_imp/(img_height*img_width))
+            
+    mse = error/(img_height*img_width)
+    mse_gl = error_gl/(img_height*img_width)
+    mse_imp = error_imp/(img_height*img_width)
+    psnr = 10*np.log10(2**img_bitdepth**2/mse) if mse != 0 else 0
+    psnr_gl = 10*np.log10(2**img_bitdepth**2/mse_gl) if mse_gl != 0 else 0
+    psnr_imp = 10*np.log10(2**img_bitdepth**2/mse_imp) if mse_imp != 0 else 0
 
-    with open("MSE.txt", 'a') as f:
-        f.write(str(error_imp/(img_height*img_width))+'\n')
+    print("PSNR nebraska", psnr)
+    print("PSNR python", psnr_gl)
+    print("PSNR diff", psnr_imp)
 
-    with open("MSE.txt") as f:
-        data = np.array(f.read().split('\n')[:-1])
+    with open("PSNR.txt", 'a') as f:
+        f.write(str(psnr_imp)+',')
+        f.write(str(psnr_gl)+'\n')
+
+    with open("PSNR.txt") as f:
+        temp = np.array(f.read().split('\n')[:-1])
+        data_1 = np.array([i.split(',')[0] for i in temp])
+        data_2 = np.array([i.split(',')[1] for i in temp])
+        print(data_1)
+        print(data_2)
         g = plt.figure(2) 
-        plt.plot(range(len(data)), data.astype(float), figure=g)
+        plt.plot(range(len(temp)), data_1.astype(float), figure=g, label='PSNR python/nebraska')
+        plt.plot(range(len(temp)), data_2.astype(float), figure=g, label='PSNR python lossless')
 
         
 
+    plt.grid()
+    plt.legend()
     plt.show()
     #ax2.set_title("Difference")
     #ax2.imshow(diff, cmap='gray')
