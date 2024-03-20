@@ -144,7 +144,7 @@ void encode_dc_magnitudes(int32_t* dc_coefficients, int32_t num_coeffs, int32_t 
 
 void encode_ac_magnitudes(Block* blocks, size_t num_blocks, uint32_t bitAC_max, uint32_t q) {
 
-    uint32_t N = (log2_32(1 + bitAC_max));
+    uint32_t N = log2_32_ceil(1 + bitAC_max);
     if(N == 0) {
         return;
     }

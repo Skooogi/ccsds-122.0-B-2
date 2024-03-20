@@ -27,7 +27,7 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
         dc_coefficients[block_index] = blocks[block_index].dc;
         int32_t current_dc = (dc_coefficients[block_index]);
         if(current_dc < 0) {
-            bitDC_max = max(bitDC_max, 1 + (log2_32(abs(current_dc))));
+            bitDC_max = max(bitDC_max, 1 + (log2_32_ceil(abs(current_dc))));
         }
 
         else {
@@ -43,18 +43,22 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
         bitAC_max = max(bitAC_max, bitAC);
     }
     uint8_t q = calculate_q_value(bitDC_max, bitAC_max);
-    //printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
+    printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
 
+    printf("AC = %i\n", blocks[6].ac[0]);
+    printf("AC = %i\n", twos_complement(blocks[6].ac[0], bitAC_max));
     //Transform ac coefficients to sign-magnitude representation
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
         blocks[block_index].tran.packed = 0; 
         blocks[block_index].dc &= (1<<bitDC_max) - 1;
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             int32_t ac_coefficient = blocks[block_index].ac[ac_index];
+
             blocks[block_index].ac[ac_index] = twos_complement(ac_coefficient, bitAC_max);
             blocks[block_index].ac[ac_index] |= ac_coefficient < 0 ? (1 << bitAC_max) : 0;
         }
     }
+    printf("AC = %i\n", blocks[6].ac[0]);
 
     headers->header_1.bitDC = bitDC_max;
     headers->header_1.bitAC = bitAC_max;
@@ -89,13 +93,14 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
         if(headers->header_2.dc_stop == 1) {
             continue;
         }
-        printf("Bitplane %u:\n", bitplane);
         for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
             reset_block_string();
             
+            uint32_t start = get_bits_written();
             for(size_t stage = 0; stage <= end_stage; ++stage) {
 
                 size_t blocks_in_gaggle = gaggle + 16 < num_blocks ? 16 : num_blocks - gaggle;
+                uint32_t start_bits = get_bitstring_length();
 
                 if(stage == 0) {
                     stage_1(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
@@ -107,8 +112,10 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
                     stage_3(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
                 }
 
+                printf("Written in stage (%u): %u\n", stage + 1, get_bitstring_length() - start_bits);
             }
             write_block_string();
+            printf("%u) Written in gaggle: %u\n", bitplane, get_bits_written() - start);
         }
 
         if(end_stage == 3) {

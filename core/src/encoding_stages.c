@@ -28,6 +28,9 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             uint32_t ac_coefficient = blocks[block_index].ac[ac_index] & ~(1<<bitAC);
+            if(block_index == 6 && ac_index == 0) {
+                printf("%u ac -> %u\n", blocks[6].ac[0], ac_coefficient);
+            }
             if(subband_lim(ac_index, bitplane)) {
                 new_high_status_bit |= 1LL << ac_index;
                 new_low_status_bit |= 1LL << ac_index;
@@ -86,7 +89,7 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
         }
 
         if(size_p > 0) {
-            printf("%u) P %u\n", block_index, types_p);
+            printf("%u) %u\n", block_index, types_p);
             word_mapping_code(types_p, size_p, 0, 0);
             if(size_s > 0) {
                 word_mapping_code(signs_p, size_s, 0, 1);
@@ -100,62 +103,60 @@ void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
     uint32_t bitAC = headers->header_1.bitAC;
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) { 
-        if(blocks[block_index].bitAC < bitplane) {
+        if(blocks[block_index].bitAC <= bitplane) {
             continue;
         }
 
         //TRANB
         int8_t bmax = block_get_bmax(&blocks[block_index]);
 
-        if(blocks[block_index].tran.b != 1 && bmax >= 0) {
+        if(blocks[block_index].tran.b != 1) {
             blocks[block_index].tran.b = bmax;
             word_mapping_code(blocks[block_index].tran.b, 1, 0, 1);
         }
 
+        if(blocks[block_index].tran.b == 0) {
+            continue;
+        }
+
         //TRAND
-        if(blocks[block_index].tran.b != 0 && bmax != -1) {
-            uint8_t tran_d = 0;
-            uint8_t size = 0;
+        uint8_t tran_d = 0;
+        uint8_t size = 0;
 
-            uint8_t status_f0 = block_get_dmax(&blocks[block_index],0);
-            uint8_t status_f1 = block_get_dmax(&blocks[block_index],1);
-            uint8_t status_f2 = block_get_dmax(&blocks[block_index],2);
+        uint8_t status_f0 = block_get_dmax(&blocks[block_index],0);
+        uint8_t status_f1 = block_get_dmax(&blocks[block_index],1);
+        uint8_t status_f2 = block_get_dmax(&blocks[block_index],2);
 
-            uint8_t subband_mask = 0;
-            subband_mask |=  block_get_dmax(&blocks[block_index], 0) == -1 ? 4 : 0;
-            subband_mask |=  block_get_dmax(&blocks[block_index], 1) == -1 ? 2 : 0;
-            subband_mask |=  block_get_dmax(&blocks[block_index], 2) == -1 ? 1 : 0;
+        if(bitplane > 0 && !(blocks[block_index].tran.d & 4) && status_f0 >= 0) {
+            tran_d |= status_f0;
+            blocks[block_index].tran.d |= 4*status_f0;
+            size += 1;
+        }
 
-            blocks[block_index].tran.d |= subband_mask;
+        if(bitplane > 0 && !(blocks[block_index].tran.d & 2) && status_f1 >= 0) {
+            tran_d <<= 1;
+            tran_d |= status_f1;
+            blocks[block_index].tran.d |= 2*status_f1;
+            size += 1;
+        }
 
-            if((blocks[block_index].tran.d & 4) != 4 && status_f0 >= 0) {
-                tran_d |= status_f0;
-                blocks[block_index].tran.d |= 4*status_f0;
-                size += 1;
-            }
+        if(!(blocks[block_index].tran.d & 1) && status_f2 >= 0) {
+            tran_d <<= 1;
+            tran_d |= status_f2;
+            blocks[block_index].tran.d |= status_f2;
+            size += 1;
+        }
 
-            if((blocks[block_index].tran.d & 2) != 2 && status_f1 >= 0) {
-                tran_d <<= 1;
-                tran_d |= status_f1;
-                blocks[block_index].tran.d |= 2*status_f1;
-                size += 1;
-            }
-
-            if((blocks[block_index].tran.d & 1) != 1 && status_f2 >= 0) {
-                tran_d <<= 1;
-                tran_d |= status_f2;
-                blocks[block_index].tran.d |= status_f2;
-                size += 1;
-            }
-
-            if(size != 0) {
-                word_mapping_code(tran_d, size, size == 3 ? 1 : 0, 0);
-            }
+        if(size != 0) {
+            word_mapping_code(tran_d, size, size == 3 ? 1 : 0, 0);
         }
 
         //types_c and signs_c
         for(size_t ci = 0; ci < 3; ++ci) {
-            if((blocks[block_index].tran.d >> (2-ci) & 1) != 1) {
+            if((ci == 0 && bitplane <= 1) || (ci == 1 && bitplane <= 1) || (ci == 2 && bitplane <= 0)) {
+                continue;
+            }
+            if(!(blocks[block_index].tran.d & (1 << (2-ci)))) {
                 continue;
             }
 
@@ -193,11 +194,11 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
-        if(blocks[block_index].tran.b == 0 || block_get_bmax(&blocks[block_index]) == -1) {
+        if(blocks[block_index].tran.b == 0) {
             continue;
         }
 
-        if(blocks[block_index].bitAC < bitplane) {
+        if(blocks[block_index].bitAC <= bitplane) {
             continue;
         }
 
@@ -216,13 +217,13 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 
         blocks[block_index].tran.g |= subband_mask;
 
-        if((blocks[block_index].tran.d & 4) == 4 && (blocks[block_index].tran.g & 4) == 0) {
+        if(bitplane > 0 && (blocks[block_index].tran.d & 4) == 4 && (blocks[block_index].tran.g & 4) == 0) {
             blocks[block_index].tran.g |= 4 * status_f0;
             tran_g |= status_f0;
             size += 1;
 		}
 
-        if((blocks[block_index].tran.d & 2) == 2 && (blocks[block_index].tran.g & 2) == 0) {
+        if(bitplane > 0 && (blocks[block_index].tran.d & 2) == 2 && (blocks[block_index].tran.g & 2) == 0) {
             blocks[block_index].tran.g |= 2 * status_f1;
             tran_g <<= 1;
             tran_g |= status_f1;
@@ -242,7 +243,11 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 
         //TRANH
         for(uint8_t hi = 0; hi < 3; ++hi) {
-            if((blocks[block_index].tran.g >>(2-hi) & 1) == 0) {
+
+            if(!(blocks[block_index].tran.g & (1 << (2-hi)))) {
+                continue;
+            }
+            if(hi < 2 && bitplane <= 0) {
                 continue;
             }
 
@@ -296,13 +301,17 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 
         //types_h and signs_h
         for(uint8_t hi = 0; hi < 3; ++hi) {
-            if(((blocks[block_index].tran.g >> (2-hi)) & 1) == 0) {
+            if(!(blocks[block_index].tran.g & (1 << (2-hi)))) {
+                continue;
+            }
+
+            if(hi < 2 && bitplane <= 0) {
                 continue;
             }
 
             for(uint8_t hj = 0; hj < 4; ++hj) {
 
-                if(((blocks[block_index].tran.h[hi] >> (3-hj)) & 1) == 0) {
+                if(!(blocks[block_index].tran.h[hi] & (1 << (3-hj)))) {
                     continue;
                 }
                 
@@ -338,7 +347,7 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
 
     for(size_t i = 0; i < num_blocks; ++i) {
-        if(blocks[i].bitAC < bitplane) {
+        if(blocks[i].bitAC <= bitplane) {
             continue;
         }
 
