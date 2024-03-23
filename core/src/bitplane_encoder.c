@@ -43,10 +43,8 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
         bitAC_max = max(bitAC_max, bitAC);
     }
     uint8_t q = calculate_q_value(bitDC_max, bitAC_max);
-    printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
+    //printf("max bitDC %u, bitAC_max %u, q %u\n", bitDC_max, bitAC_max, q);
 
-    printf("AC = %i\n", blocks[6].ac[0]);
-    printf("AC = %i\n", twos_complement(blocks[6].ac[0], bitAC_max));
     //Transform ac coefficients to sign-magnitude representation
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
         blocks[block_index].tran.packed = 0; 
@@ -58,7 +56,6 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
             blocks[block_index].ac[ac_index] |= ac_coefficient < 0 ? (1 << bitAC_max) : 0;
         }
     }
-    printf("AC = %i\n", blocks[6].ac[0]);
 
     headers->header_1.bitDC = bitDC_max;
     headers->header_1.bitAC = bitAC_max;
@@ -112,10 +109,10 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
                     stage_3(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
                 }
 
-                printf("Written in stage (%u): %u\n", stage + 1, get_bitstring_length() - start_bits);
+                //printf("Written in stage (%u): %u\n", stage + 1, get_bitstring_length() - start_bits);
             }
             write_block_string();
-            printf("%u) Written in gaggle: %u\n", bitplane, get_bits_written() - start);
+            //printf("%u) Written in gaggle: %u\n", bitplane, get_bits_written() - start);
         }
 
         if(end_stage == 3) {

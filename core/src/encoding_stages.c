@@ -28,9 +28,6 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
 
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             uint32_t ac_coefficient = blocks[block_index].ac[ac_index] & ~(1<<bitAC);
-            if(block_index == 6 && ac_index == 0) {
-                printf("%u ac -> %u\n", blocks[6].ac[0], ac_coefficient);
-            }
             if(subband_lim(ac_index, bitplane)) {
                 new_high_status_bit |= 1LL << ac_index;
                 new_low_status_bit |= 1LL << ac_index;
@@ -89,7 +86,6 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
         }
 
         if(size_p > 0) {
-            printf("%u) %u\n", block_index, types_p);
             word_mapping_code(types_p, size_p, 0, 0);
             if(size_s > 0) {
                 word_mapping_code(signs_p, size_s, 0, 1);
@@ -115,7 +111,7 @@ void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             word_mapping_code(blocks[block_index].tran.b, 1, 0, 1);
         }
 
-        if(blocks[block_index].tran.b == 0) {
+        if(blocks[block_index].tran.b == 0 || bmax == -1) {
             continue;
         }
 
@@ -164,6 +160,7 @@ void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             uint8_t signs_c = 0;
             uint8_t size_s = 0;
             uint8_t size_c = 0;
+
             for(size_t cj = 0; cj < 4; ++cj) {
                 size_t index = 1+ci*21+cj;
                 int8_t status = block_get_status(&blocks[block_index], index);
@@ -256,38 +253,30 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             int8_t status_hi2 = block_get_hmax(&blocks[block_index], hi, 2);
             int8_t status_hi3 = block_get_hmax(&blocks[block_index], hi, 3);
 
-            uint8_t subband_mask = 0;
-            subband_mask |= status_hi0 == -1 ? 8 : 0;
-            subband_mask |= status_hi1 == -1 ? 4 : 0;
-            subband_mask |= status_hi2 == -1 ? 2 : 0;
-            subband_mask |= status_hi3 == -1 ? 1 : 0;
-
-            blocks[block_index].tran.h[hi] |= subband_mask;
-
             uint8_t tran_h = 0;
             uint8_t size = 0;
 
-            if((blocks[block_index].tran.h[hi] & 8) == 0 && status_hi0 >= 0) {
+            if(!(blocks[block_index].tran.h[hi] & 8) && status_hi0 >= 0) {
                 blocks[block_index].tran.h[hi] |= 8 * status_hi0;
                 tran_h |= status_hi0;
                 size += 1;
             }
 
-            if((blocks[block_index].tran.h[hi] & 4) == 0 && status_hi1 >= 0) {
+            if(!(blocks[block_index].tran.h[hi] & 4) && status_hi1 >= 0) {
                 blocks[block_index].tran.h[hi] |= 4 * status_hi1;
                 tran_h <<= 1;
                 tran_h |= status_hi1;
                 size += 1;
             }
 
-            if((blocks[block_index].tran.h[hi] & 2) == 0 && status_hi2 >= 0) {
+            if(!(blocks[block_index].tran.h[hi] & 2) && status_hi2 >= 0) {
                 blocks[block_index].tran.h[hi] |= 2 * status_hi2;
                 tran_h <<= 1;
                 tran_h |= status_hi2;
                 size += 1;
             }
 
-            if((blocks[block_index].tran.h[hi] & 1) == 0 && status_hi3 >= 0) {
+            if(!(blocks[block_index].tran.h[hi] & 1) && status_hi3 >= 0) {
                 blocks[block_index].tran.h[hi] |= status_hi3;
                 tran_h <<= 1;
                 tran_h |= status_hi3;
@@ -295,6 +284,7 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             }
 
             if(size != 0) {
+                if(size == 4 && tran_h == 0) { printf("WTF tran h\n");}
                 word_mapping_code(tran_h, size, size < 4 ? 0 : 1, 0);
             }
         }
@@ -320,6 +310,9 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                 uint8_t types_h = 0;
                 uint8_t signs_h = 0;
                 uint8_t index = hi*21+5+hj*4;
+
+                uint8_t zeros = 0;
+
                 for(uint8_t j = 0; j < 4; ++j) {
                     int8_t status = block_get_status(&blocks[block_index], index+j);
                     if(0 <= status && status <= 1) {
@@ -334,6 +327,7 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                     }
                 }
                 if(size_h > 0) {
+                    if(size_h == 4 && types_h == 0) { printf("WTF types h\n");}
                     word_mapping_code(types_h, size_h, size_h < 4 ? 0 : 1, 0);
                     if(size_s > 0) {
                         word_mapping_code(signs_h, size_s, 0, 1);
@@ -355,7 +349,6 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             size_t index = pi * 21;
             if(block_get_status(&blocks[i], index) == 2) {
                 uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
-                //word_mapping_code(temp, 1, 0, 1);
                 file_io_write_bits(temp, 1);
             }
         }
@@ -364,7 +357,6 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                 size_t index = 1 + ci * 21 + j;
                 if(block_get_status(&blocks[i], index) == 2) {
                     uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
-                    //word_mapping_code(temp, 1, 0, 1);
                     file_io_write_bits(temp, 1);
                 }
             }
@@ -376,7 +368,6 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                     size_t index = 5+hi*21+hj*4+j;
                     if(block_get_status(&blocks[i], index) == 2) {
                         uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
-                        //word_mapping_code(temp, 1, 0, 1);
                         file_io_write_bits(temp, 1);
                     }
                 }

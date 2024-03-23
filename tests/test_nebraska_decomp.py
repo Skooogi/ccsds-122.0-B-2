@@ -11,11 +11,12 @@ import traceback
 if __name__ == '__main__':
 
     fname_in = "../res/pattern/raw/test_image_gradient_32.raw"
+    #fname_in = "temp_orig_3.raw"
     fname_out = "output.cmp"
     decomp_out = "decomp.raw"
     img_width = 32
     img_height = 32
-    img_bitdepth = 8
+    img_bitdepth = 16
     
     #build ccsds
     os.system('make -C ..')
@@ -36,11 +37,10 @@ if __name__ == '__main__':
     except Exception as e:
         traceback.print_exc()
         print(":(")
-        exit()
+        python_image = np.ones([img_height, img_width]) * -1
 
     original_image = np.fromfile(fname_in, dtype=np.uint16).reshape([img_height, img_width])
-
-    nebraska_image = np.fromfile(decomp_out, dtype= np.uint16 if img_bitdepth > 8 else np.uint8).reshape([img_height, img_width])
+    nebraska_image = np.fromfile(decomp_out, dtype= np.int16 if img_bitdepth >= 8 else np.uint8).reshape([img_height, img_width])
     nebraska_image = nebraska_image.astype(np.int32)
     print("Visualizing")
     fig = plt.figure(constrained_layout=True)
@@ -109,9 +109,9 @@ if __name__ == '__main__':
     psnr_op = 10*np.log10((2**img_bitdepth-1)**2/mse_op) if mse_op != 0 else 0
     psnr_on = 10*np.log10((2**img_bitdepth-1)**2/mse_on) if mse_on != 0 else 0
 
-    print("PSNR diff", psnr_np)
-    print("PSNR python", psnr_op)
-    print("PSNR nebraska", psnr_on)
+    print("PSNR diff\t", psnr_np)
+    print("PSNR python\t", psnr_op)
+    print("PSNR nebraska\t", psnr_on)
 
     with open("PSNR.txt", 'a') as f:
         f.write(str(psnr_np)+',')
@@ -140,12 +140,19 @@ if __name__ == '__main__':
         ax1 = g.add_subplot(fs[1, 0])
 
         ax0.set_title("Partial")
+        ax0.axvline(x=84, linestyle='--', color='red', label='Checker32')
+        ax0.axvline(x=102, linestyle='--', color='red', label='Noise32')
+        ax0.axvline(x=288, linestyle='--', color='red', label='Generated noise 32')
         ax0.plot(range(len(temp[d1mask])), data_1[d1mask], figure=g, label='PSNR python/nebraska')
         ax0.plot(range(len(temp[d2mask])), data_2[d2mask], figure=g, label='PSNR python lossless')
         ax0.grid()
         ax0.legend()
 
         ax1.set_title("Full")
+        ax1.axvline(x=36, linestyle='--', color='red', label='Checker32')
+        ax1.axvline(x=40, linestyle='--', color='red', label='White32')
+        ax1.axvline(x=41, linestyle='--', color='red', label='Black32')
+        ax1.axvline(x=45, linestyle='--', color='red', label='Noise32')
         ax1.plot(range(len(temp[d3mask])), data_3[d3mask], figure=g, label='PSNR python/nebraska')
         ax1.plot(range(len(temp[d4mask])), data_4[d4mask], figure=g, label='PSNR python lossless')
         ax1.grid()

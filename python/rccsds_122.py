@@ -22,8 +22,10 @@ def readb(num):
 
     temp = readb.cache[:num]
     readb.cache = readb.cache[num:]
+    readb.total_read_bits += num
     return temp
 
+readb.total_read_bits = 0
 readb.data = 0
 readb.cache = ""
 readb.i = 0
@@ -301,10 +303,10 @@ def update_code_words(code_words, length):
     if(code_words[index] != -1):
         return code_words[index]
     
-    code_words[index] = int(readb(1 if length < 3 else 2), 2)
+    code_words[index] = int(readb(1 if length == 2 else 2), 2)
     if(index == 1 and code_words[1] == 3):
         code_words[1] = 2
-    #print('|'+format(code_words[index], f'0{1 if length == 2 else 2}b')+'|',end='')
+
     return code_words[index]
 
 def decode_word(num_zeros, symbol_option, code_words, not_tran = True):
@@ -325,10 +327,6 @@ def decode_word(num_zeros, symbol_option, code_words, not_tran = True):
     signs = ''
     if(not_tran and decoded_value):
         signs = readb(get_ones(decoded_value, num_zeros))
-
-    #print(bitstring,end='')
-    #if(signs != ''):
-    #    print('{'+signs+'}', end='')
 
     return decoded, signs
 
@@ -384,6 +382,8 @@ def stage_0(blocks, bitplane, q):
 
 def stage_1(blocks, bitplane, code_words):
 
+    temp = readb.total_read_bits
+
     for i in range(len(blocks)):
         if blocks[i].bitAC <= bitplane:
             continue
@@ -406,11 +406,9 @@ def stage_1(blocks, bitplane, code_words):
 
         symbol_option = 0
         decoded, signs = decode_word(num_zeros, symbol_option, code_words)
-        #print(decoded, signs, "p")
 
         offset = 0
         span = 1
-        print(int(decoded,2))
         update_ac_values(bitplane, blocks[i], offset, span, decoded, signs)
     #print()
 
@@ -560,7 +558,6 @@ def stage_3(blocks, bitplane, code_words):
                 if(not (blocks[i].tran_h[family] & (1 << (3-tran_hj)))):
                     continue
 
-            
                 first_grandchild_index = 21*family + 5 + 4 * tran_hj
 
                 num_zeros = 0
@@ -718,16 +715,18 @@ def decompress(filename = 'output.cmp'):
     decode_ac_magnitudes(blocks, bitACGlobal, q)
     initialize_binary_trees()
 
+    #print("Python starts")
     for bitplane in range(bitACGlobal-1, end_bitplane-1, -1):
         stage_0(blocks, bitplane, q)
         if(header.header_2.dc_stop == 1):
             continue
 
-        print("bitplane", bitplane)
+        #print("bitplane", bitplane)
         for gaggle in range(0, len(blocks), 16):
             code_words = [-1, -1, -1]
-
+            start_glob = readb.total_read_bits
             for stage in range(0, end_stage+1):
+                start = readb.total_read_bits
 
                 if(stage == 0):
                     #print("S1")
@@ -738,11 +737,13 @@ def decompress(filename = 'output.cmp'):
                 elif(stage == 2):
                     #print("S3")
                     stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
+                #print(f'Read in stage {stage+1}:', readb.total_read_bits - start);
 
         if(end_stage == 3):
             stage_4(blocks, bitplane)
             #print(blocks[0])
-    #"""
+        #print(code_words)
+        #print(f'Read in total {bitplane}:', readb.total_read_bits - start_glob);
 
     #print("Fixing negatives")
     for i in range(len(blocks)):
@@ -768,7 +769,7 @@ def decompress(filename = 'output.cmp'):
             c_data[i * width + j] = data[i][j]
     c_data = struct.pack(f'{num_pixels}h', *c_data)
 
-    levels = 0
+    levels = 3
     c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, True)
 
     c_data = np.array(struct.unpack(f'{num_pixels}h', c_data)).astype('int16')
