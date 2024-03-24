@@ -10,8 +10,8 @@ import traceback
 
 if __name__ == '__main__':
 
-    fname_in = "../res/pattern/raw/test_image_gradient_32.raw"
-    #fname_in = "temp_orig_3.raw"
+    #fname_in = "../res/noise/raw/test_image_noise_32.raw"
+    fname_in = "temp_orig_26.raw"
     fname_out = "output.cmp"
     decomp_out = "decomp.raw"
     img_width = 32
@@ -72,10 +72,10 @@ if __name__ == '__main__':
     diff_on = original_image - nebraska_image
 
 
-    x = 8
-    xw = 16
-    y = 8
-    yw = 16
+    x = 0
+    xw = 8
+    y = 0
+    yw = 8
     print("nebraska")
     print(nebraska_image[y:y+yw,x:x+xw])
     print("python")

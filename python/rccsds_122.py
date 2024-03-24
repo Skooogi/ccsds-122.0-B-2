@@ -11,6 +11,7 @@ from subband_scaling import rescale
 
 import os, sys
 sys.path.append(os.path.abspath('./cython'))
+import traceback
 import c_dwt as c_dwt
 import struct
 
@@ -23,6 +24,8 @@ def readb(num):
     temp = readb.cache[:num]
     readb.cache = readb.cache[num:]
     readb.total_read_bits += num
+    if(readb.i > len(readb.data)):
+        print("File ended while more data was expected!")
     return temp
 
 readb.total_read_bits = 0
@@ -307,6 +310,7 @@ def update_code_words(code_words, length):
     if(index == 1 and code_words[1] == 3):
         code_words[1] = 2
 
+    print("CO", length, code_words[index])
     return code_words[index]
 
 def decode_word(num_zeros, symbol_option, code_words, not_tran = True):
@@ -447,7 +451,7 @@ def stage_2(blocks, bitplane, code_words):
 
                 blocks[i].tran_d |= int(decoded[0]) << (2 - f)
                 decoded = decoded[1:]
-
+            
         for family in range(3):
 
             if((family == 0 and bitplane <= 1) or (family == 1 and bitplane <= 1) or (family == 2 and bitplane <= 0)):
@@ -482,6 +486,7 @@ def stage_3(blocks, bitplane, code_words):
         if blocks[i].tran_b == 0:
             continue
 
+        #TRANG
         status_f0 = blocks[i].get_gmax(0)
         status_f1 = blocks[i].get_gmax(1)
         status_f2 = blocks[i].get_gmax(2)
@@ -541,8 +546,6 @@ def stage_3(blocks, bitplane, code_words):
             symbol_option = 1 if num_zeros == 4 else 0
             not_tran = False
             decoded, signs = decode_word(num_zeros, symbol_option, code_words, not_tran)
-            #if i == 0:
-            #    print(num_zeros, family, status_hi0, format(blocks[i].tran_g, '03b'))
             size_tran_h = 4
             blocks[i].tran_h[family] = update_tran_word(blocks[i].tran_h[family], size_tran_h, decoded)
 
@@ -721,7 +724,7 @@ def decompress(filename = 'output.cmp'):
         if(header.header_2.dc_stop == 1):
             continue
 
-        #print("bitplane", bitplane)
+        print("bitplane", bitplane)
         for gaggle in range(0, len(blocks), 16):
             code_words = [-1, -1, -1]
             start_glob = readb.total_read_bits
@@ -737,13 +740,12 @@ def decompress(filename = 'output.cmp'):
                 elif(stage == 2):
                     #print("S3")
                     stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
-                #print(f'Read in stage {stage+1}:', readb.total_read_bits - start);
+                print(f'Read in stage {stage+1}:', readb.total_read_bits - start);
 
         if(end_stage == 3):
             stage_4(blocks, bitplane)
-            #print(blocks[0])
-        #print(code_words)
-        #print(f'Read in total {bitplane}:', readb.total_read_bits - start_glob);
+        #print(blocks[0])
+        print(f'Read in total {bitplane}:', readb.total_read_bits - start_glob);
 
     #print("Fixing negatives")
     for i in range(len(blocks)):

@@ -109,10 +109,10 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
                     stage_3(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
                 }
 
-                //printf("Written in stage (%u): %u\n", stage + 1, get_bitstring_length() - start_bits);
+                printf("Written in stage (%u): %u\n", stage + 1, get_bitstring_length() - start_bits);
             }
             write_block_string();
-            //printf("%u) Written in gaggle: %u\n", bitplane, get_bits_written() - start);
+            printf("%u) Written in gaggle: %u\n", bitplane, get_bits_written() - start);
         }
 
         if(end_stage == 3) {

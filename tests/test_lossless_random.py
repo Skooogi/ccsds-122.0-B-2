@@ -52,8 +52,8 @@ def randomtests():
     max_height = 32
 
     # The minimum and maximum bitdepth to use. (Currently only bitdepths up to 12 supported)
-    min_bitdepth = 3
-    max_bitdepth = 3
+    min_bitdepth = 8
+    max_bitdepth = 8
 
     # The seed to use for the run. Arbitrary. Always setting the same seed so that the
     # results are reproducible.

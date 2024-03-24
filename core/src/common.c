@@ -64,8 +64,7 @@ int8_t block_get_status(Block* block, uint8_t ac_index) {
 
 int8_t block_get_bmax(Block* block) {
     uint64_t filtered = (~block->high_status_bit & block->low_status_bit) & b_mask;
-    int8_t negative = (filtered == 0 && ((block->high_status_bit & block->low_status_bit) & b_mask) > 0);
-    return (filtered > 0) - negative;
+    return (filtered > 0);
 }
 
 int8_t block_get_dmax(Block* block, uint8_t family) {
