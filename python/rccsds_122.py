@@ -764,20 +764,10 @@ def decompress(filename = 'output.cmp'):
     rescale(data, width, height)
 
     #Do DWT in Cython
-    num_pixels = width*height
-    c_data = np.zeros(num_pixels, dtype='int16')
-    for i in range(height):
-        for j in range(width):
-            c_data[i * width + j] = data[i][j]
-    c_data = struct.pack(f'{num_pixels}h', *c_data)
-
     levels = 3
-    c_dwt.c_discrete_wavelet_transform_2D(c_data, width, height, levels, True)
-
-    c_data = np.array(struct.unpack(f'{num_pixels}h', c_data)).astype('int16')
-    for i in range(height):
-        for j in range(width):
-            data[i][j] = c_data[i * width + j]
+    data = data.flatten()
+    c_dwt.c_discrete_wavelet_transform_2D(data, width, height, levels, True)
+    data = data.astype(np.int16).reshape([height, width])
     #end Cython DWT
 
     file_io.save_image("img_out.bmp", data, width, height) #uncomment if you want to see the result image
