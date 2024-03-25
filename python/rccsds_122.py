@@ -698,7 +698,7 @@ def decompress(filename = 'output.cmp'):
     else:
         q = 1 + int(bitACGlobal/2)
     q = max(q, 3)
-    #print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, q:{q}, width:{width}, padding:{pad_width}]')
+    print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, q:{q}, width:{width}, padding:{pad_width}]')
 
     decode_dc_initial(blocks, bitDC, q)
     end_stage = header.header_2.stage_stop

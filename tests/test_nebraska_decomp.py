@@ -10,10 +10,10 @@ import traceback
 
 if __name__ == '__main__':
 
-    #fname_in = "../res/noise/raw/test_image_noise_32.raw"
-    fname_in = "temp_orig_26.raw"
+    fname_in = "../res/noise/raw/test_image_new_noise_32.raw"
+    #fname_in = "temp_orig_26.raw"
     fname_out = "output.cmp"
-    decomp_out = "decomp.raw"
+    decomp_out = "decomp.raw" #786x604 -> 792x608
     img_width = 32
     img_height = 32
     img_bitdepth = 16
