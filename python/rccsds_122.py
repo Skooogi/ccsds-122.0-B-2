@@ -105,7 +105,8 @@ def decode_dc_initial(blocks, bitDC, q):
     k = 0
 
     diffs = np.zeros(len(blocks), dtype='int')
-    for i in range(len(blocks)//16):
+    gaggle_has_remainder = 1 if len(blocks) % 16 > 0 else 0
+    for i in range(len(blocks)//16 + gaggle_has_remainder):
         k = int(readb(code_word_bits), 2)
 
         if(i == 0):
@@ -176,7 +177,8 @@ def decode_ac_magnitudes(blocks, bitACGlobal, q):
     code_word_bits = (math.ceil(math.log(N,2)))
     k = 0
 
-    for i in range(len(blocks)//16):
+    gaggle_has_remainder = 1 if len(blocks) % 16 > 0 else 0
+    for i in range(len(blocks)//16+gaggle_has_remainder):
         k = int(readb(code_word_bits), 2)
         if(i == 0):
             diffs[i] = int(readb(N), 2)
@@ -310,7 +312,6 @@ def update_code_words(code_words, length):
     if(index == 1 and code_words[1] == 3):
         code_words[1] = 2
 
-    print("CO", length, code_words[index])
     return code_words[index]
 
 def decode_word(num_zeros, symbol_option, code_words, not_tran = True):
@@ -698,7 +699,7 @@ def decompress(filename = 'output.cmp'):
     else:
         q = 1 + int(bitACGlobal/2)
     q = max(q, 3)
-    print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, q:{q}, width:{width}, padding:{pad_width}]')
+    #print(f'[bitDC:{bitDC}, bitACGlobal:{bitACGlobal}, q:{q}, width:{width}, padding:{pad_width}]')
 
     decode_dc_initial(blocks, bitDC, q)
     end_stage = header.header_2.stage_stop
@@ -724,12 +725,12 @@ def decompress(filename = 'output.cmp'):
         if(header.header_2.dc_stop == 1):
             continue
 
-        print("bitplane", bitplane)
+        #print("bitplane", bitplane)
         for gaggle in range(0, len(blocks), 16):
             code_words = [-1, -1, -1]
-            start_glob = readb.total_read_bits
+            #start_glob = readb.total_read_bits
             for stage in range(0, end_stage+1):
-                start = readb.total_read_bits
+                #start = readb.total_read_bits
 
                 if(stage == 0):
                     #print("S1")
@@ -740,12 +741,11 @@ def decompress(filename = 'output.cmp'):
                 elif(stage == 2):
                     #print("S3")
                     stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
-                print(f'Read in stage {stage+1}:', readb.total_read_bits - start);
+                #print(f'Read in stage {stage+1}:', readb.total_read_bits - start);
 
         if(end_stage == 3):
             stage_4(blocks, bitplane)
-        #print(blocks[0])
-        print(f'Read in total {bitplane}:', readb.total_read_bits - start_glob);
+        #print(f'Read in total {bitplane}:', readb.total_read_bits - start_glob);
 
     #print("Fixing negatives")
     for i in range(len(blocks)):
