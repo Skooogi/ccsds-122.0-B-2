@@ -284,7 +284,6 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             }
 
             if(size != 0) {
-                if(size == 4 && tran_h == 0) { printf("WTF tran h\n");}
                 word_mapping_code(tran_h, size, size < 4 ? 0 : 1, 0);
             }
         }
@@ -327,8 +326,7 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                     }
                 }
                 if(size_h > 0) {
-                    if(size_h == 4 && types_h == 0) { printf("WTF types h\n");}
-                    word_mapping_code(types_h, size_h, size_h < 4 ? 0 : 1, 0);
+                    word_mapping_code(types_h, size_h, size_h == 4 ? 1 : 0, 0);
                     if(size_s > 0) {
                         word_mapping_code(signs_h, size_s, 0, 1);
                     }

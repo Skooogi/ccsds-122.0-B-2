@@ -29,7 +29,9 @@ static void split_coding(int32_t* differences, size_t num_differences, uint32_t 
 
     int32_t gaggle_sum;
     size_t index;
-    for(size_t i = 0; i < (num_differences>>4); ++i) {
+    
+    uint8_t gaggle_has_remainder = num_differences % 16 ? 1 : 0;
+    for(size_t i = 0; i < (num_differences>>4) + gaggle_has_remainder; ++i) {
         gaggle_sum = 0;
         
         for(size_t j = i == 0 ? 1 : 0; j < 16; ++j) {

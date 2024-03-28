@@ -38,7 +38,7 @@ typedef struct MappedWord {
 } MappedWord;
 
 typedef struct BlockString {
-    MappedWord mapped_words[512];
+    MappedWord mapped_words[1024]; //Capped out with 512 words for some images.
     uint32_t index;
 } BlockString;
 

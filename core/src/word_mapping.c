@@ -206,14 +206,14 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
         return;
     }
 
-    switch(word_length) {
+    switch(current->length) {
             
-        case 2:
+        case 1:
             current->mapped_symbol = sym2bit[word];
             string_length_bit_2[0] += word_length_bit_2[current->mapped_symbol];
             string_length_bit_2[1] += word_length;
             break;
-        case 3:
+        case 2:
             current->mapped_symbol = sym3bit[symbol_option][word];
             if(word == 0 && symbol_option == 1) {
                 printf("SYMBOL ERROR: 000\n");
@@ -223,7 +223,7 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
             string_length_bit_3[1] += word_length_bit_3[1][current->mapped_symbol];
             string_length_bit_3[2] += word_length;
             break;
-        case 4:
+        case 3:
             current->mapped_symbol = sym4bit[symbol_option][word];
             if(word == 0 && symbol_option == 1) {
                 printf("SYMBOL ERROR: 0000\n");

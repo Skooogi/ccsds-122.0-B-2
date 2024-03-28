@@ -29,7 +29,7 @@ typedef union Header_1 {
         unsigned last_segment   : 1;
         unsigned first_segment  : 1;
     };
-
+ 
     uint32_t packed;
 
 } Header_1;
@@ -183,6 +183,7 @@ typedef union Header_4 {
 
 #endif //__ORDER_LITTLE_ENDIAN__
 
+//20 Bytes
 typedef struct {
 
     Header_1 header_1;

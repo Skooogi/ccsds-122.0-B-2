@@ -9,15 +9,10 @@
 
 static inline int16_t round_int(int32_t numerator, int32_t denominator) {
     float rounding = ((float)numerator)/denominator + 0.5f;
-    if(rounding > 0) {
-        rounding = (int16_t)rounding;
+    if(rounding < 0 && rounding != (int16_t)rounding) {
+        return (int16_t)(rounding - 1);
     }
-    else {
-        if(rounding != (int16_t)rounding) {
-            rounding = (int16_t)(rounding - 1);
-        }
-    }
-    return rounding;
+    return (int16_t)(rounding);
 }
 
 static void forward_DWT(int16_t* data, size_t width) {
@@ -153,4 +148,5 @@ void discrete_wavelet_transform_2D(int16_t* data, size_t data_width, size_t data
 			}
 		}
 	}
+
 }
