@@ -45,41 +45,33 @@ static uint8_t word_length_bit_4[3][16] = {
     {3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5}
 };
 
-static BlockString block_string = {};
-static uint32_t string_length_bit_2[2] = {};
-static uint32_t string_length_bit_3[3] = {};
-static uint32_t string_length_bit_4[4] = {};
-
-void reset_block_string() {
-    memset(&block_string, 0, sizeof(BlockString));
-    memset(&string_length_bit_2, 0, 2 * sizeof(uint32_t));
-    memset(&string_length_bit_3, 0, 3 * sizeof(uint32_t));
-    memset(&string_length_bit_4, 0, 4 * sizeof(uint32_t));
+static BlockString* block_string;
+void set_block_string(BlockString* new_block_string) {
+    block_string = new_block_string;
 }
 
 void write_block_string() {
 
-    if(block_string.index == 0) {
+    if(block_string->index[block_string->stage] == 0) {
         return;
     }
 
-    uint8_t written_code_options = 0;
-    uint8_t code_option_bit_2 = string_length_bit_2[0] <= string_length_bit_2[1] ? 0 : 1;
+    uint8_t code_option_bit_2 = block_string->string_length_2_bit[0] <= block_string->string_length_2_bit[1] ? 0 : 1;
     uint8_t code_option_bit_3 = 0;
     uint8_t code_option_bit_4 = 0;
 
     for(uint8_t i = 1; i < 4; ++i) {
-        if(i < 3 && string_length_bit_3[i] < string_length_bit_3[code_option_bit_3]){
+        if(i < 3 && block_string->string_length_3_bit[i] < block_string->string_length_3_bit[code_option_bit_3]){
             code_option_bit_3 = i;
         }
 
-        if(string_length_bit_4[i] < string_length_bit_4[code_option_bit_4]){
+        if(block_string->string_length_4_bit[i] < block_string->string_length_4_bit[code_option_bit_4]){
             code_option_bit_4 = i;
         }
     }
 
-    for(size_t word_index = 0; word_index < block_string.index; ++word_index) {
-        MappedWord current = block_string.mapped_words[word_index];
+    for(size_t word_index = 0; word_index < block_string->index[block_string->stage]; ++word_index) {
+        MappedWord current = block_string->mapped_words[block_string->stage][word_index];
         uint8_t word, length;
 
         if(current.length == 0 || current.uncoded) {
@@ -89,32 +81,32 @@ void write_block_string() {
 
         switch(current.length) {
             case 1:
-                if((written_code_options & 1) != 1) {
+                if((block_string->written_code_options & 1) != 1) {
                     file_io_write_bits(code_option_bit_2, 1);
-                    written_code_options |= 1;
+                    block_string->written_code_options |= 1;
                 }
                 word = word2bit[code_option_bit_2][current.mapped_symbol];
                 length = code_option_bit_2 == 1 ? 2 : word_length_bit_2[current.mapped_symbol];
                 file_io_write_bits(word, length);
                 break;
             case 2:
-                if((written_code_options & 2) != 2) {
+                if((block_string->written_code_options & 2) != 2) {
                     if(code_option_bit_3 == 2) {
                         file_io_write_bits(code_option_bit_3+1, 2);
                     }
                     else {
                         file_io_write_bits(code_option_bit_3, 2);
                     }
-                    written_code_options |= 2;
+                    block_string->written_code_options |= 2;
                 }
                 word = word3bit[code_option_bit_3][current.mapped_symbol];
                 length = code_option_bit_3 == 2 ? 3 : word_length_bit_3[code_option_bit_3][current.mapped_symbol];
                 file_io_write_bits(word, length);
                 break;
             case 3:
-                if((written_code_options & 4) != 4) {
+                if((block_string->written_code_options & 4) != 4) {
                     file_io_write_bits(code_option_bit_4, 2);
-                    written_code_options |= 4;
+                    block_string->written_code_options |= 4;
                 }
                 word = word4bit[code_option_bit_4][current.mapped_symbol];
                 length = code_option_bit_4 == 3 ? 4 : word_length_bit_4[code_option_bit_4][current.mapped_symbol];
@@ -126,62 +118,62 @@ void write_block_string() {
 
 uint32_t get_bitstring_length() {
 
-    if(block_string.index == 0) {
+    if(block_string->index[block_string->stage] == 0) {
         return 0;
     }
 
-    uint32_t total = 0;
-
-    uint8_t written_code_options = 0;
-    uint8_t code_option_bit_2 = string_length_bit_2[0] <= string_length_bit_2[1] ? 0 : 1;
+    uint32_t total;
+    uint8_t code_option_bit_2 = block_string->string_length_2_bit[0] <= block_string->string_length_2_bit[1] ? 0 : 1;
     uint8_t code_option_bit_3 = 0;
     uint8_t code_option_bit_4 = 0;
 
     for(uint8_t i = 1; i < 4; ++i) {
-        if(i < 3 && string_length_bit_3[i] < string_length_bit_3[code_option_bit_3]){
+        if(i < 3 && block_string->string_length_3_bit[i] < block_string->string_length_3_bit[code_option_bit_3]){
             code_option_bit_3 = i;
         }
 
-        if(string_length_bit_4[i] < string_length_bit_4[code_option_bit_4]){
+        if(block_string->string_length_4_bit[i] < block_string->string_length_4_bit[code_option_bit_4]){
             code_option_bit_4 = i;
         }
     }
 
-    for(size_t word_index = 0; word_index < block_string.index; ++word_index) {
-        MappedWord current = block_string.mapped_words[word_index];
+    for(size_t word_index = 0; word_index < block_string->index[block_string->stage]; ++word_index) {
+        MappedWord current = block_string->mapped_words[block_string->stage][word_index];
         uint8_t word, length;
 
         if(current.length == 0 || current.uncoded) {
-            total += current.length + 1;
+            total += current.length+1;
             continue;
         }
 
-        switch(current.length + 1) {
-            case 2:
-                if((written_code_options & 1) != 1) {
+        switch(current.length) {
+            case 1:
+                if((block_string->written_code_options & 1) != 1) {
                     total += 1;
-                    written_code_options |= 1;
-                    //printf("2: %u %u\n", code_option_bit_2, 1);
+                    block_string->written_code_options |= 1;
                 }
                 word = word2bit[code_option_bit_2][current.mapped_symbol];
                 length = code_option_bit_2 == 1 ? 2 : word_length_bit_2[current.mapped_symbol];
                 total += length;
                 break;
-            case 3:
-                if((written_code_options & 2) != 2) {
-                    total += 2;
-                    written_code_options |= 2;
-                    //printf("3: %u %u\n", code_option_bit_3, 2);
+            case 2:
+                if((block_string->written_code_options & 2) != 2) {
+                    if(code_option_bit_3 == 2) {
+                        total += 2;
+                    }
+                    else {
+                        total += 2;
+                    }
+                    block_string->written_code_options |= 2;
                 }
                 word = word3bit[code_option_bit_3][current.mapped_symbol];
                 length = code_option_bit_3 == 2 ? 3 : word_length_bit_3[code_option_bit_3][current.mapped_symbol];
                 total += length;
                 break;
-            case 4:
-                if((written_code_options & 4) != 4) {
+            case 3:
+                if((block_string->written_code_options & 4) != 4) {
                     total += 2;
-                    //printf("4: %u %u\n", code_option_bit_4, 2);
-                    written_code_options |= 4;
+                    block_string->written_code_options |= 4;
                 }
                 word = word4bit[code_option_bit_4][current.mapped_symbol];
                 length = code_option_bit_4 == 3 ? 4 : word_length_bit_4[code_option_bit_4][current.mapped_symbol];
@@ -195,11 +187,12 @@ uint32_t get_bitstring_length() {
 
 void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option, uint8_t uncoded) {
     
-    MappedWord* current = &block_string.mapped_words[block_string.index];
+    size_t index = block_string->index[block_string->stage];
+    MappedWord* current = &block_string->mapped_words[block_string->stage][index];
     current->length = word_length - 1;
     current->symbol_option = symbol_option;
     current->uncoded = uncoded;
-    block_string.index++;
+    block_string->index[block_string->stage]++;
 
     if(uncoded || (word_length == 1)) {
         current->mapped_symbol = word;
@@ -210,8 +203,8 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
             
         case 1:
             current->mapped_symbol = sym2bit[word];
-            string_length_bit_2[0] += word_length_bit_2[current->mapped_symbol];
-            string_length_bit_2[1] += word_length;
+            block_string->string_length_2_bit[0] += word_length_bit_2[current->mapped_symbol];
+            block_string->string_length_2_bit[1] += word_length;
             break;
         case 2:
             current->mapped_symbol = sym3bit[symbol_option][word];
@@ -219,9 +212,9 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
                 printf("SYMBOL ERROR: 000\n");
                 exit(EXIT_FAILURE);
             }
-            string_length_bit_3[0] += word_length_bit_3[0][current->mapped_symbol];
-            string_length_bit_3[1] += word_length_bit_3[1][current->mapped_symbol];
-            string_length_bit_3[2] += word_length;
+            block_string->string_length_3_bit[0] += word_length_bit_3[0][current->mapped_symbol];
+            block_string->string_length_3_bit[1] += word_length_bit_3[1][current->mapped_symbol];
+            block_string->string_length_3_bit[2] += word_length;
             break;
         case 3:
             current->mapped_symbol = sym4bit[symbol_option][word];
@@ -229,10 +222,10 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
                 printf("SYMBOL ERROR: 0000\n");
                 exit(EXIT_FAILURE);
             }
-            string_length_bit_4[0] += word_length_bit_4[0][current->mapped_symbol];
-            string_length_bit_4[1] += word_length_bit_4[1][current->mapped_symbol];
-            string_length_bit_4[2] += word_length_bit_4[2][current->mapped_symbol];
-            string_length_bit_4[3] += word_length;
+            block_string->string_length_4_bit[0] += word_length_bit_4[0][current->mapped_symbol];
+            block_string->string_length_4_bit[1] += word_length_bit_4[1][current->mapped_symbol];
+            block_string->string_length_4_bit[2] += word_length_bit_4[2][current->mapped_symbol];
+            block_string->string_length_4_bit[3] += word_length;
             break;
     }
 }

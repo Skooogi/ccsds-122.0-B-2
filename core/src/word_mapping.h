@@ -6,7 +6,10 @@
 extern "C" {
 #endif
 
+struct BlockString;
+
 void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option, uint8_t uncoded);
+void set_block_string(BlockString* new_block_string);
 void write_block_string(void);
 void reset_block_string(void);
 void block_string_initialize(void);

@@ -10,6 +10,7 @@ extern "C" {
 
 #define AC_COEFFICIENTS_PER_BLOCK 63
 #define BLOCKS_PER_GAGGLE 16
+#define MAPPED_WORDS_PER_STAGE 512
 
 typedef union Tran {
     struct {
@@ -37,9 +38,15 @@ typedef struct MappedWord {
     unsigned mapped_symbol : 4;
 } MappedWord;
 
+//Exists for each gaggle. Reset every bitplane
 typedef struct BlockString {
-    MappedWord mapped_words[1024]; //Capped out with 512 words for some images.
-    uint32_t index;
+    uint8_t written_code_options;
+    uint8_t stage; //Only for stages 1 - 3
+    MappedWord mapped_words[3][MAPPED_WORDS_PER_STAGE]; //Mapped words per stage 1-3
+    uint32_t index[3];
+    uint32_t string_length_2_bit[2];
+    uint32_t string_length_3_bit[3];
+    uint32_t string_length_4_bit[4];
 } BlockString;
 
 //Block operations

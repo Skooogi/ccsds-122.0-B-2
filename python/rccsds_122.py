@@ -687,6 +687,9 @@ def decompress(filename = 'output.cmp'):
         blocks[i].ac = np.zeros(63, dtype=int)
     #print("Blocks:",len(blocks))
     height = int(len(blocks) / int(width/8))*8
+    num_gaggles = len(blocks)//16
+    if(len(blocks) % 16 != 0):
+        num_gaggles += 1
 
     #determine q and N for DC
     q = 0
@@ -726,21 +729,21 @@ def decompress(filename = 'output.cmp'):
             continue
 
         #print("bitplane", bitplane)
-        for gaggle in range(0, len(blocks), 16):
-            code_words = [-1, -1, -1]
+        code_words = np.ones([num_gaggles, 3],dtype=int)*-1
+        for stage in range(0, end_stage+1):
             #start_glob = readb.total_read_bits
-            for stage in range(0, end_stage+1):
+            for gaggle in range(num_gaggles):
                 #start = readb.total_read_bits
 
                 if(stage == 0):
                     #print("S1")
-                    stage_1(blocks[gaggle:gaggle+16], bitplane, code_words)
+                    stage_1(blocks[gaggle*16:gaggle*16+16], bitplane, code_words[gaggle])
                 elif(stage == 1):
                     #print("S2")
-                    stage_2(blocks[gaggle:gaggle+16], bitplane, code_words)
+                    stage_2(blocks[gaggle*16:gaggle*16+16], bitplane, code_words[gaggle])
                 elif(stage == 2):
                     #print("S3")
-                    stage_3(blocks[gaggle:gaggle+16], bitplane, code_words)
+                    stage_3(blocks[gaggle*16:gaggle*16+16], bitplane, code_words[gaggle])
                 #print(f'Read in stage {stage+1}:', readb.total_read_bits - start);
 
         if(end_stage == 3):

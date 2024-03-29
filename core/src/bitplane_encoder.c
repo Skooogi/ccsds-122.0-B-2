@@ -14,6 +14,7 @@ static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max);
 void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
 
     size_t num_blocks = headers->header_3.segment_size;
+    size_t num_gaggles = num_blocks / BLOCKS_PER_GAGGLE + (num_blocks % BLOCKS_PER_GAGGLE != 0);
     int32_t bitDC_max = 1;
     int32_t bitAC_max = 0;
     int32_t bitAC = 0;
@@ -85,39 +86,60 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
 
     encode_ac_magnitudes(blocks, num_blocks, bitAC_max, q);
 
+    BlockString* block_strings = malloc(num_gaggles*sizeof(BlockString));
+
     for(int8_t bitplane = bitAC_max - 1; bitplane >= end_bitplane; --bitplane) {
         stage_0(blocks, num_blocks, q, bitplane);
         if(headers->header_2.dc_stop == 1) {
             continue;
         }
-        for(size_t gaggle = 0; gaggle < num_blocks; gaggle+=16) {
-            reset_block_string();
-            
-            uint32_t start = get_bits_written();
-            for(size_t stage = 0; stage <= end_stage; ++stage) {
 
-                size_t blocks_in_gaggle = gaggle + 16 < num_blocks ? 16 : num_blocks - gaggle;
+        //Reset all block strings
+        memset(block_strings, 0, num_gaggles*sizeof(BlockString));
+
+        uint32_t start = get_bits_written();
+        for(size_t stage = 0; stage <= end_stage; ++stage) {
+            for(size_t gaggle = 0; gaggle < num_gaggles; ++gaggle) {
+                if(stage == 3) {
+                    continue;
+                }
+                set_block_string(&block_strings[gaggle]);
+                block_strings[gaggle].stage = stage;
+
+                size_t blocks_in_gaggle = gaggle*16 + 16 < num_blocks ? 16 : num_blocks - gaggle*16;
                 uint32_t start_bits = get_bitstring_length();
 
                 if(stage == 0) {
-                    stage_1(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
+                    stage_1(headers, blocks+gaggle*16, blocks_in_gaggle, bitplane);
                 }
                 else if(stage == 1) {
-                    stage_2(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
+                    stage_2(headers, blocks+gaggle*16, blocks_in_gaggle, bitplane);
                 }
                 else if(stage == 2) {
-                    stage_3(headers, blocks+gaggle, blocks_in_gaggle, bitplane);
+                    stage_3(headers, blocks+gaggle*16, blocks_in_gaggle, bitplane);
                 }
 
                 //printf("Written in stage (%u): %u\n", stage + 1, get_bitstring_length() - start_bits);
             }
-            write_block_string();
             //printf("%u) Written in gaggle: %u\n", bitplane, get_bits_written() - start);
+        }
+
+        //Write stages to file in order given in figure 4-2
+        for(size_t stage = 0; stage <= end_stage; ++stage) {
+            if(stage == 3) {
+                break;
+            }
+            for(size_t gaggle = 0; gaggle < num_gaggles; ++gaggle) {
+                set_block_string(&block_strings[gaggle]);
+                block_strings[gaggle].stage = stage;
+                write_block_string();
+            }
         }
 
         if(end_stage == 3) {
             stage_4(headers, blocks, num_blocks, bitplane);
         }
+
     }
     free(dc_coefficients);
     free(blocks);
