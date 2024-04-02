@@ -19,10 +19,14 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
     int32_t bitAC_max = 0;
     int32_t bitAC = 0;
 
-    int32_t* dc_coefficients = calloc(num_blocks, sizeof(int32_t));
-    Block* blocks = calloc(num_blocks, sizeof(Block));
 
+    Block* blocks = calloc(num_blocks, sizeof(Block));
     block_transform_pack(blocks, num_blocks, data, headers->header_4.image_width);
+    free(data);
+
+    int32_t* dc_coefficients = calloc(num_blocks, sizeof(int32_t));
+    BlockString* block_strings = malloc(num_gaggles*sizeof(BlockString));
+
     for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
 
         dc_coefficients[block_index] = blocks[block_index].dc;
@@ -86,7 +90,9 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
 
     encode_ac_magnitudes(blocks, num_blocks, bitAC_max, q);
 
-    BlockString* block_strings = malloc(num_gaggles*sizeof(BlockString));
+    uint32_t max_index_1 = 0;
+    uint32_t max_index_2 = 0;
+    uint32_t max_index_3 = 0;
 
     for(int8_t bitplane = bitAC_max - 1; bitplane >= end_bitplane; --bitplane) {
         stage_0(blocks, num_blocks, q, bitplane);
@@ -130,6 +136,10 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
                 break;
             }
             for(size_t gaggle = 0; gaggle < num_gaggles; ++gaggle) {
+                max_index_1 = max(max_index_1, block_strings[gaggle].index[0]);
+                max_index_2 = max(max_index_2, block_strings[gaggle].index[1]);
+                max_index_3 = max(max_index_3, block_strings[gaggle].index[2]);
+
                 set_block_string(&block_strings[gaggle]);
                 block_strings[gaggle].stage = stage;
                 write_block_string();
@@ -141,8 +151,11 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
         }
 
     }
+
+    printf("%lu %lu %lu\n", max_index_1, max_index_2, max_index_3);
     free(dc_coefficients);
     free(blocks);
+    free(block_strings);
 }
 
 static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max) {

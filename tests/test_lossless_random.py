@@ -39,21 +39,21 @@ def randomtests():
     # ------------------------------------------------------------------------------
 
     # The total number of random images to test
-    num_images = 10
+    num_images = 1000
 
     # The minimum and maximum image width. Note that the image width must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_width = 32
-    max_width = 32
+    max_width = 1024
 
     # The minimum and maximum image height. Note that the image height must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_height = 32
-    max_height = 32
+    max_height = 1024
 
     # The minimum and maximum bitdepth to use. (Currently only bitdepths up to 12 supported)
-    min_bitdepth = 16
-    max_bitdepth = 16
+    min_bitdepth = 1
+    max_bitdepth = 12
 
     # The seed to use for the run. Arbitrary. Always setting the same seed so that the
     # results are reproducible.

@@ -25,15 +25,15 @@ def randomtests():
     os.system('make -C ..')
     #build cython library
     os.system('(cd ../python/cython; python3 c_dwt_compile.py build_ext --inplace)')
-    #build nebraska and copy to tests
-    os.system('make -C ../../CCSDS/source; cp ../../CCSDS/bin/nebraska.bin nebraska.bin')
+
+    nebraska_compressor = "nebraska.bin" #replace with decompressor location
 
     # ------------------------------------------------------------------------------
     # Parameters of the test:
     # ------------------------------------------------------------------------------
 
     # The total number of random images to test
-    num_images = 100
+    num_images = 1000
 
     # The minimum and maximum image width. Note that the image width must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
@@ -46,7 +46,7 @@ def randomtests():
     max_height = 1024
 
     # The minimum and maximum bitdepth to use. (Currently only bitdepths up to 12 supported)
-    min_bitdepth = 12
+    min_bitdepth = 1
     max_bitdepth = 12
 
     # The seed to use for the run. Arbitrary. Always setting the same seed so that the
@@ -107,9 +107,9 @@ def randomtests():
         file_io.save_image(fname_in[:-4] + '.bmp', orig_img, img_width, img_height)
 
         print("Compressing:")
-        os.system(f'time ../build/ccsds.bin {fname_in} {fname_out} {img_width} {img_height} {img_bitdepth}')
+        os.system(f'../build/ccsds.bin {fname_in} {fname_out} {img_width} {img_height} {img_bitdepth}')
         print("Decompressing:")
-        os.system(f'time ./nebraska.bin -b {img_bitdepth} -d {fname_out} -o {fname_decomp}')
+        os.system(f'time ./{nebraska_compressor} -b {img_bitdepth} -d {fname_out} -o {fname_decomp}')
 
         decomp_img = np.fromfile(fname_decomp, dtype=np.uint16 if img_bitdepth > 8 else np.uint8).reshape([img_height, img_width])
         file_io.save_image(fname_decomp[:-4] + '.bmp', decomp_img, img_width, img_height)
