@@ -152,7 +152,7 @@ void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
 
     }
 
-    printf("%lu %lu %lu\n", max_index_1, max_index_2, max_index_3);
+    //printf("%lu %lu %lu\n", max_index_1, max_index_2, max_index_3);
     free(dc_coefficients);
     free(blocks);
     free(block_strings);

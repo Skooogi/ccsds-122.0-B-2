@@ -69,7 +69,6 @@ int main(int argc, char** argv) {
     headers->header_2.use_fill = 0;
     headers->header_2.bitplane_stop = 0;
 
-
     headers->header_3.segment_size = (width>>3)*(height>>3);
     headers->header_3.optimal_ac_select = 0;
     headers->header_3.optimal_dc_select = 0;
@@ -92,7 +91,6 @@ int main(int argc, char** argv) {
 
     file_io_close_output_file();
     free(headers);
-    free(test_data);
 	return 0;
 }
 #endif
