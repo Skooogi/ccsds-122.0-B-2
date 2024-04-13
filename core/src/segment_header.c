@@ -13,8 +13,12 @@ SegmentHeader* segment_header_init_values(void) {
 }
 
 void segment_header_write_data(SegmentHeader* headers) {
-    
-    file_io_write_bits(headers->header_1.packed, 32);
+    if(!headers->header_1.last_segment) {
+        file_io_write_bits(headers->header_1.packed >> 8, 24);
+    }
+    else {
+        file_io_write_bits(headers->header_1.packed, 32);
+    }
     if(headers->header_1.has_header_2) {
         file_io_write_bits(headers->header_2.packed, 40);
     }
