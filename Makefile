@@ -7,7 +7,7 @@ C_INCLUDES = \
 -Icore/include \
 
 C_DEFS =
-CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -g -O3
+CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -g
 #Dependency information
 CFLAGS+= -MMD -MP -MF"$(@:%.o=%.d)"
 
@@ -20,9 +20,9 @@ OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 all: $(BUILD_DIR)/$(PROJECT).bin 
 
-TEST_IN_FILE = "../res/space/raw/test_image_space_3.raw"
+TEST_IN_FILE = "../res/pattern/raw/test_image_gradient_32.raw"
 TEST_OUT_FILE = "../python/output.cmp"
-TEST_SIZE = 2000 1322 8
+TEST_SIZE = 32 32 8
 RUN_BIN = ./$(PROJECT).bin $(TEST_IN_FILE) $(TEST_OUT_FILE) $(TEST_SIZE)
 
 run: all
@@ -37,8 +37,9 @@ perf: all
 stat: all
 	@(cd ${BUILD_DIR}; perf stat -d $(RUN_BIN))
 
-#@(cd ${BUILD_DIR}; valgrind --leak-check=full --track-origins=yes $(RUN_BIN))
 valgrind: all
+	@(cd ${BUILD_DIR}; valgrind --leak-check=full --track-origins=yes $(RUN_BIN))
+massig: all
 	@(cd ${BUILD_DIR}; valgrind --tool=massif $(RUN_BIN))
 
 $(BUILD_DIR)/$(PROJECT).bin: $(OBJECTS)
