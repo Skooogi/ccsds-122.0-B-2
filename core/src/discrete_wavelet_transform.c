@@ -1,11 +1,6 @@
 #include "discrete_wavelet_transform.h"
 #include <stdint.h>
 #include <string.h>
-#include <stdio.h>
-
-//static inline int16_t round_int(int32_t numerator, int32_t denominator) {
-//    return (numerator) < 0 ? ((numerator) - ((denominator)/2)) / (denominator) : ((numerator) + ((denominator)/2)) / (denominator);
-//}
 
 static inline int16_t round_int(int32_t numerator, int32_t denominator) {
     float rounding = ((float)numerator)/denominator + 0.5f;
@@ -16,6 +11,11 @@ static inline int16_t round_int(int32_t numerator, int32_t denominator) {
 }
 
 static void forward_DWT(int16_t* data, size_t width) {
+    //An array of size W [0.....W] is transformed to highpass 'H' and lowpass 'L' values.
+    //The transformation is in-place and the resulting array is formed as:
+    //[L_0,L_1 ... L_(W/2), H_0, H1 ... H_(W/2)]
+    //
+    //The transformation is calculated as shown in (3.3.2)
 
 	//cache line for in place operation
 	int16_t cache[width];
@@ -24,6 +24,7 @@ static void forward_DWT(int16_t* data, size_t width) {
 	uint32_t n = width >> 1; //number of coefficients in pass
 	int16_t* highpass = &data[n];
 	int16_t* lowpass = &data[0];
+
 
     highpass[0] = cache[1] - round_int((9 * (cache[0] + cache[2]) - (cache[2] + cache[4])), 16);
     lowpass[0] = cache[0] - round_int(-highpass[0], 2);
@@ -41,6 +42,7 @@ static void forward_DWT(int16_t* data, size_t width) {
 }
 
 static void backward_DWT(int16_t* data, size_t width) {
+    //The original values are reconstructed as shown in (3.4.2)
 
     size_t n = width >> 1;
     int16_t cache[width];
@@ -64,7 +66,12 @@ static void backward_DWT(int16_t* data, size_t width) {
     data[2*n-1] = highpass[n-1] + round_int(9 * data[2*n-2] - data[2*n-4], 8);
 }
 
+
 void discrete_wavelet_transform_2D(int16_t* data, size_t data_width, size_t data_height, uint8_t transform_levels, uint8_t inverse_flag) {
+    //The 2D-image is split into 1D rows and columns.
+    //These 1D arrays are operated on independantly.
+    //The resulting 2D lowpass area is then transformed.
+    //This is repeated 3 times.
 
     if(inverse_flag) {
         for(int8_t level = transform_levels-1; level >= 0; --level) {

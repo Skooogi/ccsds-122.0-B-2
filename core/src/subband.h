@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-void subband_scale(int16_t* data, size_t width, size_t height);
+void subband_scale(SegmentHeader* headers, int16_t* data, size_t width, size_t height);
 
 #ifdef __cplusplus
 }

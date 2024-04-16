@@ -1,6 +1,5 @@
 #include "file_io.h"
 #include "segment_header.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 

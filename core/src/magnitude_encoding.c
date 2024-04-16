@@ -1,7 +1,118 @@
 #include "magnitude_encoding.h"
+#include "common.h"
 #include "file_io.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+static int32_t select_coding(int32_t gaggle_sum, size_t J, size_t N);
+static void split_coding(int32_t* differences, size_t num_differences, uint32_t N, int32_t* first);
+
+void encode_dc_magnitudes(SegmentData* segment_data) {
+
+    int32_t* dc_coefficients = segment_data->dc_coefficients + segment_data->block_offset;
+    int32_t num_coeffs = segment_data->headers->header_3.segment_size;
+    int32_t bitDC = segment_data->headers->header_1.bitDCMax;
+    int32_t q = segment_data->q;
+
+    //DC coding
+    uint32_t N = max(bitDC - q, 1);
+    
+    if(N == 1) {
+        for(size_t i = 0;  i < num_coeffs; ++i) {
+            file_io_write_bits(dc_coefficients[i]>>q, 1);
+        }
+        return;
+    }
+
+    //First DC coefficient is uncoded
+    int32_t differences[num_coeffs];
+    int32_t shifted[num_coeffs];
+    int32_t mask_N_bits = (1 << N) - 1;
+    for(size_t i = 0;  i < num_coeffs; ++i) {
+        //printf("%b\n", dc_coefficients[i]);
+        shifted[i] = (dc_coefficients[i] >> q) & ((1<<20) - 1);
+        if((shifted[i] & (1 << (N-1))) == 0) {
+            continue;
+        }
+        shifted[i] = -(((shifted[i] ^ mask_N_bits) & mask_N_bits) + 1);
+    }
+
+    int32_t last = shifted[0];
+    int32_t first = last;
+
+    //Rest of the DC coefficients
+    //4.3.2.4
+    int32_t sigma, theta, res;
+    for(size_t i = 1;  i < num_coeffs; ++i) {
+
+        sigma = shifted[i] - last;
+        theta = min(last + (1<<(N-1)), (1<<(N-1)) - 1 - last);
+        last = shifted[i];
+        res = 0;
+
+        if(sigma >= 0 && sigma <= theta) {
+            res = 2*sigma;
+        }
+        else if(sigma < 0 && sigma >= -theta) {
+            res = -2*sigma-1;
+        }
+        else {
+            res = theta + abs(sigma);
+        }
+        
+        differences[i] = res;
+    }
+
+    split_coding(differences, num_coeffs, N, &first);
+}
+
+void encode_ac_magnitudes(SegmentData* segment_data) {
+    Block* blocks = segment_data->blocks + segment_data->block_offset;
+    size_t num_blocks = segment_data->headers->header_3.segment_size;
+    uint32_t bitAC_max = segment_data->headers->header_1.bitACMax;
+    uint32_t q = segment_data->q;
+
+    uint32_t N = log2_32_ceil(1 + bitAC_max);
+    if(N == 0) {
+        return;
+    }
+    if(N == 1) {
+        //Coefficients are 1 bit long and no further coding is required
+        for(size_t i = 1; i < num_blocks; ++i) {
+            file_io_write_bits(blocks[i].bitAC, 1);
+        }
+        return;
+    }
+             
+    int32_t differences[num_blocks];
+
+    int32_t last = blocks[0].bitAC;
+    int32_t first = last;
+    differences[0] = first;
+    
+    //Rest of the AC coefficients
+    //4.3.2.4
+    int32_t sigma, theta, res;
+    for(size_t i = 1; i < num_blocks; ++i) {
+        sigma = (blocks[i].bitAC) - last;
+        theta = min(last, (1<<N) - 1 - last);
+        last = (blocks[i].bitAC);
+        res = 0;
+
+        if(sigma >= 0 && sigma <= theta) {
+            res = sigma<<1;
+        }
+        else if(sigma < 0 && sigma >= -theta) {
+            res = (abs(sigma)<<1) - 1;
+        }
+        else{
+            res = theta + abs(sigma);
+        }
+        differences[i] = res;
+    }
+
+    split_coding(differences, num_blocks, N, &first);
+}
 
 static int32_t select_coding(int32_t gaggle_sum, size_t J, size_t N) {
     //Heuristic way of selecting coding option k as in figure 4-10
@@ -88,102 +199,4 @@ static void split_coding(int32_t* differences, size_t num_differences, uint32_t 
             }
         }
     }
-}
-
-void encode_dc_magnitudes(int32_t* dc_coefficients, int32_t num_coeffs, int32_t bitDC, int32_t q) {
-
-    //DC coding
-    uint32_t N = max(bitDC - q, 1);
-    
-    if(N == 1) {
-        for(size_t i = 0;  i < num_coeffs; ++i) {
-            file_io_write_bits(dc_coefficients[i]>>q, 1);
-        }
-        return;
-    }
-
-    //First DC coefficient is uncoded
-    int32_t differences[num_coeffs];
-    int32_t shifted[num_coeffs];
-    int32_t mask_N_bits = (1 << N) - 1;
-    for(size_t i = 0;  i < num_coeffs; ++i) {
-        //printf("%b\n", dc_coefficients[i]);
-        shifted[i] = (dc_coefficients[i] >> q) & ((1<<20) - 1);
-        if((shifted[i] & (1 << (N-1))) == 0) {
-            continue;
-        }
-        shifted[i] = -(((shifted[i] ^ mask_N_bits) & mask_N_bits) + 1);
-    }
-
-    int32_t last = shifted[0];
-    int32_t first = last;
-
-    //Rest of the DC coefficients
-    //4.3.2.4
-    int32_t sigma, theta, res;
-    for(size_t i = 1;  i < num_coeffs; ++i) {
-
-        sigma = shifted[i] - last;
-        theta = min(last + (1<<(N-1)), (1<<(N-1)) - 1 - last);
-        last = shifted[i];
-        res = 0;
-
-        if(sigma >= 0 && sigma <= theta) {
-            res = 2*sigma;
-        }
-        else if(sigma < 0 && sigma >= -theta) {
-            res = -2*sigma-1;
-        }
-        else {
-            res = theta + abs(sigma);
-        }
-        
-        differences[i] = res;
-    }
-
-    split_coding(differences, num_coeffs, N, &first);
-}
-
-void encode_ac_magnitudes(Block* blocks, size_t num_blocks, uint32_t bitAC_max, uint32_t q) {
-
-    uint32_t N = log2_32_ceil(1 + bitAC_max);
-    if(N == 0) {
-        return;
-    }
-    if(N == 1) {
-        //Coefficients are 1 bit long and no further coding is required
-        for(size_t i = 1; i < num_blocks; ++i) {
-            file_io_write_bits(blocks[i].bitAC, 1);
-        }
-        return;
-    }
-             
-    int32_t differences[num_blocks];
-
-    int32_t last = blocks[0].bitAC;
-    int32_t first = last;
-    differences[0] = first;
-    
-    //Rest of the AC coefficients
-    //4.3.2.4
-    int32_t sigma, theta, res;
-    for(size_t i = 1; i < num_blocks; ++i) {
-        sigma = (blocks[i].bitAC) - last;
-        theta = min(last, (1<<N) - 1 - last);
-        last = (blocks[i].bitAC);
-        res = 0;
-
-        if(sigma >= 0 && sigma <= theta) {
-            res = sigma<<1;
-        }
-        else if(sigma < 0 && sigma >= -theta) {
-            res = (abs(sigma)<<1) - 1;
-        }
-        else{
-            res = theta + abs(sigma);
-        }
-        differences[i] = res;
-    }
-
-    split_coding(differences, num_blocks, N, &first);
 }

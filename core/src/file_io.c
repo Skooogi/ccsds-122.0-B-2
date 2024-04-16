@@ -12,6 +12,7 @@ extern void put_word(uint8_t word);
 uint32_t get_bits_written() { return bits_written; }
 
 void file_io_write_bits(uint64_t bits, size_t length) {
+    //Writes output one byte at a time.
 
     static uint8_t cache = 0;
     static uint8_t size = 0;

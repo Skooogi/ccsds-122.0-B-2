@@ -23,9 +23,9 @@ typedef union Header_1 {
         unsigned has_header_2   : 1;
         unsigned reserved_1     : 1;
 
-        unsigned bitAC          : 5;
-        unsigned bitDC          : 5;
-        unsigned num_segments   : 8;
+        unsigned bitACMax          : 5;
+        unsigned bitDCMax          : 5;
+        unsigned segment_index   : 8;
         unsigned last_segment   : 1;
         unsigned first_segment  : 1;
     };
@@ -102,9 +102,9 @@ typedef union Header_1 {
     struct {
         unsigned first_segment  : 1;
         unsigned last_segment   : 1;
-        unsigned num_segments   : 8;
-        unsigned bitDC          : 5;
-        unsigned bitAC          : 5;
+        unsigned segment_index   : 8;
+        unsigned bitDCMax          : 5;
+        unsigned bitACMax          : 5;
 
         unsigned reserved_1     : 1;
         unsigned has_header_2   : 1;

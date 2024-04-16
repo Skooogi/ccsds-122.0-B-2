@@ -1,45 +1,42 @@
 #include "encoding_stages.h"
+#include "common.h"
 #include "file_io.h"
 #include "word_mapping.h"
 #include <stdio.h>
-#include <stdlib.h>
 
-void stage_0(Block* blocks, size_t num_blocks, uint8_t q, uint8_t bitplane) {
+static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane);
+
+void stage_0(SegmentData* segment_data) {
+
+    int32_t* dc_coefficients = segment_data->dc_coefficients + segment_data->block_offset;
+    size_t num_blocks = segment_data->headers->header_3.segment_size;
+    uint8_t q = segment_data->q;
+    uint8_t bitplane = segment_data->bitplane;
+
     if(3 > bitplane || bitplane >= q) {
         return;
     }
-    //Any remaining DC bits
+
+    //Encodes any remaining DC bits q > bitplane > 3
     for(size_t i = 0; i < num_blocks; ++i) {
-        file_io_write_bits((blocks[i].dc >> bitplane) & 1, 1); 
+        file_io_write_bits((dc_coefficients[i] >> bitplane) & 1, 1); 
     }
 }
 
-void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
+void stage_1(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size) {
 
-    uint32_t bitAC = headers->header_1.bitAC;
+    uint8_t bitACMax = segment_data->headers->header_1.bitACMax;
+    uint8_t bitplane = segment_data->bitplane;
+    Block* blocks = segment_data->blocks + segment_data->block_offset + gaggle_offset;
 
-    for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
+    //Encodes all types[P] and corresponding signs for each block sequentally.
+    //(4.5.3.1.8)
+    for(size_t block_index = 0; block_index < gaggle_size; ++block_index) {
         if(blocks[block_index].bitAC <= bitplane) {
             continue;
         }
 
-        uint64_t new_high_status_bit = 0;
-        uint64_t new_low_status_bit = 0;
-
-        for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
-            uint32_t ac_coefficient = blocks[block_index].ac[ac_index] & ~(1<<bitAC);
-            if(subband_lim(ac_index, bitplane)) {
-                new_high_status_bit |= 1LL << ac_index;
-                new_low_status_bit |= 1LL << ac_index;
-            }
-            else if((1<<(bitplane+1)) <= ac_coefficient) {
-                new_high_status_bit |= 1LL << ac_index;
-            }
-            else if((1<<(bitplane)) <= ac_coefficient && ac_coefficient < (1<<(bitplane+1))) {
-                new_low_status_bit |= 1LL << ac_index;
-            }
-        }
-        block_set_status_with(&blocks[block_index], new_high_status_bit, new_low_status_bit);
+        set_block_status(&blocks[block_index], bitACMax, bitplane);
         
         //types_p and signs_p
         uint8_t types_p = 0;
@@ -47,44 +44,30 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
         uint8_t size_s = 0;
         uint8_t size_p = 0;
 
-        int8_t p0 = block_get_status(&blocks[block_index], 0);
-        int8_t p1 = block_get_status(&blocks[block_index], 21);
-        int8_t p2 = block_get_status(&blocks[block_index], 42);
+        for(uint8_t family = 0; family < 3; ++family) {
 
-        if(bitplane > 2 && 0 <= p0 && p0 <= 1) {
-            types_p |= p0;
-            size_p += 1;
-
-            if(p0 == 1){
-                signs_p |= (blocks[block_index].ac[0] >> bitAC) & 1;
-                size_s += 1;
+            //Each family has 21 ac coefficients with p as the first one.
+            int8_t p = block_get_status(&blocks[block_index], family*21);
+            if(family < 2 && (bitplane <= 2 || p < 0 || p > 1)) {
+                continue;
             }
-        }
+            if(family == 2 && (bitplane <= 1 || p < 0 || p > 1)) {
+                continue;
+            }
 
-        if(bitplane > 2 && 0 <= p1 && p1 <= 1) {
             types_p <<= 1;
-            types_p |= p1;
-            size_p += 1;
+            types_p |= p;
+            size_p++;
 
-            if(p1 == 1) {
+            //If the ac coefficient is hit, save the sign.
+            if(p) {
                 signs_p <<= 1;
-                signs_p |= (blocks[block_index].ac[21] >> bitAC) & 1;
-                size_s += 1;
+                signs_p |= (blocks[block_index].ac[family*21] >> bitACMax) & 1;
+                size_s++;
             }
         }
 
-        if(bitplane > 1 && 0 <= p2 && p2 <= 1) {
-            types_p <<= 1;
-            types_p |= p2;
-            size_p += 1;
-
-            if(p2 == 1) {
-                signs_p <<= 1;
-                signs_p |= (blocks[block_index].ac[42] >> bitAC) & 1;
-                size_s += 1;
-            }
-        }
-
+        //Save generated words to block string.
         if(size_p > 0) {
             word_mapping_code(types_p, size_p, 0, 0);
             if(size_s > 0) {
@@ -94,24 +77,29 @@ void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
     }
 }
 
-void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
+void stage_2(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size) {
 
-    uint32_t bitAC = headers->header_1.bitAC;
+    uint32_t bitACMax = segment_data->headers->header_1.bitACMax;
+    uint8_t bitplane = segment_data->bitplane;
+    Block* blocks = segment_data->blocks + segment_data->block_offset + gaggle_offset;
 
-    for(size_t block_index = 0; block_index < num_blocks; ++block_index) { 
+    //Encodes all types[C] and corresponding signs for each block sequentally.
+    //(4.5.3.1.8)
+    for(size_t block_index = 0; block_index < gaggle_size; ++block_index) { 
         if(blocks[block_index].bitAC <= bitplane) {
             continue;
         }
 
         //TRANB
-        int8_t bmax = block_get_bmax(&blocks[block_index]);
+        uint8_t bmax = block_get_bmax(&blocks[block_index]);
 
         if(blocks[block_index].tran.b != 1) {
             blocks[block_index].tran.b = bmax;
             word_mapping_code(blocks[block_index].tran.b, 1, 0, 1);
         }
 
-        if(blocks[block_index].tran.b == 0 || bmax == -1) {
+        //All coefficients in the block are 0 and only TRANB is encoded.
+        if(blocks[block_index].tran.b == 0) {
             continue;
         }
 
@@ -119,31 +107,25 @@ void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
         uint8_t tran_d = 0;
         uint8_t size = 0;
 
-        uint8_t status_f0 = block_get_dmax(&blocks[block_index],0);
-        uint8_t status_f1 = block_get_dmax(&blocks[block_index],1);
-        uint8_t status_f2 = block_get_dmax(&blocks[block_index],2);
+        for(uint8_t family = 0; family < 3; ++family) {
 
-        if(bitplane > 0 && !(blocks[block_index].tran.d & 4) && status_f0 >= 0) {
-            tran_d |= status_f0;
-            blocks[block_index].tran.d |= 4*status_f0;
-            size += 1;
-        }
+            uint8_t status = block_get_dmax(&blocks[block_index], family);
+            if(family < 2 && (bitplane == 0 || (blocks[block_index].tran.d & (1 << (2-family))))) {
+                continue;
+            }
+            if(family == 2 && (blocks[block_index].tran.d & (1 << (2-family)))) {
+                continue;
+            }
 
-        if(bitplane > 0 && !(blocks[block_index].tran.d & 2) && status_f1 >= 0) {
             tran_d <<= 1;
-            tran_d |= status_f1;
-            blocks[block_index].tran.d |= 2*status_f1;
-            size += 1;
-        }
+            tran_d |= status;
+            size++;
 
-        if(!(blocks[block_index].tran.d & 1) && status_f2 >= 0) {
-            tran_d <<= 1;
-            tran_d |= status_f2;
-            blocks[block_index].tran.d |= status_f2;
-            size += 1;
+            blocks[block_index].tran.d |= status << (2-family);
         }
 
         if(size != 0) {
+            //Symbol option is 1 only when TRAND is 3b long.
             word_mapping_code(tran_d, size, size == 3 ? 1 : 0, 0);
         }
 
@@ -171,7 +153,7 @@ void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                     if(types_c & 1) {
                         signs_c <<= 1;
                         size_s += 1;
-                        signs_c |= (blocks[block_index].ac[index] >> bitAC) & 1;
+                        signs_c |= (blocks[block_index].ac[index] >> bitACMax) & 1;
                     }
                 }
             }
@@ -185,11 +167,13 @@ void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
     }
 }
 
-void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
+void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size) {
 
-    uint32_t bitAC = headers->header_1.bitAC;
+    uint32_t bitACMax = segment_data->headers->header_1.bitACMax;
+    uint8_t bitplane = segment_data->bitplane;
+    Block* blocks = segment_data->blocks + segment_data->block_offset + gaggle_offset;
 
-    for(size_t block_index = 0; block_index < num_blocks; ++block_index) {
+    for(size_t block_index = 0; block_index < gaggle_size; ++block_index) { 
 
         if(blocks[block_index].tran.b == 0) {
             continue;
@@ -203,36 +187,25 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
         uint8_t size = 0;
         uint8_t tran_g = 0;
 
-        int8_t status_f0 = block_get_gmax(&blocks[block_index],0);
-        int8_t status_f1 = block_get_gmax(&blocks[block_index],1);
-        int8_t status_f2 = block_get_gmax(&blocks[block_index],2);
-        
-        uint8_t subband_mask = 0;
-        subband_mask |= status_f0 == -1 ? 4 : 0;
-        subband_mask |= status_f1 == -1 ? 2 : 0;
-        subband_mask |= status_f2 == -1 ? 1 : 0;
+        for(uint8_t family = 0; family < 3; ++family) {
 
-        blocks[block_index].tran.g |= subband_mask;
+            uint8_t tran_d_hit = (blocks[block_index].tran.d & (1 << (2-family)));
+            uint8_t tran_g_hit = (blocks[block_index].tran.g & (1 << (2-family)));
 
-        if(bitplane > 0 && (blocks[block_index].tran.d & 4) == 4 && (blocks[block_index].tran.g & 4) == 0) {
-            blocks[block_index].tran.g |= 4 * status_f0;
-            tran_g |= status_f0;
-            size += 1;
-		}
+            uint8_t status = block_get_gmax(&blocks[block_index], family);
+            if(family < 2 && (bitplane == 0 || !tran_d_hit || tran_g_hit)) {
+                continue;
+            }
+            if(family == 2 && (!tran_d_hit || tran_g_hit)) {
+                continue;
+            }
 
-        if(bitplane > 0 && (blocks[block_index].tran.d & 2) == 2 && (blocks[block_index].tran.g & 2) == 0) {
-            blocks[block_index].tran.g |= 2 * status_f1;
             tran_g <<= 1;
-            tran_g |= status_f1;
-            size += 1;
-		}
+            tran_g |= status;
+            size++;
 
-        if((blocks[block_index].tran.d & 1) == 1 && (blocks[block_index].tran.g & 1) == 0) {
-            blocks[block_index].tran.g |= status_f2;
-            tran_g <<= 1;
-            tran_g |= status_f2;
-            size += 1;
-		}
+            blocks[block_index].tran.g |= status << (2-family);
+        }
 
         if(size != 0) {
             word_mapping_code(tran_g, size, 0, 0);
@@ -248,40 +221,24 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                 continue;
             }
 
-            int8_t status_hi0 = block_get_hmax(&blocks[block_index], hi, 0);
-            int8_t status_hi1 = block_get_hmax(&blocks[block_index], hi, 1);
-            int8_t status_hi2 = block_get_hmax(&blocks[block_index], hi, 2);
-            int8_t status_hi3 = block_get_hmax(&blocks[block_index], hi, 3);
-
             uint8_t tran_h = 0;
             uint8_t size = 0;
+            for(uint8_t quadrant = 0; quadrant < 4; ++quadrant) {
 
-            if(!(blocks[block_index].tran.h[hi] & 8) && status_hi0 >= 0) {
-                blocks[block_index].tran.h[hi] |= 8 * status_hi0;
-                tran_h |= status_hi0;
-                size += 1;
-            }
+                uint8_t tran_h_hit = (blocks[block_index].tran.h[hi] & (1 << (3-quadrant)));
 
-            if(!(blocks[block_index].tran.h[hi] & 4) && status_hi1 >= 0) {
-                blocks[block_index].tran.h[hi] |= 4 * status_hi1;
+                uint8_t status = block_get_hmax(&blocks[block_index], hi, quadrant);
+                if(tran_h_hit) {
+                    continue;
+                }
+
                 tran_h <<= 1;
-                tran_h |= status_hi1;
-                size += 1;
+                tran_h |= status;
+                size++;
+
+                blocks[block_index].tran.h[hi] |= status << (3-quadrant);
             }
 
-            if(!(blocks[block_index].tran.h[hi] & 2) && status_hi2 >= 0) {
-                blocks[block_index].tran.h[hi] |= 2 * status_hi2;
-                tran_h <<= 1;
-                tran_h |= status_hi2;
-                size += 1;
-            }
-
-            if(!(blocks[block_index].tran.h[hi] & 1) && status_hi3 >= 0) {
-                blocks[block_index].tran.h[hi] |= status_hi3;
-                tran_h <<= 1;
-                tran_h |= status_hi3;
-                size += 1;
-            }
 
             if(size != 0) {
                 word_mapping_code(tran_h, size, size < 4 ? 0 : 1, 0);
@@ -310,8 +267,6 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                 uint8_t signs_h = 0;
                 uint8_t index = hi*21+5+hj*4;
 
-                uint8_t zeros = 0;
-
                 for(uint8_t j = 0; j < 4; ++j) {
                     int8_t status = block_get_status(&blocks[block_index], index+j);
                     if(0 <= status && status <= 1) {
@@ -320,12 +275,13 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                         size_h += 1;
                         if(types_h & 1) {
                             signs_h <<= 1;
-                            signs_h |= (blocks[block_index].ac[index+j] >> bitAC) & 1;
+                            signs_h |= (blocks[block_index].ac[index+j] >> bitACMax) & 1;
                             size_s += 1;
                         }
                     }
                 }
                 if(size_h > 0) {
+                    //Symbol option is 1 when types[H] is 4b long.
                     word_mapping_code(types_h, size_h, size_h == 4 ? 1 : 0, 0);
                     if(size_s > 0) {
                         word_mapping_code(signs_h, size_s, 0, 1);
@@ -336,13 +292,17 @@ void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
     }
 }
 
-void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane) {
+void stage_4(SegmentData* segment_data) {
 
-    for(size_t i = 0; i < num_blocks; ++i) {
+    uint8_t bitplane = segment_data->bitplane;
+    Block* blocks = segment_data->blocks + segment_data->block_offset;
+
+    for(size_t i = 0; i < segment_data->headers->header_3.segment_size; ++i) {
         if(blocks[i].bitAC <= bitplane) {
             continue;
         }
 
+        //Bits for P coefficient.
         for(size_t pi = 0; pi < 3; ++pi) {
             size_t index = pi * 21;
             if(block_get_status(&blocks[i], index) == 2) {
@@ -350,6 +310,8 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
                 file_io_write_bits(temp, 1);
             }
         }
+        
+        //Bits for C coefficients.
         for(size_t ci = 0; ci < 3; ++ci) {
             for(size_t j = 0; j < 4; ++j) {
                 size_t index = 1 + ci * 21 + j;
@@ -360,6 +322,7 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             }
         }
 
+        //Bits for H coefficients.
         for(size_t hi = 0; hi < 3; ++hi) {
             for(size_t hj = 0; hj < 4; ++hj) {
                 for(size_t j = 0; j < 4; ++j) {
@@ -372,4 +335,25 @@ void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t b
             }
         }
     }
+}
+
+static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
+
+        uint64_t new_high_status_bit = 0;
+        uint64_t new_low_status_bit = 0;
+
+        for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
+            uint32_t ac_coefficient = block->ac[ac_index] & ~(1<<bitACMax);
+            if(subband_lim(ac_index, bitplane)) {
+                new_high_status_bit |= 1ll << ac_index;
+                new_low_status_bit |= 1ll << ac_index;
+            }
+            else if((1<<(bitplane+1)) <= ac_coefficient) {
+                new_high_status_bit |= 1ll << ac_index;
+            }
+            else if((1<<(bitplane)) <= ac_coefficient && ac_coefficient < (1<<(bitplane+1))) {
+                new_low_status_bit |= 1ll << ac_index;
+            }
+        }
+        block_set_status_with(block, new_high_status_bit, new_low_status_bit);
 }

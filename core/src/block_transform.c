@@ -2,18 +2,21 @@
 
 static void family(Block* blocks, size_t block_index, int16_t* data, size_t width, size_t row, size_t column, size_t ac_index);
 
-void block_transform_pack(Block* blocks, size_t num_blocks, int16_t* data, size_t data_width) {
+void block_transform_pack(Block* blocks, int32_t* dc_coefficients, size_t num_blocks, int16_t* data, size_t data_width) {
+    //Picks all coefficients for all blocks from the transformed image.
+    //These are held in sequential blocks. (Figure 4-1)
 
+    //Height is not explicitly saved because it can be derived.
     size_t block_width = data_width>>3;
     size_t block_height = num_blocks / block_width;
 
-    //Fill blocks with the families making up the DC coefficients
+    //Fill blocks with the families making up the DC coefficients.
     for(size_t row = 0; row < block_height; ++row) {
         for(size_t column = 0; column < block_width; ++column) {
             size_t block_index = row*block_width+column;
 
-            //DC coefficient
-            blocks[block_index].dc = data[row*data_width+column];
+            //DC coefficients are held separately.
+            dc_coefficients[block_index] = data[row*data_width+column];
 
             //Parents for F0 F1 F2
             blocks[block_index].ac[0] = data[row*data_width + column + block_width];
@@ -27,6 +30,8 @@ void block_transform_pack(Block* blocks, size_t num_blocks, int16_t* data, size_
 }
 
 static void family(Block* blocks, size_t block_index, int16_t* data, size_t width, size_t row, size_t column, size_t ac_index) {
+    //Map all coefficients in a single family for a single block.
+    //(Table 4-1)
 
     //Children C_i;
     blocks[block_index].ac[ac_index+0]  = data[(2*row)   * width + 2*column];

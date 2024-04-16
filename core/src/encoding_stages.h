@@ -9,11 +9,11 @@
 extern "C" {
 #endif
 
-void stage_0(Block* blocks, size_t num_blocks, uint8_t q, uint8_t bitplane);
-void stage_1(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane);
-void stage_2(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane);
-void stage_3(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane);
-void stage_4(SegmentHeader* headers, Block* blocks, size_t num_blocks, uint8_t bitplane);
+void stage_0(SegmentData* segment_data);
+void stage_1(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size);
+void stage_2(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size);
+void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size);
+void stage_4(SegmentData* segment_data);
 #ifdef __cplusplus
 }
 #endif

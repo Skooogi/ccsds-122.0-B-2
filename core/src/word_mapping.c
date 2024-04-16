@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
+//All tables used for symbol and code word mapping. (4.5.3.2.)
 static uint8_t sym2bit[4] = { 0, 2, 1, 3 };
 static uint8_t sym3bit[2][8] = {
     {1, 4, 0, 5, 2, 6, 3, 7}, 
@@ -45,6 +45,7 @@ static uint8_t word_length_bit_4[3][16] = {
     {3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5}
 };
 
+//Current block string to save to and write from.
 static BlockString* block_string;
 void set_block_string(BlockString* new_block_string) {
     block_string = new_block_string;
@@ -60,6 +61,7 @@ void write_block_string() {
     uint8_t code_option_bit_3 = 0;
     uint8_t code_option_bit_4 = 0;
 
+    //Choose the code option for each word length 2...4 that minimizes encoded length.
     for(uint8_t i = 1; i < 4; ++i) {
         if(i < 3 && block_string->string_length_3_bit[i] < block_string->string_length_3_bit[code_option_bit_3]){
             code_option_bit_3 = i;
@@ -70,6 +72,8 @@ void write_block_string() {
         }
     }
 
+    //Map and write each word.
+    //Before the first occurence of each word length the code word used is written to stream.
     for(size_t word_index = 0; word_index < block_string->index[block_string->stage]; ++word_index) {
         MappedWord current = block_string->mapped_words[block_string->stage][word_index];
         uint8_t word, length;
@@ -89,8 +93,11 @@ void write_block_string() {
                 length = code_option_bit_2 == 1 ? 2 : word_length_bit_2[current.mapped_symbol];
                 file_io_write_bits(word, length);
                 break;
+
             case 2:
                 if((block_string->written_code_options & 2) != 2) {
+
+                    //Code options for 3b word are indexed 0,1,3;
                     if(code_option_bit_3 == 2) {
                         file_io_write_bits(code_option_bit_3+1, 2);
                     }
@@ -103,6 +110,7 @@ void write_block_string() {
                 length = code_option_bit_3 == 2 ? 3 : word_length_bit_3[code_option_bit_3][current.mapped_symbol];
                 file_io_write_bits(word, length);
                 break;
+
             case 3:
                 if((block_string->written_code_options & 4) != 4) {
                     file_io_write_bits(code_option_bit_4, 2);
@@ -116,76 +124,9 @@ void write_block_string() {
     } 
 }
 
-uint32_t get_bitstring_length() {
-
-    if(block_string->index[block_string->stage] == 0) {
-        return 0;
-    }
-
-    uint32_t total;
-    uint8_t code_option_bit_2 = block_string->string_length_2_bit[0] <= block_string->string_length_2_bit[1] ? 0 : 1;
-    uint8_t code_option_bit_3 = 0;
-    uint8_t code_option_bit_4 = 0;
-
-    for(uint8_t i = 1; i < 4; ++i) {
-        if(i < 3 && block_string->string_length_3_bit[i] < block_string->string_length_3_bit[code_option_bit_3]){
-            code_option_bit_3 = i;
-        }
-
-        if(block_string->string_length_4_bit[i] < block_string->string_length_4_bit[code_option_bit_4]){
-            code_option_bit_4 = i;
-        }
-    }
-
-    for(size_t word_index = 0; word_index < block_string->index[block_string->stage]; ++word_index) {
-        MappedWord current = block_string->mapped_words[block_string->stage][word_index];
-        uint8_t word, length;
-
-        if(current.length == 0 || current.uncoded) {
-            total += current.length+1;
-            continue;
-        }
-
-        switch(current.length) {
-            case 1:
-                if((block_string->written_code_options & 1) != 1) {
-                    total += 1;
-                    block_string->written_code_options |= 1;
-                }
-                word = word2bit[code_option_bit_2][current.mapped_symbol];
-                length = code_option_bit_2 == 1 ? 2 : word_length_bit_2[current.mapped_symbol];
-                total += length;
-                break;
-            case 2:
-                if((block_string->written_code_options & 2) != 2) {
-                    if(code_option_bit_3 == 2) {
-                        total += 2;
-                    }
-                    else {
-                        total += 2;
-                    }
-                    block_string->written_code_options |= 2;
-                }
-                word = word3bit[code_option_bit_3][current.mapped_symbol];
-                length = code_option_bit_3 == 2 ? 3 : word_length_bit_3[code_option_bit_3][current.mapped_symbol];
-                total += length;
-                break;
-            case 3:
-                if((block_string->written_code_options & 4) != 4) {
-                    total += 2;
-                    block_string->written_code_options |= 4;
-                }
-                word = word4bit[code_option_bit_4][current.mapped_symbol];
-                length = code_option_bit_4 == 3 ? 4 : word_length_bit_4[code_option_bit_4][current.mapped_symbol];
-                total += length;
-                break;
-        }
-    } 
-
-    return total;
-}
-
 void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option, uint8_t uncoded) {
+    //Maps each generated word according to 4.5.3.2.
+    //The mapped words are held in a BlockString by stage until they are written.
     
     size_t index = block_string->index[block_string->stage];
     MappedWord* current = &block_string->mapped_words[block_string->stage][index];
@@ -194,11 +135,14 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
     current->uncoded = uncoded;
     block_string->index[block_string->stage]++;
 
+    //No encoding is necessary and the word is written as is.
     if(uncoded || (word_length == 1)) {
         current->mapped_symbol = word;
         return;
     }
 
+    //The length generated with each code option is saved.
+    //This is used to select the code option that minimizes length.
     switch(current->length) {
             
         case 1:
@@ -206,8 +150,11 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
             block_string->string_length_2_bit[0] += word_length_bit_2[current->mapped_symbol];
             block_string->string_length_2_bit[1] += word_length;
             break;
+
         case 2:
             current->mapped_symbol = sym3bit[symbol_option][word];
+
+            //Impossible value.
             if(word == 0 && symbol_option == 1) {
                 printf("SYMBOL ERROR: 000\n");
                 exit(EXIT_FAILURE);
@@ -216,8 +163,11 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
             block_string->string_length_3_bit[1] += word_length_bit_3[1][current->mapped_symbol];
             block_string->string_length_3_bit[2] += word_length;
             break;
+
         case 3:
             current->mapped_symbol = sym4bit[symbol_option][word];
+            
+            //Impossible value.
             if(word == 0 && symbol_option == 1) {
                 printf("SYMBOL ERROR: 0000\n");
                 exit(EXIT_FAILURE);
