@@ -224,7 +224,7 @@ static void parse_packet(void) {
 
         else if(strcmp(token, "compress") == 0) {
             
-            ccsds_compress((int32_t*)&file->data[0], file->width, file->height, file->bitdepth); 
+            ccsds_compress((int16_t*)&file->data[0], file->width, file->height, file->bitdepth); 
 
             cached_packet.data[0] = 1;
             cached_packet.length = 1;

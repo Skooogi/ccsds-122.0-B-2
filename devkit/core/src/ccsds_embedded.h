@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-void ccsds_compress(int32_t* data, size_t width, size_t height, uint8_t bitdepth);
+void ccsds_compress(int16_t* data, size_t width, size_t height, uint8_t bitdepth);
 
 #ifdef __cplusplus
 }

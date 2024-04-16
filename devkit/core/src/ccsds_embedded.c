@@ -1,7 +1,6 @@
 #include "ccsds_embedded.h"
 #include "segment_header.h"
 #include "discrete_wavelet_transform.h"
-#include "driver_init.h"
 #include "subband.h"
 #include "bitplane_encoder.h"
 #include "file_io.h"
@@ -33,13 +32,13 @@ void put_word(uint8_t word) {
     }
 }
 
-void ccsds_compress(int32_t* data, size_t width, size_t height, uint8_t bitdepth) {
+void ccsds_compress(int16_t* data, size_t width, size_t height, uint8_t bitdepth) {
 
     SegmentHeader* headers = segment_header_init_values();
     //TEST PARAMETERS START
     headers->header_1.first_segment = 1;
     headers->header_1.last_segment = 1;
-    headers->header_1.num_segments = 1;
+    headers->header_1.segment_index = 0;
     headers->header_1.has_header_3 = 1;
     headers->header_1.has_header_4 = 1;
     headers->header_1.pad_width = 0;
@@ -53,7 +52,7 @@ void ccsds_compress(int32_t* data, size_t width, size_t height, uint8_t bitdepth
 
     discrete_wavelet_transform_2D(data, width, height, 3, 0);
 
-    subband_scale(data, width, height);
+    subband_scale(headers, data, width, height);
 
     bitplane_encoder_encode(data, headers);
 
@@ -64,7 +63,6 @@ void ccsds_compress(int32_t* data, size_t width, size_t height, uint8_t bitdepth
     packet.crc = crc8((uint8_t*)&packet.data, num_words);
     packet.length = num_words;
     send_packet(&packet);
-
 }
 
 int32_t min(int32_t a, int32_t b) {
