@@ -70,12 +70,12 @@ void encode_ac_magnitudes(SegmentData* segment_data) {
     Block* blocks = segment_data->blocks + segment_data->block_offset;
     size_t num_blocks = segment_data->headers->header_3.segment_size;
     uint32_t bitAC_max = segment_data->headers->header_1.bitACMax;
-    uint32_t q = segment_data->q;
 
     uint32_t N = log2_32_ceil(1 + bitAC_max);
     if(N == 0) {
         return;
     }
+
     if(N == 1) {
         //Coefficients are 1 bit long and no further coding is required
         for(size_t i = 1; i < num_blocks; ++i) {
