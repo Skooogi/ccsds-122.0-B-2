@@ -20,9 +20,9 @@ OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 all: $(BUILD_DIR)/$(PROJECT).bin 
 
-TEST_IN_FILE = "../res/pattern/raw/test_image_gradient_32.raw"
+TEST_IN_FILE = "../res/noise/raw/test_image_noise_1k.raw"
 TEST_OUT_FILE = "../python/output.cmp"
-TEST_SIZE = 32 32 8
+TEST_SIZE = 1024 1024 8
 RUN_BIN = ./$(PROJECT).bin $(TEST_IN_FILE) $(TEST_OUT_FILE) $(TEST_SIZE)
 
 run: all
@@ -39,7 +39,7 @@ stat: all
 
 valgrind: all
 	@(cd ${BUILD_DIR}; valgrind --leak-check=full --track-origins=yes $(RUN_BIN))
-massig: all
+massif: all
 	@(cd ${BUILD_DIR}; valgrind --tool=massif $(RUN_BIN))
 
 $(BUILD_DIR)/$(PROJECT).bin: $(OBJECTS)
