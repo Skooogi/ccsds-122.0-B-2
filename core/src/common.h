@@ -1,6 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include "segment_header.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -25,7 +26,6 @@ typedef union Tran {
 typedef struct Block {
     uint8_t bitAC;
     Tran tran;
-    int32_t dc;
     int32_t ac[AC_COEFFICIENTS_PER_BLOCK]; 
     uint64_t high_status_bit;
     uint64_t low_status_bit;
@@ -49,6 +49,20 @@ typedef struct BlockString {
     uint32_t string_length_4_bit[4];
 } BlockString;
 
+typedef struct SegmentData {
+
+    size_t block_offset;
+    size_t num_gaggles;
+    uint8_t q;
+    uint8_t bitplane;
+
+    SegmentHeader* headers;
+    int32_t* dc_coefficients;
+    Block* blocks;
+    BlockString* block_strings;
+
+} SegmentData;
+
 //Block operations
 bool subband_lim(uint8_t ac_index, uint8_t bitplane);
 void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_status_bit);
@@ -60,8 +74,8 @@ int8_t block_get_gmax(Block* block, uint8_t family);
 int8_t block_get_hmax(Block* block, uint8_t family, uint8_t quadrant);
 
 //Math operations
-inline int32_t max(int32_t a, int32_t b) {  return (a > b) ? a : b; }
-inline int32_t min(int32_t a, int32_t b) {  return (a < b) ? a : b; }
+static inline int32_t max(int32_t a, int32_t b) {  return (a > b) ? a : b; }
+static inline int32_t min(int32_t a, int32_t b) {  return (a < b) ? a : b; }
 uint32_t log2_32 (uint32_t value);
 uint32_t log2_32_ceil (uint32_t value);
 uint32_t twos_complement(int32_t value, size_t num_bits);
