@@ -6,12 +6,13 @@ from pathlib import Path
 import ccsds_122 as comp
 import file_io
 import rccsds_122 as decomp
+import numpy as np
 
 def test_images(check_python=0):
 
     file_out = "output.cmp"
 
-    root_folder = "../res"
+    root_folder = "../res/opic"
     bmp_files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
     raw_files = list(Path(root_folder).rglob("*.[rR][aA][wW]"))
 
@@ -28,7 +29,7 @@ def test_images(check_python=0):
         height = int(metadata[2].split('x')[1])
         bitdepth = int(metadata[4].split('-')[0])
 
-        raw_images.append([str(raw_files[i]), width, height, bitdepth])
+        raw_images.append([str(raw_files[i]), width, height, bitdepth*2])
 
     with open("results.csv", "w") as res_file:
 
@@ -36,8 +37,10 @@ def test_images(check_python=0):
         print("Filename, Category, width, height, bitdepth, compression ratio", file=res_file)
 
         for i,file in enumerate(raw_images):
+            
             print('Testing image ' + file[0])
             print("C:")
+            file_out = file[0][:-3]+'cmp'
             os.system(f'time ../build/ccsds.bin {file[0]} {file_out} {file[1]} {file[2]} {file[3]}')
             file_compressed = os.path.getsize(file_out)
             file_size = file[1]*file[2]*file[3] // 8

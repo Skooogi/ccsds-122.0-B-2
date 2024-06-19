@@ -60,9 +60,9 @@ def test_strips(images):
 if __name__ == "__main__":
 
     strip_height = 24
-    num_strips = 100
+    num_strips = 200
 
-    root_folder = "../res"
+    root_folder = "../res/opic"
     bmp_files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
 
     with open("results.csv", "w") as f:
