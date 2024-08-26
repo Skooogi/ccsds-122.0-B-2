@@ -29,21 +29,31 @@
 
 \newpage
 \section{Introduction}
+
 \subsection{Scope}
 This document describes the setup, implementation details and testing of the 
-CCSDS (Consultative Comittee for Space Data Systems) 122.0-B-2 image compression algorithm. 
+CCSDS (Consultative Comittee for Space Data Systems) 122.0-B-2 image compression algorithm (\hyperref[lnk:1]{AD1}). 
 Previous knowledge of the algorithm is expected. 
-The CCSDS standard, linked in the 'Further Reading' section, 
+The CCSDS standard, linked in the 'Further Reading' section \ref{links}, 
 contains a more in-depth look at the inner workings of the algorithm and mathematics.
 
 \medskip
 \noindent
-The purpose of this implementation is to produce losslessly compressed files from 
+This implementation was created as a tailored example of the CCSDS standard for the CI (Comet Interceptor) mission. 
+Furthermore, the motivation to create an in-house version of the algorithm was to increase characterization accuracy. 
+This was achieved by using data, software and hardware comparable to their counterparts used during the final mission. 
+Non-vital parts of the algorithm were discarded, thus decreasing computational complexity. 
+This reduced the memory footprint and power requirements to a level lower than other available implementations.
+
+\medskip
+\noindent
+The main purpose of this implementation is to produce losslessly compressed files from 
 1024x1024 pixels and high aspect ratio grayscale images and to characterize the compression performance in an embedded environment. 
 
 \subsection{Abbreviations and Acronyms}
 \begin{tabular}{ll}
     CCSDS   & Consultative Comittee for Space Data Systems \\
+    CI      & Comet Interceptor \\
     DWT     & Discrete Wavelet Transform \\
     RAM     & Random Access Memory \\
     VENV    & Virtual Environment \\
@@ -57,15 +67,36 @@ The purpose of this implementation is to produce losslessly compressed files fro
     EDBG    & Embedded Debugger \\
     CPU     & Central Processing Unit \\
 \end{tabular}
-\subsection{Further Reading}
+
+\newpage
+\subsection{Further Reading} 
 \label{links}
-\href{https://public.ccsds.org/Pubs/122x0b2.pdf}{CCSDS 122.0-B-2 Reference standard} \\
-\href{https://public.ccsds.org/Pubs/120x1g3.pdf}{CCSDS 120.1-G-3 Informational report} \\
-\href{https://www.microchip.com/en-us/development-tool/atsamv71-xult}{SAM V71 Xplained Ultra evaluation kit product page} \\
-\href{https://www.segger.com/downloads/jlink/}{SEGGER website for JLink}
+
+\begin{enumerate}
+    \item\href{https://public.ccsds.org/Pubs/122x0b2.pdf}{CCSDS 122.0-B-2 Reference standard}\label{lnk:standard}
+    \item\href{https://public.ccsds.org/Pubs/120x1g3.pdf}{CCSDS 120.1-G-3 Informational report}\label{lnk:g}
+    \item\href{http://hyperspectral.unl.edu/download.htm}{University of Nebraska CCSDS}\label{lnk:uon}
+    \item\href{https://essr.esa.int/project/whitedwarf-2-0}{White Dward 2.0}\label{lnk:wd}
+    \item\href{https://www.microchip.com/en-us/development-tool/atsamv71-xult}{SAM V71 Xplained Ultra evaluation kit product page}\label{lnk:xplained}
+    \item\href{https://www.segger.com/downloads/jlink/}{SEGGER website for JLink}\label{lnk:4}
+\end{enumerate}
 
 \newpage
 \section{Implementation}
+
+\subsection{CCSDS 122.0 basics}
+The algorithm is based on the wavelet transform, which like the Fourier transform, 
+produces a set of coefficients containing frequency information. 
+This process is performed for a total of three times, creating a tree-like structure. 
+The tree-like structure contains significant redundancy with high correlation between coefficients. 
+These coefficients are then encoded bitplane by bitplane while discarding any bits which can be derived from previously encoded data.
+
+\medskip
+\noindent
+The input data used must be a binary file containing raw pixel data of one color channel. 
+Each pixel must be represented by two bytes. 
+Information about the size of the image and the bitdepth of the data are given as command line arguments when running the algorithm.
+
 \subsection{Key Considerations}
 This implementation does not include the option for a floating point 
 DWT (Discrete Wavelet Transform) or a segment byte limit, 
@@ -78,7 +109,8 @@ stop the compression process prematurely.
 \noindent
 There is no decompression logic as it is not performed in an embedded environment nor is it resource limited. 
 Instead, the generated files should be decompressed with an external decompressor.
-Both the university of Nebraska's reference implementation and the white dwarf 2.0 provided by CCSDS are 
+Both the university of Nebraska's reference implementation (\hyperref[lnk:uon]{AD3}) and 
+the white dwarf 2.0 (\hyperref[lnk:wd]{AD4}) provided by CCSDS are 
 recommended for cross-validation. Both are readily available on the internet, 
 although white dwarf requires the creation of a free account. 
 Links can be found in chapter \ref{links}.
@@ -99,7 +131,7 @@ The height of the image must be at least 17, but there is no upper limit.
 \noindent
 A further improvement to consider in the future is the ability to stream in data instead of reading from a file. 
 This would reduce the amount of RAM (Random Access Memory) needed to compress large images. 
-The CCSDS informational report, linked in chapter \ref{links}, includes a proposed implementation of this logic. 
+The CCSDS informational report (\hyperref[lnk:g]{AD2}), includes a proposed implementation of this logic. 
 A full reworking of the DWT would then be required.
 
 \newpage
@@ -134,8 +166,10 @@ All comparisons should be migrated to use the aforementioned third party decoder
 As the name suggests, this directory contains all image resources used for tests. 
 The set of test images have been collected from the official NASA website, OPIC and EnVisS teams. 
 Note that the NASA images are enhanced for the public and might not represent actual image data from a mission. 
+These images contain asteroids at different distances and starry backgrounds with and without comets. 
+Furthermore, no reliable data exists about exposure times or the sensors used for these images. 
 The OPIC and EnVisS images are still preliminary and more accurate images are required. 
-This means that the algorithm is not accurately characterized for true mission performance yet. 
+This means that the algorithm can not be accurately characterized for true mission performance before receiving better data. 
 
 \noindent
 \subsubsection{Tests}
@@ -152,14 +186,14 @@ a venv (virtual environment) is required.
 \subsubsection{Setup virtual environment}
 \begin{enumerate}
 
-    \item \code{python -m venv YOUR\_ENV\_NAME --system-site-packages}
+    \item \code{python -m venv YOUR_ENV_NAME --system-site-packages}
 
         \medskip
         This creates a folder named YOUR\_ENV\_NAME and adds all venv related files inside. 
         The '--system-site-packages' flag reuses already existing packages.
 
     \medskip
-    \item \code{cd YOUR\_ENV\_NAME}
+    \item \code{cd YOUR_ENV_NAME}
 
     \medskip
     \item \code{pip install pillow numpy numba matplotlib setuptools cython serial pyserial}
@@ -171,9 +205,9 @@ a venv (virtual environment) is required.
 \subsubsection{Setup project structure and files}
 \begin{enumerate}
 
-    \item \code{clone project files to YOUR\_ENV\_NAME}
+    \item \code{clone project files to YOUR_ENV_NAME}
 
-    \item \code{cd YOUR\_ENV\_NAME/ccsds-122.0-B-2}
+    \item \code{cd YOUR_ENV_NAME/ccsds-122.0-B-2}
 
         \medskip
         From this point forward all commands are written as they would be 
@@ -183,7 +217,7 @@ a venv (virtual environment) is required.
     \item clone 'res' directory (maintained separately) to your newly created project directory.
 
     \medskip
-    \item \code{(cd tests; python bmp\_to\_raw.py)}
+    \item \code{(cd tests; python bmp_to_raw.py)}
 
         \medskip
         This converts all images in 'res' to raw files used by the compressor. 
@@ -358,7 +392,7 @@ After installation, setup should be as easy as:
         These files must match in order to debug correctly. 
 \end{enumerate}
 
-\newpage
+\medskip
 \noindent
 After setup the python interface found in \code{project_root/devkit/python} \code{/io_test.py} can be launched. 
 This script is used to send raw image data and receive compressed files. 
@@ -414,47 +448,59 @@ The compressed file is saved to \code{output.cmp}.
 This file can now be decompressed with any decompressor compliant with the reference standard.
 
 \newpage
-\section{Expected Performance}
-Figure \ref{fig:time} shows the worst case scenario of compressing pure white noise.
-On a modern CPU (Central Processing Unit) with a clock speed of 3.9 GHz, 
-compression of the largest images 1024x1024 takes around 600 ms. 
-Note that the compression time is directly proportional to the number of pixels in the image, 
-whereas the aspect ratio has little effect on speed.
-
-\medskip
-\noindent
-The implementation is single-threaded due to the limited processing power of the devkit. 
-This means that the performance of the devkit can be estimated based on clock speed alone.
-
+\section{Results}
 \begin{minipage}{\textwidth}
 \centering
 \medskip
-\includegraphics[width=\textwidth,height=0.9\textwidth]{time_1}
+\includegraphics[width=\textwidth,height=\textwidth]{time_1}
 \captionof{figure}{Compression time of randomly generated rectangular noise images with width and height ranging from 0 to 1024}
 \label{fig:time}
 \bigskip
 \end{minipage}
 
+\begin{minipage}{\textwidth}
+\centering
+\medskip
+\includegraphics[width=\textwidth]{ratio_1}\vfill
+\includegraphics[width=.19\textwidth]{noise}
+\includegraphics[width=.19\textwidth]{pattern}
+\includegraphics[width=.19\textwidth]{opic}
+\includegraphics[width=.19\textwidth]{enviss}
+\includegraphics[width=.19\textwidth]{space}
+\captionof{figure}{Compression ratio for different categories of natural and generated images 
+    with examples for: noise, pattern, opic, enviss and space}
+\label{fig:ratio}
+\end{minipage}
+
 \newpage
+\section{Conclusions}
+
 \noindent
-The compression ratio is highly dependent on the amount of fine grain detail in the image. 
+On a modern CPU (Central Processing Unit) with a clock speed of 3.9 GHz, 
+compression of the largest images 1024x1024 takes around 600 ms. 
+This is shown in figure \ref{fig:time}, which presents the worst case scenario of compressing pure white noise.
+Note that the compression time is directly proportional to the number of pixels in the image, 
+whereas the aspect ratio has little effect on speed.
+Moreover, the implementation is single-threaded due to the limited processing power of the devkit. 
+This means that the performance of the devkit can be estimated based on clock speed alone.
+
+\medskip
+\noindent
+Figure \ref{fig:ratio} shows that the compression ratio is highly dependent on the amount of fine grain detail in the image. 
 Pure noise does not compress at all since the compression is based on coherence or entropy of the image. 
 Noise from an imaging sensor affects the compression in a similar way. 
 This can be observed in the \code{OPIC} and \code{Space} categories of figure \ref{fig:ratio}. 
 Images in the \code{pattern} and \code{EnVisS} categories consist of repeating and uniform patterns. 
-These should and do compress well, meaning below the minimum compression limit of 75 \%.
-
-\medskip
-\noindent Whenever possible, images should be filtered before compression to reduce the effect of noise. 
+These should and do compress well, meaning below the minimum compression limit of 75\%.
+Whenever possible, images should be filtered before compression to reduce the effect of noise. 
 In the case of sensor noise, the noise is time invariant and can be adjusted for with a simple offset.
 
-\begin{minipage}{\textwidth}
-\centering
 \medskip
-\includegraphics[width=\textwidth,height=0.9\textwidth]{ratio_1}
-\captionof{figure}{Compression ratio for different categories of natural and generated images}
-\label{fig:ratio}
-\bigskip
-\end{minipage}
+\noindent
+The implementation works well on a wide range of images. 
+Due to its lower computational complexity, it is light weight and thus it can run on resource bounded hardware. 
+Moreover, it does not significantly compromise compression ratio while maintaining a small memory footprint. 
+Future improvements should focus on procuring more accurate test data and fine-tuning compression parameters. 
+
 
 \end{document}
