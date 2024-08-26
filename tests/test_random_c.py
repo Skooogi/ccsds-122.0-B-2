@@ -112,7 +112,7 @@ def randomtests():
         os.system(f'time ./{nebraska_compressor} -b {img_bitdepth} -d {fname_out} -o {fname_decomp}')
 
         decomp_img = np.fromfile(fname_decomp, dtype=np.uint16 if img_bitdepth > 8 else np.uint8).reshape([img_height, img_width])
-        file_io.save_image(fname_decomp[:-4] + '.bmp', decomp_img, img_width, img_height)
+        #file_io.save_image(fname_decomp[:-4] + '.bmp', decomp_img, img_width, img_height)
 
         check_decompressed_data(orig_img.astype(np.int32), decomp_img.astype(np.int32), img_width, img_height, img_bitdepth)
 

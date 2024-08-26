@@ -109,7 +109,7 @@ def randomtests():
         orig_img.tofile(fname_in)
 
         #uncomment if you want to seegenerated images
-        file_io.save_image(fname_in[:-4] + '.bmp', orig_img, img_width, img_height)
+        #file_io.save_image(fname_in[:-4] + '.bmp', orig_img, img_width, img_height)
 
         print("C:")
         os.system(f'time ../build/ccsds.bin {fname_in} {fname_out} {img_width} {img_height} {img_bitdepth}')
