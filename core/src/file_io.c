@@ -48,7 +48,7 @@ void file_io_set_output_file(const char* filename) {
 
 void file_io_close_output_file() {
     //Flush cache
-    file_io_write_bits(0, 8);
+    file_io_write_bits(0, 7);
 #ifndef EMBEDDED
     fclose(fp);
 #endif
