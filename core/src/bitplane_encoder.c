@@ -202,7 +202,7 @@ static void encode_shifted_dc_bits(SegmentData* segment_data) {
     }
     
     //q is atleast 3 and limit must be non-negative.
-    uint8_t limit = bitACMax > 2 ? q - bitACMax : q - 2;
+    uint8_t limit = bitACMax > 3 ? q - bitACMax : q - 3;
 
     //Encodes bitplanes that are larger than q
     for(int8_t offset = 0; offset < limit; ++offset) {
