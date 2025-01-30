@@ -156,6 +156,7 @@ static void initialize_segment_header(SegmentData* segment_data, uint32_t segmen
     segment_data->headers->header_1.last_segment = segment_index == num_segments-1 ? 1 : 0;
     segment_data->headers->header_1.segment_index = segment_index;
 
+    //NOTE: Nebraska implementation expects all headers every time
     if(segment_data->headers->header_1.segment_index) {
         segment_data->headers->header_1.has_header_2 = 0;
         segment_data->headers->header_1.has_header_3 = 0;
