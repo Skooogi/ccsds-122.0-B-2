@@ -34,7 +34,7 @@ def test_data(data, width, height, bitdepth, check_python=1):
 
 def test_images():
 
-    root_folder = "../res/space"
+    root_folder = "../res"
     bmp_files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
     raw_files = list(Path(root_folder).rglob("*.[rR][aA][wW]"))
 
@@ -42,6 +42,8 @@ def test_images():
     
     #Match metadata from bmp to raw file
     for i in range(len(raw_files)):
+        if('hy' in str(raw_files[i])):
+            continue
         filename = os.path.basename(str(raw_files[i]))[:-4]
         bmp_file = next((str(s) for s in bmp_files if filename in str(s)), None)
         #metadata = (os.system(f'identify {bmp_file}'))

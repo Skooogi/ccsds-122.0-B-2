@@ -198,7 +198,12 @@ static void encode_shifted_dc_bits(SegmentData* segment_data) {
     int32_t* dc_coefficients = segment_data->dc_coefficients + segment_data->block_offset;
     size_t segment_size = segment_data->headers->header_3.segment_size;
 
-    if(q <= bitACMax) {
+    uint8_t bitshift_LL3 = 3;
+    if(segment_data->headers->header_4.custom_weights) {
+        bitshift_LL3 = segment_data->headers->header_4.custom_weight_LL_3;
+    }
+
+    if(q <= max(bitACMax, bitshift_LL3)) {
         return;
     }
     

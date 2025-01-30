@@ -35,23 +35,24 @@ if __name__ == "__main__":
 
     offset = width/max_length
     for category, results in data.items():
-        values = [row[-1] for row in results]
-        names = [row[0] for row in results]
+        values = [row[-1] for row in results if row[-1] != 0.0]
+        names = [row[0] for row in results if row[-1] != 0.0]
 
         for i,value in enumerate(values):
-            x_position = x[category_index]+len(values)*offset/2 - offset/2 -offset*i
+            x_position = x[category_index]+len(values)*offset/2 - offset/2 -offset*i*1.1
 
-            plt.bar(x_position, value*100, width=offset)
-            plt.text(x_position, 1, names[i], color='black',ha='center', va='bottom', rotation=90, fontsize=10)
+            plt.bar(x_position, value*100, width=offset, color="tab:blue" if not category_index%2 else "tab:orange")
+            #plt.text(x_position, 1, names[i], color='black',ha='center', va='bottom', rotation=90, fontsize=10)
 
         category_index += 1
 
-    plt.axhline(75, color='r', linestyle='--')
+    plt.axhline(75, color='r', linestyle='--', label="75 %")
 
     plt.xticks(x, data.keys())
     plt.yticks(range(0,130,10))
     plt.grid()
     plt.ylabel("Compressed filesize/original filesize (%)")
     plt.xlabel("Category")
+    plt.legend()
     plt.title(lines[0])
     plt.show()

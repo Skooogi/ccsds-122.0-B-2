@@ -12,7 +12,7 @@ def test_images(check_python=0):
 
     file_out = "output.cmp"
 
-    root_folder = "../res/opic"
+    root_folder = "../res"
     bmp_files = list(Path(root_folder).rglob("*.[bB][mM][pP]"))
     raw_files = list(Path(root_folder).rglob("*.[rR][aA][wW]"))
 
@@ -20,6 +20,8 @@ def test_images(check_python=0):
     
     #Match metadata from bmp to raw file
     for i in range(len(raw_files)):
+        if('hy' in str(raw_files[i])):
+            continue
         filename = os.path.basename(str(raw_files[i]))[:-4]
         bmp_file = next((str(s) for s in bmp_files if filename in str(s)), None)
         #metadata = (os.system(f'identify {bmp_file}'))
@@ -43,7 +45,10 @@ def test_images(check_python=0):
             file_out = file[0][:-3]+'cmp'
             os.system(f'time ../build/ccsds.bin {file[0]} {file_out} {file[1]} {file[2]} {file[3]}')
             file_compressed = os.path.getsize(file_out)
-            file_size = file[1]*file[2]*file[3] // 8
+
+            file_size = file[1]*file[2]
+            if("opic" in file[0]):
+                file_size = file[1]*file[2]*file[3] // 8
             ratio = file_compressed/file_size 
             if(ratio > 0.8):
                 print(f'ratio: {bcolors.FAIL}{ratio:.3f}{bcolors.ENDC}')
@@ -69,7 +74,7 @@ def test_images(check_python=0):
                     print(f'ratio: {bcolors.OKGREEN}{ratio:.3f}{bcolors.ENDC}')
                 print("*"*20)
 
-        #os.system(f'rm {file_out}')
+        os.system(f'rm {file_out}')
 
 if __name__ == '__main__':
     check_python = 0
