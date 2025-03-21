@@ -1,8 +1,0 @@
-pillow
-numpy
-numba
-matplotlib
-setuptools
-cython
-serial
-pyserial
