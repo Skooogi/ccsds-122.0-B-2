@@ -14,6 +14,7 @@ static void initialize_segment_data(SegmentData* segment_data);
 static void initialize_segment_header(SegmentData* segment_data, uint32_t segment_index, size_t num_segments, size_t num_blocks_total);
 static void encode_shifted_dc_bits(SegmentData* segment_data);
 static void encode_stages(SegmentData* segment_data);
+static uint8_t middle_segment = 0;
 
 void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
 
@@ -156,12 +157,20 @@ static void initialize_segment_header(SegmentData* segment_data, uint32_t segmen
     segment_data->headers->header_1.last_segment = segment_index == num_segments-1 ? 1 : 0;
     segment_data->headers->header_1.segment_index = segment_index;
 
-    //NOTE: Nebraska implementation expects all headers every time
-    if(segment_data->headers->header_1.segment_index) {
+    //NOTE: Both white dwarf and nebraska implementation expects all headers every time
+    if(middle_segment && !segment_data->headers->header_1.last_segment) {
         segment_data->headers->header_1.has_header_2 = 0;
         segment_data->headers->header_1.has_header_3 = 0;
         segment_data->headers->header_1.has_header_4 = 0;
     }
+
+    else if(segment_data->headers->header_1.last_segment) {
+        segment_data->headers->header_1.has_header_2 = 1;
+        segment_data->headers->header_1.has_header_3 = 1;
+        segment_data->headers->header_1.has_header_4 = 1;
+    }
+
+    middle_segment = 1;
 }
 
 static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max) {
@@ -171,7 +180,7 @@ static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max) {
 
     //Dynamic range is small -> no quantization.
     if(bitDC_max <= 3) {
-        return max(0, 3);
+        return 0;
     }
 
     //Dynamic range of DC is almost half the dynamic range of AC.
@@ -194,7 +203,6 @@ static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max) {
 static void encode_shifted_dc_bits(SegmentData* segment_data) {
 
     uint8_t q = segment_data->q;
-    printf("q %u\n", segment_data->q);
     uint8_t bitACMax = segment_data->headers->header_1.bitACMax;
     int32_t* dc_coefficients = segment_data->dc_coefficients + segment_data->block_offset;
     size_t segment_size = segment_data->headers->header_3.segment_size;
