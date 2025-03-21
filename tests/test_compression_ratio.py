@@ -60,6 +60,17 @@ def test_images(check_python=0):
             path = file[0].split('/')
             print(path[-1], path[2], file[1], file[2], file[3], ratio, sep=',', file=res_file)
 
+            whitedwarf = "ccsds_122_0_b2_decoder"
+            whitedwarf_format = 'u16le'
+            fname_decomp = "decomp.raw"
+            os.system(f'time ./{whitedwarf} {file_out} {fname_decomp} {whitedwarf_format}')
+            os.system(f'mv {whitedwarf_format} {fname_decomp}')
+            whitedwarf_decomp_img = np.fromfile(fname_decomp, dtype=np.uint16 if file[3] > 8 else np.uint8).reshape([file[2], file[1]])
+
+            data = np.fromfile(file[0], dtype=np.uint16).reshape([file[2], file[1]])
+            if(whitedwarf_decomp_img == data).all():
+                print("ERROR", file[3])
+
             if(check_python):
                 print("Python:")
                 comp.compress(bmp_images[i])

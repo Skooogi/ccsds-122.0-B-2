@@ -28,7 +28,7 @@ class OPICImage:
 
         image.name=name
 
-        data = np.frombuffer(data,dtype=np.uint8)
+        data = np.frombuffer(data,dtype=np.uint8).astype(np.uint16)
 
         image.packet_length=np.frombuffer(data[0:8:2].copy(order="C"),np.uint32).item()
 
@@ -73,8 +73,6 @@ if __name__ == '__main__':
     oraws = list(Path(root_folder).rglob("*.[oO][rR][aA][wW]"))
 
     outdir="../res/opic/raw"
-
-    noise = np.fromfile("../res/noise.raw", dtype=np.uint16).reshape(2048,2048)
 
     for imname in oraws:
         image=OPICImage.Load(imname)

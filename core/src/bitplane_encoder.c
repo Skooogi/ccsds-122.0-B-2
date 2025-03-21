@@ -194,6 +194,7 @@ static uint8_t calculate_q_value(uint32_t bitDC_max, uint32_t bitAC_max) {
 static void encode_shifted_dc_bits(SegmentData* segment_data) {
 
     uint8_t q = segment_data->q;
+    printf("q %u\n", segment_data->q);
     uint8_t bitACMax = segment_data->headers->header_1.bitACMax;
     int32_t* dc_coefficients = segment_data->dc_coefficients + segment_data->block_offset;
     size_t segment_size = segment_data->headers->header_3.segment_size;

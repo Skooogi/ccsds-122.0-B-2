@@ -38,15 +38,15 @@ def randomtests():
     # The minimum and maximum image width. Note that the image width must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_width = 32
-    max_width = 1024
+    max_width = 64
 
     # The minimum and maximum image height. Note that the image height must be a multiple 
     # of eight (8), if we want to avoid the use of padding!
     min_height = 32
-    max_height = 1024
+    max_height = 64
 
     # The minimum and maximum bitdepth to use. (Currently only bitdepths up to 12 supported)
-    min_bitdepth = 1
+    min_bitdepth = 12
     max_bitdepth = 12
 
     # The seed to use for the run. Arbitrary. Always setting the same seed so that the
@@ -107,9 +107,17 @@ def randomtests():
         file_io.save_image(fname_in[:-4] + '.bmp', orig_img, img_width, img_height)
 
         print("Compressing:")
-        os.system(f'../build/ccsds.bin {fname_in} {fname_out} {img_width} {img_height} {img_bitdepth}')
+        os.system(f'time ../build/ccsds.bin {fname_in} {fname_out} {img_width} {img_height} {img_bitdepth}')
         print("Decompressing:")
-        os.system(f'time ./{nebraska_compressor} -b {img_bitdepth} -d {fname_out} -o {fname_decomp}')
+        #Decomp
+        #os.system(f'time ./{nebraska_compressor} -b {img_bitdepth} -d {fname_out} -o {fname_decomp}')
+        maker = "(cd ../../../white_dwarf && make 122 1> /dev/null) && cp ../../../white_dwarf/build/bin/ccsds_122_0_b2_decoder ccsds_122_0_b2_decoder"
+        os.system(maker)
+        whitedwarf = "ccsds_122_0_b2_decoder"
+        whitedwarf_format = 'u16le'
+        os.system(f'time ./{whitedwarf} {fname_out} {fname_decomp} {whitedwarf_format}')
+        os.system(f'mv {whitedwarf_format} {fname_decomp}')
+        whitedwarf_decomp_img = np.fromfile(fname_decomp, dtype=np.uint16 if img_bitdepth > 8 else np.uint8).reshape([img_height, img_width])
 
         decomp_img = np.fromfile(fname_decomp, dtype=np.uint16 if img_bitdepth > 8 else np.uint8).reshape([img_height, img_width])
         #file_io.save_image(fname_decomp[:-4] + '.bmp', decomp_img, img_width, img_height)

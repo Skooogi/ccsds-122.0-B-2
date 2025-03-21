@@ -6,12 +6,14 @@ SOURCE_DIR = core/src
 C_INCLUDES = \
 -Icore/include \
 
+CC=gcc
+
 C_DEFS =
-CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -O2
+CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -O0 -g -fprofile-arcs -ftest-coverage
 #Dependency information
 CFLAGS+= -MMD -MP -MF"$(@:%.o=%.d)"
 
-LIBS = -lc -lm
+LIBS = -lc -lm -lgcov
 LIBDIR = 
 LDFLAGS = $(LIBDIR) $(LIBS)
 

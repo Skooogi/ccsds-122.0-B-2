@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #ifndef EMBEDDED
 int main(int argc, char** argv) {
@@ -49,6 +50,9 @@ int main(int argc, char** argv) {
     fclose(fp);
 
     file_io_set_output_file(file_out) ;
+
+    struct timeval start, stop;
+    gettimeofday(&start,NULL);
 
     SegmentHeader* headers = segment_header_init_values();
     width += pad_width;
@@ -100,6 +104,10 @@ int main(int argc, char** argv) {
 
     //Writes the trasformed data to the output stream.
     bitplane_encoder_encode(test_data, headers);
+
+    gettimeofday(&stop,NULL);
+    double elapsed = (double)(stop.tv_usec - start.tv_usec) / 1000000 + (double)(stop.tv_sec - start.tv_sec);
+    printf("%f\n", elapsed);
 
     file_io_close_output_file();
     free(headers);
