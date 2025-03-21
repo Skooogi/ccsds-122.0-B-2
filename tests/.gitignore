@@ -4,3 +4,4 @@ __pycache__
 *.raw
 *.csv
 *.bin
+u16le
