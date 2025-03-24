@@ -5,3 +5,4 @@ __pycache__
 *.csv
 *.bin
 u16le
+u32le
