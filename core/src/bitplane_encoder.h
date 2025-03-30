@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers);
+void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers);
 
 #ifdef __cplusplus
 }

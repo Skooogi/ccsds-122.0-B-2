@@ -1,8 +1,8 @@
 #include "block_transform.h"
 
-static void family(Block* blocks, size_t block_index, int16_t* data, size_t width, size_t row, size_t column, size_t ac_index);
+static void family(Block* blocks, size_t block_index, int32_t* data, size_t width, size_t row, size_t column, size_t ac_index);
 
-void block_transform_pack(Block* blocks, int32_t* dc_coefficients, size_t num_blocks, int16_t* data, size_t data_width) {
+void block_transform_pack(Block* blocks, int32_t* dc_coefficients, size_t num_blocks, int32_t* data, size_t data_width) {
     //Picks all coefficients for all blocks from the transformed image.
     //These are held in sequential blocks. (Figure 4-1)
 
@@ -29,7 +29,7 @@ void block_transform_pack(Block* blocks, int32_t* dc_coefficients, size_t num_bl
     }
 }
 
-static void family(Block* blocks, size_t block_index, int16_t* data, size_t width, size_t row, size_t column, size_t ac_index) {
+static void family(Block* blocks, size_t block_index, int32_t* data, size_t width, size_t row, size_t column, size_t ac_index) {
     //Map all coefficients in a single family for a single block.
     //(Table 4-1)
 

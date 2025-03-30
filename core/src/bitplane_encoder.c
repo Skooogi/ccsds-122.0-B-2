@@ -16,7 +16,7 @@ static void encode_shifted_dc_bits(SegmentData* segment_data);
 static void encode_stages(SegmentData* segment_data);
 static uint8_t middle_segment = 0;
 
-void bitplane_encoder_encode(int16_t* data, SegmentHeader* headers) {
+void bitplane_encoder_encode(int32_t* data, SegmentHeader* headers) {
 
     size_t num_blocks_total = headers->header_3.segment_size;
     size_t num_blocks = min(BLOCKS_PER_SEGMENT, num_blocks_total);

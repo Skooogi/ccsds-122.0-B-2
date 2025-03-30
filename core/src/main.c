@@ -3,6 +3,7 @@
 #include "file_io.h"
 #include "segment_header.h"
 #include "subband.h"
+#include "common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,7 +32,11 @@ int main(int argc, char** argv) {
     uint8_t pad_width = width % 8 ? 8 - width % 8 : 0;
     uint8_t pad_height = height % 8 ? 8 - height % 8 : 0;
 
-    int16_t* test_data = malloc((width+pad_width)*(height+pad_height)*sizeof(int16_t));
+    uint8_t byte_multiplier = (bitdepth+7)/8;
+    byte_multiplier = 3;
+    int32_t* test_data = NULL;
+    test_data = malloc((width+pad_width)*(height+pad_height)*sizeof(uint32_t));
+
     if(!test_data) {
         printf("Failed to allocate image!\n");
         exit(EXIT_FAILURE);
@@ -39,13 +44,13 @@ int main(int argc, char** argv) {
 
     //Padding image to multiple of 8
     for(size_t row = 0; row < height; ++row) {
-        fread(&test_data[row*(width+pad_width)], sizeof(int16_t), width, fp);
+        fread(&test_data[row*(width+pad_width)], sizeof(int32_t), width, fp);
         for(size_t column = width; column < width + pad_width; ++column) {
             test_data[row*(width+pad_width)+column] = test_data[row*(width+pad_width)+width-1];
         }
     }
     for(size_t row = height; row < height + pad_height; ++row) {
-        memcpy(&test_data[row*(width+pad_width)], &test_data[(height-1)*(width+pad_width)], (width+pad_width)*sizeof(int16_t));
+        memcpy(&test_data[row*(width+pad_width)], &test_data[(height-1)*(width+pad_width)], (width+pad_width)*sizeof(int32_t));
     }
     fclose(fp);
 

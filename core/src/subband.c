@@ -1,7 +1,7 @@
 #include "subband.h"
 #include "segment_header.h"
 
-void subband_scale(SegmentHeader* headers, int16_t* data, size_t width, size_t height) {
+void subband_scale(SegmentHeader* headers, int32_t* data, size_t width, size_t height) {
 
     size_t width_2 = width>>1;
     size_t width_4 = width>>2;
