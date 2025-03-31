@@ -1,10 +1,12 @@
 #include "discrete_wavelet_transform.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-static inline int32_t round_int(int32_t numerator, int32_t denominator) {
-    float rounding = ((float)numerator)/denominator + 0.5f;
+static inline int32_t round_int(int64_t numerator, int64_t denominator) {
+
+    double rounding = ((double)numerator)/denominator + 0.5f;
     if(rounding < 0 && rounding != (int32_t)rounding) {
         return (int32_t)(rounding - 1);
     }
@@ -25,7 +27,6 @@ static void forward_DWT(int32_t* data, size_t width) {
 	uint32_t n = width >> 1; //number of coefficients in pass
 	int32_t* highpass = &data[n];
 	int32_t* lowpass = &data[0];
-
 
     highpass[0] = cache[1] - round_int((9 * (cache[0] + cache[2]) - (cache[2] + cache[4])), 16);
     lowpass[0] = cache[0] - round_int(-highpass[0], 2);
