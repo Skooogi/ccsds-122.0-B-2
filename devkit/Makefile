@@ -1,6 +1,6 @@
 TARGET = SAMV71
 
-OPT = -g
+OPT = -Os
 BUILD_DIR = build
 
 PREFIX = arm-none-eabi-
@@ -54,7 +54,7 @@ C_SOURCES = $(call rwildcard,$(SOURCE_DIR)/,*.c)
 C_SOURCES += $(call rwildcard,$(CCSDS_DIR)/,*.c)
 
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall
-CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -g -Wno-format
+CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -Wno-format
 CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 
 # -lm -lnosys
@@ -62,7 +62,7 @@ LIBS =
 LDSCRIPT = \
 	   -T"$(SOURCE_DIR)/samv71b/gcc/gcc/samv71q21b_flash.ld" \
 	   -L"$(SOURCE_DIR)/samv71b/gcc/gcc"
-LDFLAGS = $(MCU) -specs=nosys.specs $(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = $(MCU) -specs=nosys.specs $(LDSCRIPT) $(LIBDIR) $(LIBS) -ffunction-sections -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin
 
@@ -76,7 +76,7 @@ vpath %.s $(sort $(dir $(ASM_SOURCES)))
 debug: all
 	@JLinkExe -commanderscript cmd.jlink
 	@JLinkGDBServer -if SWD -Device ATSAMV71Q21B &
-	@$(TERM) -e arm-none-eabi-gdb --eval-command="target remote localhost:2331" ./build/SAMV71.elf
+	@alacritty -e arm-none-eabi-gdb --eval-command="target remote localhost:2331" ./build/SAMV71.elf
 
 flash: all
 	@JLinkExe -commanderscript cmd.jlink
