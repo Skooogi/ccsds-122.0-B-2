@@ -1,0 +1,10 @@
+Input: 128x128 int16 image
+test ping without compression code = approx 10 ms (not deducted from results)
+Python timer accurate to 1 ms
+
+debug symbols and no optimizations  = 1629 ms
+block_get_status read unions        = 1557 ms
+float-abi=hard                      = 1383 ms
+-Os                                 = 877 ms
+I & D caches enabled                = 288 ms
+everything combined                 = 89 ms
