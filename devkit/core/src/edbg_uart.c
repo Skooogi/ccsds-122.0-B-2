@@ -38,6 +38,10 @@ static volatile uint32_t data_sent = 0;
 static bool receiving_file = 0;
 static bool sending_file = 0;
 
+//Benchmarking increase to 87000 to test read/write
+#define N_RAM 1
+static uint32_t memory[N_RAM] = {};
+
 static uint8_t const crc8_table[] = {
     0xea, 0xd4, 0x96, 0xa8, 0x12, 0x2c, 0x6e, 0x50, 0x7f, 0x41, 0x03, 0x3d,
     0x87, 0xb9, 0xfb, 0xc5, 0xa5, 0x9b, 0xd9, 0xe7, 0x5d, 0x63, 0x21, 0x1f,
@@ -127,7 +131,7 @@ uint8_t send_packet(Packet* packet) {
     }
 }
 
-static void parse_packet(void) {
+static void __attribute__((optimize("O0"))) parse_packet(void) {
 
 
     if(receiving_file) {
@@ -231,6 +235,45 @@ static void parse_packet(void) {
             cached_packet.crc = crc8((uint8_t*)&cached_packet.data, 1);
             send_packet(&cached_packet);
         }
+
+        else if(strcmp(token, "cpu_speed") == 0) {
+
+            uint32_t n = 10000000;
+            uint32_t sum = 0;
+            for(uint32_t i = 0; i < n; ++i) {
+                sum += i;
+            }
+
+            *(uint32_t*)&cached_packet.data[0] = sum;
+            cached_packet.length = 4;
+            cached_packet.crc = crc8((uint8_t*)&cached_packet.data, cached_packet.length);
+            send_packet(&cached_packet);
+        }
+
+        else if(strcmp(token, "write_speed") == 0) {
+
+            for(uint32_t i = 0; i < N_RAM; ++i) {
+                memory[i] = i;
+            }
+
+            *(uint32_t*)&cached_packet.data[0] = N_RAM;
+            cached_packet.length = 4;
+            cached_packet.crc = crc8((uint8_t*)&cached_packet.data, cached_packet.length);
+            send_packet(&cached_packet);
+        }
+
+        else if(strcmp(token, "read_speed") == 0) {
+
+            uint32_t sum = 0;
+            for(uint32_t i = 0; i < N_RAM; ++i) {
+                sum += memory[i];
+            }
+
+            *(uint32_t*)&cached_packet.data[0] = sum;
+            cached_packet.length = 4;
+            cached_packet.crc = crc8((uint8_t*)&cached_packet.data, cached_packet.length);
+            send_packet(&cached_packet);
+        }
         
         token = strtok(NULL, " ");
     }
@@ -238,6 +281,10 @@ static void parse_packet(void) {
 
 int main(void)
 {
+    SCB_EnableICache();
+    SCB_EnableDCache();
+    SCB_CleanDCache();
+
 	atmel_start_init();
 
 	usart_async_register_callback(&EDBG_COM, USART_ASYNC_TXC_CB, tx_cb_EDBG_COM);

@@ -14,7 +14,6 @@ def get_port():
             return serial.Serial(p[0])
     raise IOError("Board not plugged in!")
 
-
 def print_banner():
     print(r"""
  ____     ____     ____    ____    ____       
@@ -97,6 +96,15 @@ def send_packet(ser, data):
 
     return 255;
 
+def time_execution(ser, input_str):
+    start = time.time()
+    send_packet(ser, input_str.encode());
+    while(ser.inWaiting() == 0):
+        time.sleep(0.001)
+    stop = time.time()
+    byte_data = read_packet(ser);
+    return (stop-start)*1000
+
 if __name__ == "__main__":
     ser = get_port()
     ser.baudrate = 115200
@@ -120,18 +128,15 @@ if __name__ == "__main__":
             print("Connected: yes, port: "+ ser.port + ", baud: " + str(ser.baudrate))
 
         elif input_str == 'test':
-            send_packet(ser, input_str.encode());
-
-            time.sleep(0.1)
-            byte_data = read_packet(ser);
-            print(byte_data)
+            elapsed = time_execution(ser, input_str)
+            print(elapsed, "ms")
 
         elif input_str == 'file':
 
-            input_str = input("[I]>> Input file:")
+            filename = input("[I]>> Input file:")
             width, height, bitdepth = input("[I]>> width, height, bitdepth:").split()
 
-            file = open(input_str, "rb")
+            file = open(filename, "rb")
             data_bytes = file.read()
             
             file_data = "file".encode()
@@ -186,86 +191,60 @@ if __name__ == "__main__":
             print()
 
         elif input_str == 'compress':
+            start = time.time()
             send_packet(ser, input_str.encode());
-            start = time.time() * 1000;
-            length = 0
-            fp = open("output.cmp", "wb")
-            byte_data = b''
+            while(ser.inWaiting() == 0):
+                time.sleep(0.001)
+            stop = time.time()
+            byte_data = read_packet(ser);
+            print(f'[O]>> {(stop-start)*1000} ms')
 
-            packets = 1
-            data = 0
-            time.sleep(0.1)
-            while length != 3:
-                byte_data = read_packet(ser);
-                length = byte_data[0]
-                data += length - 2
-                print(f'[O]>> received {packets} packets ({data} B)', end='\r')
-                packets += 1
-                if(length != 3):
-                    fp.write(byte_data[1:-1])
-            end = time.time() * 1000;
-            fp.close()
-            print()
-            print("[O]>>",end-start, 'ms')
-            continue
+        elif input_str == "cpu_speed":
+            avg = 0
+            n = 10
+            for i in range(n):
+                elapsed = time_execution(ser, input_str)
+                print(f'[O]>> {i+1}/{n} took {elapsed} ms')
+                avg += elapsed
+
+            avg /= n
+            print(f"[O]>> Average time over {n} samples is {avg} ms")
+            num = int(0xFFFFFF)
+            print(f'{num/(avg/1000)} instructions/s')
+
+        elif input_str == "write_speed":
+            avg = 0
+            n = 100
+            
+            #Ignore first because malloc takes time
+            time_execution(ser,input_str)
+
+            for i in range(n):
+                elapsed = time_execution(ser, input_str)
+                print(f'[O]>> {i+1}/{n} took {elapsed} ms')
+                avg += elapsed
+            avg /= n
+
+            print(f"[O]>> Average time over {n} samples is {avg} ms")
+            num_bytes = 87000*4
+            speed = num_bytes/(avg/1000) #B/s
+            speed /= 1000000 #MB/s
+            print(f'[O]>> Write speed of {speed} MB/s')
+
+        elif input_str == "read_speed":
+            avg = 0
+            n = 100
+            for i in range(n):
+                elapsed = time_execution(ser, input_str)
+                print(f'[O]>> {i+1}/{n} took {elapsed} ms')
+                avg += elapsed
+            avg /= n
+
+            print(f"[O]>> Average time over {n} samples is {avg} ms")
+            num_bytes = 87000*4
+            speed = num_bytes/(avg/1000) #B/s
+            speed /= 1000000 #MB/s
+            print(f'[O]>> Read speed of {speed} MB/s')
 
         else: 
             send_packet(ser, input_str.encode());
-        """
-        else:
-            # send the character to the device
-            data_bytes = 0
-            if(input_str == ''):
-                continue
-
-            elif(input_str == 'upload'):
-
-                input_str = input("[I]>> Input file:")
-                file = open(input_str, "rb")
-                data_bytes = file.read()
-                
-                file_data = "upload\0\0".encode()
-                file_data += len(data_bytes).to_bytes(4, 'little')
-                file_data += ((len(data_bytes)+63)//64).to_bytes(4, 'little')
-                out = send_packet(ser, file_data, 0, 1)
-                print("[O]>> "+out)
-                if(out[0] == 'F'):
-                    continue
-            elif(input_str == 'download'):
-                data_bytes = input_str.encode()
-
-                input_str = input("[I]>> Output file:")
-                file = open(input_str, "wb")
-
-                out = send_packet(ser, data_bytes, 0, 1)
-                print("[O]>> "+out)
-
-                if(out == 'sending'):
-                    byte_data = b''
-                    time.sleep(0.05)
-                    while ser.inWaiting() > 0:
-                        byte_data += ser.read(1)
-
-                    packet_length = byte_data[0]
-                    crc = byte_data[packet_length-1]
-                    check = crc8.calculate(byte_data[1:-1])
-
-                    file_size = int.from_bytes(byte_data[1:5], byteorder='little')
-                    num_packets = int.from_bytes(byte_data[5:9], byteorder='little')
-                    print(f'[I]>> file size: {file_size} B, Packets: {num_packets}')
-                    if(crc == check):
-                        print("[I]>> received 1/1")
-                        send_packet(ser,"success".encode(),0,1)
-                    else:
-                        print("[I]>> resending 1")
-                        send_packet(ser,"resend".encode(),0,1)
-                continue
-
-            else:
-                data_bytes = input_str.encode()
-                
-            num_packets = (len(data_bytes)+63)//64
-            for block in range(0, len(data_bytes), 64):
-                send_packet(ser, data_bytes[block:block+64], block//64, num_packets)
-                """
-
