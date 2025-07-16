@@ -29,8 +29,14 @@ typedef struct Block {
     uint8_t bitAC;
     Tran tran;
     int32_t ac[AC_COEFFICIENTS_PER_BLOCK]; 
-    uint64_t high_status_bit;
-    uint64_t low_status_bit;
+    union {
+        uint64_t high_status_bit;
+        uint8_t high_statuses[8];
+    };
+    union {
+        uint64_t low_status_bit;
+        uint8_t low_statuses[8];
+    };
 } Block;
 
 typedef struct MappedWord {

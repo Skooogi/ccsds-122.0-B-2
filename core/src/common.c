@@ -80,7 +80,9 @@ void block_set_status(Block* block, uint8_t ac_index, int8_t value) {
 
 //Transforms the status bits back to a value.
 int8_t block_get_status(Block* block, uint8_t ac_index) {
-    return state_map[((block->high_status_bit >> ac_index) & 1) * 2 + ((block->low_status_bit >> ac_index) & 1)];
+    uint8_t idx = ac_index / 8;
+    uint8_t i = ac_index % 8;
+    return state_map[((block->high_statuses[idx] >> i) & 1)*2 + ((block->low_statuses[idx] >> i) & 1)];
 }
 
 //All get_*max functions return:
