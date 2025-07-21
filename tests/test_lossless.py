@@ -31,8 +31,8 @@ def get_file_bitdepth(bitdepth):
 
     return file_type
 
-@pytest.mark.parametrize('seed', range(3))
-@pytest.mark.parametrize('bitdepth', range(8,9))
+@pytest.mark.parametrize('seed', range(1))
+@pytest.mark.parametrize('bitdepth', range(1,33))
 def test_lossless_end_to_end(bitdepth, seed):
     
     ccsds = "../build/ccsds.bin"
