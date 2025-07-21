@@ -4,11 +4,10 @@
 #include <string.h>
 
 static inline int32_t round_int(int32_t numerator, int32_t denominator) {
-    float rounding = ((float)numerator)/denominator + 0.5f;
-    if(rounding < 0 && rounding != (int32_t)rounding) {
-        return (int32_t)(rounding - 1);
+    if(numerator < 0) {
+        return (numerator - (denominator/2-1)) / denominator;
     }
-    return (int32_t)(rounding);
+    return (numerator + (denominator/2)) / denominator;
 }
 
 static void forward_DWT(int32_t* data, size_t width) {
