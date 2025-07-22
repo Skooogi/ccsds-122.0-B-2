@@ -9,7 +9,7 @@ C_INCLUDES = \
 CC=gcc
 
 C_DEFS =
-CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -O0 -g 
+CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -O2
 #-fprofile-arcs -ftest-coverage
 #Dependency information
 CFLAGS+= -MMD -MP -MF"$(@:%.o=%.d)"
@@ -26,7 +26,7 @@ all: $(BUILD_DIR)/$(PROJECT).bin
 
 TEST_IN_FILE = "../res/noise/raw/test_image_noise_1k.raw"
 TEST_OUT_FILE = "../python/output.cmp"
-TEST_SIZE = 1024 1024 8
+TEST_SIZE = 1024 1024 12
 RUN_BIN = ./$(PROJECT).bin $(TEST_IN_FILE) $(TEST_OUT_FILE) $(TEST_SIZE)
 
 run: all
