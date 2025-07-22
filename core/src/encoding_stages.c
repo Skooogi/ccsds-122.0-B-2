@@ -3,6 +3,18 @@
 #include "file_io.h"
 #include "word_mapping.h"
 #include <stdio.h>
+#include <stdlib.h>
+
+static uint8_t indices[63] = {
+    0,21,42,1,2,3,4,22,
+    23,24,25,43,44,45,46,5,
+    6,7,8,9,10,11,12,13,
+    14,15,16,17,18,19,20,26,
+    27,28,29,30,31,32,33,34,
+    35,36,37,38,39,40,41,47,
+    48,49,50,51,52,53,54,55,
+    56,57,58,59,60,61,62
+};
 
 static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane);
 
@@ -302,58 +314,39 @@ void stage_4(SegmentData* segment_data) {
             continue;
         }
 
-        //Bits for P coefficient.
-        for(size_t pi = 0; pi < 3; ++pi) {
-            size_t index = pi * 21;
-            if(block_get_status(&blocks[i], index) == 2) {
-                uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
-                file_io_write_bits(temp, 1);
-            }
-        }
-        
-        //Bits for C coefficients.
-        for(size_t ci = 0; ci < 3; ++ci) {
-            for(size_t j = 0; j < 4; ++j) {
-                size_t index = 1 + ci * 21 + j;
-                if(block_get_status(&blocks[i], index) == 2) {
-                    uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
-                    file_io_write_bits(temp, 1);
-                }
-            }
-        }
-
-        //Bits for H coefficients.
-        for(size_t hi = 0; hi < 3; ++hi) {
-            for(size_t hj = 0; hj < 4; ++hj) {
-                for(size_t j = 0; j < 4; ++j) {
-                    size_t index = 5+hi*21+hj*4+j;
-                    if(block_get_status(&blocks[i], index) == 2) {
-                        uint8_t temp = blocks[i].ac[index] >> bitplane & 1;
-                        file_io_write_bits(temp, 1);
-                    }
-                }
-            }
-        }
+        file_io_write_bits(blocks[i].bitplane_slice, blocks[i].slice_length);
     }
 }
 
 static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
 
-        uint64_t new_high_status_bit = 0;
-        uint64_t new_low_status_bit = 0;
+    uint64_t new_high_status_bit = 0;
+    uint64_t new_low_status_bit = 0;
 
-        for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
-            uint32_t ac_coefficient = block->ac[ac_index] & ~(1<<bitACMax);
-            if(subband_lim(ac_index, bitplane)) {
-                new_high_status_bit |= 1ll << ac_index;
-                new_low_status_bit |= 1ll << ac_index;
-            }
-            else if((1<<(bitplane+1)) <= ac_coefficient) {
-                new_high_status_bit |= 1ll << ac_index;
-            }
-            else if((1<<(bitplane)) <= ac_coefficient && ac_coefficient < (1<<(bitplane+1))) {
-                new_low_status_bit |= 1ll << ac_index;
-            }
+    uint64_t bitplane_slice = 0;
+    uint8_t slice_length = 0;
+
+    for(size_t unmapped_index = 0; unmapped_index < AC_COEFFICIENTS_PER_BLOCK; ++unmapped_index) {
+        size_t ac_index = indices[unmapped_index];
+        uint32_t ac_coefficient = block->ac[ac_index] & ~(1<<bitACMax);
+
+        if(subband_lim(ac_index, bitplane)) {
+            new_high_status_bit |= 1ll << ac_index;
+            new_low_status_bit |= 1ll << ac_index;
         }
-        block_set_status_with(block, new_high_status_bit, new_low_status_bit);
+        else if((1<<(bitplane+1)) <= ac_coefficient) {
+            new_high_status_bit |= 1ll << ac_index;
+
+            bitplane_slice <<= 1;
+            bitplane_slice |= ((ac_coefficient >> bitplane) & 1);
+            slice_length++;
+        }
+        else if((1<<(bitplane)) <= ac_coefficient && ac_coefficient < (1<<(bitplane+1))) {
+            new_low_status_bit |= 1ll << ac_index;
+        }
+    }
+
+    block->bitplane_slice = bitplane_slice;
+    block->slice_length = slice_length;
+    block_set_status_with(block, new_high_status_bit, new_low_status_bit);
 }

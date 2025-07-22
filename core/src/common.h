@@ -29,6 +29,8 @@ typedef struct Block {
     uint8_t bitAC;
     Tran tran;
     int32_t ac[AC_COEFFICIENTS_PER_BLOCK]; 
+    uint64_t bitplane_slice;
+    uint8_t slice_length;
     uint64_t high_status_bit;
     uint64_t low_status_bit;
 } Block;
