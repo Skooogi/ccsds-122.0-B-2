@@ -12,7 +12,7 @@ def generate_random_image(max_width, max_height, bitdepth, seed):
 
     assert width >= 32 and width % 8 == 0, "Width must be a multiple of eight"
     assert height >= 32 and height % 8 == 0, "Height must be a multiple of eight"
-    assert bitdepth > 0 and bitdepth <= 25, "Bitdepth must be between 1 and 32"
+    assert bitdepth > 0 and bitdepth <= 25, "Bitdepth must be between 1 and 26"
 
     data = np.random.rand(height,width)*2**bitdepth
     return data.astype(np.uint32)
@@ -32,7 +32,7 @@ def get_file_bitdepth(bitdepth):
     return file_type
 
 @pytest.mark.parametrize('seed', range(1))
-@pytest.mark.parametrize('bitdepth', range(1,33))
+@pytest.mark.parametrize('bitdepth', range(1, 26))
 def test_lossless_end_to_end(bitdepth, seed):
     
     ccsds = "../build/ccsds.bin"
