@@ -1,6 +1,11 @@
+// Original copyright: Aalto University
+// Modifications copyright: Huld Ltd.
+// Project: EnVisS ASW (for Comet Interceptor mission)
+
 #include "common.h"
 #include "file_io.h"
 #include "word_mapping.h"
+//#include "asw_assert.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,13 +13,13 @@
 //All tables used for symbol and code word mapping. (4.5.3.2.)
 static uint8_t sym2bit[4] = { 0, 2, 1, 3 };
 static uint8_t sym3bit[2][8] = {
-    {1, 4, 0, 5, 2, 6, 3, 7}, 
-    {-1, 3, 0, 4, 1, 5, 2, 6}
+    {1, 4, 0, 5, 2, 6, 3, 7},
+    {255, 3, 0, 4, 1, 5, 2, 6}
 };
 
 static uint8_t sym4bit[2][16] = {
     {10, 1, 3, 6, 2, 5, 9, 12, 0, 8, 7, 13, 4, 14, 11, 15},
-    {-1, 1, 3, 6, 2, 5, 9, 11, 0, 8, 7, 12, 4, 13, 10, 14}
+    {255, 1, 3, 6, 2, 5, 9, 11, 0, 8, 7, 12, 4, 13, 10, 14}
 };
 
 static uint8_t word2bit[2][4] = {
@@ -28,7 +33,7 @@ static uint8_t word3bit[3][8] = {
     {2, 3, 2, 3, 2, 3, 0, 1},
     {0, 1, 2, 3, 4, 5, 6, 7}
 };
-static uint8_t word_length_bit_3[2][8] = { 
+static uint8_t word_length_bit_3[2][8] = {
     {1, 2, 3, 5, 5, 5, 6, 6},
     {2, 2, 3, 3, 4, 4, 4, 4}
 };
@@ -39,7 +44,7 @@ static uint8_t word4bit[4][16] = {
     {4, 5, 6, 7, 4, 5, 6, 7, 4, 5, 6, 7, 0, 1, 2, 3},
     {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 };
-static uint8_t word_length_bit_4[3][16] = { 
+static uint8_t word_length_bit_4[3][16] = {
     {1, 2, 3, 4, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8},
     {2, 2, 3, 3, 4, 4, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7},
     {3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5}
@@ -51,7 +56,7 @@ void set_block_string(BlockString* new_block_string) {
     block_string = new_block_string;
 }
 
-void write_block_string() {
+void write_block_string(void) {
 
     if(block_string->index[block_string->stage] == 0) {
         return;
@@ -79,7 +84,7 @@ void write_block_string() {
         uint8_t word, length;
 
         if(current.length == 0 || current.uncoded) {
-            file_io_write_bits(current.mapped_symbol, current.length+1);
+            file_io_write_bits(current.mapped_symbol, (size_t) (current.length+1));
             continue;
         }
 
@@ -99,7 +104,7 @@ void write_block_string() {
 
                     //Code options for 3b word are indexed 0,1,3;
                     if(code_option_bit_3 == 2) {
-                        file_io_write_bits(code_option_bit_3+1, 2);
+                        file_io_write_bits((uint64_t) (code_option_bit_3+1), 2);
                     }
                     else {
                         file_io_write_bits(code_option_bit_3, 2);
@@ -121,43 +126,43 @@ void write_block_string() {
                 file_io_write_bits(word, length);
                 break;
         }
-    } 
+    }
 }
 
 void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option, uint8_t uncoded) {
     //Maps each generated word according to 4.5.3.2.
     //The mapped words are held in a BlockString by stage until they are written.
-    
+
     size_t index = block_string->index[block_string->stage];
     MappedWord* current = &block_string->mapped_words[block_string->stage][index];
-    current->length = word_length - 1;
-    current->symbol_option = symbol_option;
-    current->uncoded = uncoded;
+    current->length = (uint8_t) ((word_length - 1) & 0x3);
+    current->symbol_option = (uint8_t) (symbol_option & 0x1);
+    current->uncoded = (uint8_t) (uncoded & 0x1);
     block_string->index[block_string->stage]++;
 
     //No encoding is necessary and the word is written as is.
     if(uncoded || (word_length == 1)) {
-        current->mapped_symbol = word;
+        current->mapped_symbol = (uint8_t) (word & 0xF);
         return;
     }
 
     //The length generated with each code option is saved.
     //This is used to select the code option that minimizes length.
     switch(current->length) {
-            
+
         case 1:
-            current->mapped_symbol = sym2bit[word];
+            current->mapped_symbol = (uint8_t) (sym2bit[word] & 0xf);
             block_string->string_length_2_bit[0] += word_length_bit_2[current->mapped_symbol];
             block_string->string_length_2_bit[1] += word_length;
             break;
 
         case 2:
-            current->mapped_symbol = sym3bit[symbol_option][word];
+            current->mapped_symbol = (uint8_t) (sym3bit[symbol_option][word] & 0xf);
 
             //Impossible value.
             if(word == 0 && symbol_option == 1) {
-                printf("SYMBOL ERROR: 000\n");
-                exit(EXIT_FAILURE);
+                printf("Impossible value 2!\n");
+                //Assert(false);
             }
             block_string->string_length_3_bit[0] += word_length_bit_3[0][current->mapped_symbol];
             block_string->string_length_3_bit[1] += word_length_bit_3[1][current->mapped_symbol];
@@ -165,12 +170,12 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
             break;
 
         case 3:
-            current->mapped_symbol = sym4bit[symbol_option][word];
-            
+            current->mapped_symbol = (uint8_t) (sym4bit[symbol_option][word] & 0xf);
+
             //Impossible value.
             if(word == 0 && symbol_option == 1) {
-                printf("SYMBOL ERROR: 0000\n");
-                exit(EXIT_FAILURE);
+                printf("Impossible value 3!\n");
+                //Assert(false);
             }
             block_string->string_length_4_bit[0] += word_length_bit_4[0][current->mapped_symbol];
             block_string->string_length_4_bit[1] += word_length_bit_4[1][current->mapped_symbol];

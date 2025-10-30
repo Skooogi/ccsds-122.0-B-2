@@ -1,3 +1,7 @@
+// Original copyright: Aalto University
+// Modifications copyright: Huld Ltd.
+// Project: EnVisS ASW (for Comet Interceptor mission)
+
 #ifndef ENCODING_STAGES_H
 #define ENCODING_STAGES_H
 

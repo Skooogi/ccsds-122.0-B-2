@@ -1,3 +1,7 @@
+// Original copyright: Aalto University
+// Modifications copyright: Huld Ltd.
+// Project: EnVisS ASW (for Comet Interceptor mission)
+
 #include "subband.h"
 #include "segment_header.h"
 
@@ -10,7 +14,7 @@ void subband_scale(SegmentHeader* headers, int32_t* data, size_t width, size_t h
     size_t height_2 = height>>1;
     size_t height_4 = height>>2;
     size_t height_8 = height>>3;
-    
+
     uint8_t HH_1 = 0;
     uint8_t HL_1 = 1;
     uint8_t LH_1 = 1;
@@ -38,69 +42,69 @@ void subband_scale(SegmentHeader* headers, int32_t* data, size_t width, size_t h
     //Scaling HH_1
     for(size_t j = height_2; j < height; ++j) {
         for(size_t i = width_2; i < width; ++i) {
-            data[j * width + i] <<= HH_1;
+            data[j * width + i] = (int32_t) (data[j * width + i] << HH_1);
         }
     }
 
     //HL_1
     for(size_t j = 0; j < height_2; ++j) {
         for(size_t i = width_2; i < width; ++i) {
-            data[j * width + i] <<= HL_1;
+            data[j * width + i] = (int32_t) (data[j * width + i] << HL_1);
         }
     }
 
     //LH_1
     for(size_t j = height_2; j < height; ++j) {
         for(size_t i = 0; i < width_2; ++i) {
-           data[j * width + i] <<= LH_1; 
+           data[j * width + i] = (int32_t) (data[j * width + i] << LH_1);
         }
     }
     //Scaling HH_2
     for(size_t j = height_4; j < height_2; ++j) {
         for(size_t i = width_4; i < width_2; ++i) {
-            data[j * width + i] <<= HH_2;
+            data[j * width + i] = (int32_t) (data[j * width + i] << HH_2);
         }
     }
 
     //HL_2
     for(size_t j = 0; j < height_4; ++j) {
         for(size_t i = width_4; i < width_2; ++i) {
-            data[j * width + i] <<= HL_2;
+            data[j * width + i] = (int32_t) (data[j * width + i] << HL_2);
         }
     }
 
     //LH_2
     for(size_t j = height_4; j < height_2; ++j) {
         for(size_t i = 0; i < width_4; ++i) {
-           data[j * width + i] <<= LH_2; 
+           data[j * width + i] = (int32_t) (data[j * width + i] << LH_2);
         }
     }
 
     //Scaling HH_3
     for(size_t j = height_8; j < height_4; ++j) {
         for(size_t i = width_8; i < width_4; ++i) {
-            data[j * width + i] <<= HH_3;
+            data[j * width + i] = (int32_t) (data[j * width + i] << HH_3);
         }
     }
 
     //HL_3
     for(size_t j = 0; j < height_8; ++j) {
         for(size_t i = width_8; i < width_4; ++i) {
-            data[j * width + i] <<= HL_3;
+            data[j * width + i] = (int32_t) (data[j * width + i]  << HL_3);
         }
     }
 
     //LH_3
     for(size_t j = height_8; j < height_4; ++j) {
         for(size_t i = 0; i < width_8; ++i) {
-           data[j * width + i] <<= LH_3; 
+           data[j * width + i] = (int32_t) (data[j * width + i] << LH_3);
         }
     }
 
     //LL_3
     for(size_t j = 0; j < height_8; ++j) {
         for(size_t i = 0; i < width_8; ++i) {
-            data[j * width + i] <<= LL_3;
+            data[j * width + i] = (int32_t) (data[j * width + i] << LL_3);
         }
     }
 }

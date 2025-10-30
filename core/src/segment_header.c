@@ -1,11 +1,17 @@
+// Original copyright: Aalto University
+// Modifications copyright: Huld Ltd.
+// Project: EnVisS ASW (for Comet Interceptor mission)
+
 #include "file_io.h"
 #include "segment_header.h"
 #include <stdlib.h>
 #include <string.h>
 
+static SegmentHeader SegHeader;
+
 SegmentHeader* segment_header_init_values(void) {
-    
-    SegmentHeader* headers = malloc(sizeof(SegmentHeader));
+
+    SegmentHeader* headers = &SegHeader;
     memset(headers, 0, sizeof(SegmentHeader));
 
     return headers;

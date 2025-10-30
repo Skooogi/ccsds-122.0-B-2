@@ -1,3 +1,7 @@
+// Original copyright: Aalto University
+// Modifications copyright: Huld Ltd.
+// Project: EnVisS ASW (for Comet Interceptor mission)
+
 #include "common.h"
 #include <stdio.h>
 
@@ -9,23 +13,23 @@ uint32_t log2_32 (uint32_t value) {
 
 uint32_t log2_32_ceil (uint32_t value) {
     uint32_t result = 0;
-    while(value > 1<<result) result ++;
+    while(value > (uint32_t) (1<<result)) result ++;
     return result;
 }
 
 uint32_t twos_complement(int32_t value, size_t num_bits) {
     if(value & (1 << num_bits)) {
-        return (~(value) + 1) & ((1<<num_bits)-1);
+        return (uint32_t) ((~(value) + 1) & ((1<<num_bits)-1));
     }
-    return value;
+    return (uint32_t) value;
 }
 
 bool subband_lim(uint8_t ac_index, uint8_t bitplane) {
 
     static uint64_t sub_map[3] = {
-        0b1111111111111111111111111111111111111111111111100000000000000000,
-        0b1111100000000000000001111100000000000000001000000000000000000000,
-        0b1000000000000000000001000000000000000000000000000000000000000000
+        0xFFFFFFFFFFFE0000ULL,
+        0xF80007C000200000ULL,
+        0x8000040000000000ULL
     };
 
     // Checks whether or not ac coefficient scaling means bitplane is necessarily 0.
@@ -42,11 +46,11 @@ bool subband_lim(uint8_t ac_index, uint8_t bitplane) {
  * BLOCK OPERATIONS
  *
  * Block saves the state -1...2 of each coefficient in two 64b values.
- * One is for high bits and one for low bits. 
+ * One is for high bits and one for low bits.
  * For each 64b the coefficient state is mapped from the least significant bit as follows:
  * 1 x Parent
  * 4 x Children
- * 16 x Grandchildren 
+ * 16 x Grandchildren
  *
  * (MSB) HHHH HHHH HHHH HHHH CCCC P (LSB)
  *
@@ -74,8 +78,8 @@ void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_
 
 //Set a single ac status.
 void block_set_status(Block* block, uint8_t ac_index, int8_t value) {
-    block->high_status_bit = (block->high_status_bit & ~(1LL << ac_index)) | (state_map_inv_1[value] << ac_index);
-    block->low_status_bit = (block->low_status_bit & ~(1LL << ac_index)) | (state_map_inv_2[value] << ac_index);
+    block->high_status_bit = (uint64_t) ((block->high_status_bit & ~(1ULL << ac_index)) | (uint64_t) (state_map_inv_1[value] << ac_index));
+    block->low_status_bit = (uint64_t) ((block->low_status_bit & ~(1ULL << ac_index)) | (uint64_t) (state_map_inv_2[value] << ac_index));
 }
 
 //Transforms the status bits back to a value.
@@ -106,7 +110,7 @@ uint8_t block_get_gmax(Block* block, uint8_t family) {
     return (filtered >> 21*family & g_mask) > 0;
 }
 
-//Status of one quadrant of grandchildren of a single family. 
+//Status of one quadrant of grandchildren of a single family.
 uint8_t block_get_hmax(Block* block, uint8_t family, uint8_t quadrant) {
     uint64_t filtered = (~block->high_status_bit & block->low_status_bit);
     return (filtered >> (21*family + quadrant * 4) & h_mask) > 0;

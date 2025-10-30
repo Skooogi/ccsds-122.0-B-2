@@ -1,3 +1,7 @@
+// Original copyright: Aalto University
+// Modifications copyright: Huld Ltd.
+// Project: EnVisS ASW (for Comet Interceptor mission)
+
 #ifndef SEGMENT_HEADER_H
 #define SEGMENT_HEADER_H
 
@@ -29,14 +33,14 @@ typedef union Header_1 {
         unsigned last_segment   : 1;
         unsigned first_segment  : 1;
     };
- 
+
     uint32_t packed;
 
 } Header_1;
 
 //5 Bytes
 typedef union Header_2 {
-    
+
     struct {
         unsigned reserved_1     : 4;
         unsigned use_fill       : 1;
@@ -52,7 +56,7 @@ typedef union Header_2 {
 
 //3 Bytes
 typedef union Header_3 {
-    
+
     struct {
         unsigned reserved_2          : 2;
         unsigned optimal_ac_select   : 1;
@@ -67,7 +71,7 @@ typedef union Header_3 {
 
 //8 Bytes
 typedef union Header_4 {
-    
+
     struct {
         unsigned reserved_2             : 11;
         unsigned custom_weight_LL_3     : 2;
@@ -121,7 +125,7 @@ typedef union Header_1 {
 
 //5 Bytes
 typedef union Header_2 {
-    
+
     struct {
         unsigned seg_byte_limit : 27;
         unsigned dc_stop        : 1;
@@ -137,7 +141,7 @@ typedef union Header_2 {
 
 //3 Bytes
 typedef union Header_3 {
-    
+
     struct {
         unsigned segment_size        : 20;
         unsigned optimal_dc_select   : 1;
@@ -152,7 +156,7 @@ typedef union Header_3 {
 
 //8 Bytes
 typedef union Header_4 {
-    
+
     struct {
         unsigned dwt_type               : 1;
         unsigned reserved_1             : 1;

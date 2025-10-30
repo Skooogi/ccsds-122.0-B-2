@@ -1,3 +1,7 @@
+// Original copyright: Aalto University
+// Modifications copyright: Huld Ltd.
+// Project: EnVisS ASW (for Comet Interceptor mission)
+
 #include "block_transform.h"
 
 static void family(Block* blocks, size_t block_index, int32_t* data, size_t width, size_t row, size_t column, size_t ac_index);

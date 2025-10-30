@@ -1,3 +1,7 @@
+// Original copyright: Aalto University
+// Modifications copyright: Huld Ltd.
+// Project: EnVisS ASW (for Comet Interceptor mission)
+
 #ifndef COMMON_H
 #define COMMON_H
 
@@ -28,9 +32,7 @@ typedef union Tran {
 typedef struct Block {
     uint8_t bitAC;
     Tran tran;
-    int32_t ac[AC_COEFFICIENTS_PER_BLOCK]; 
-    uint64_t bitplane_slice;
-    uint8_t slice_length;
+    int32_t ac[AC_COEFFICIENTS_PER_BLOCK];
     uint64_t high_status_bit;
     uint64_t low_status_bit;
 } Block;

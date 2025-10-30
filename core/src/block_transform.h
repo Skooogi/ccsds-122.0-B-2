@@ -1,3 +1,7 @@
+// Original copyright: Aalto University
+// Modifications copyright: Huld Ltd.
+// Project: EnVisS ASW (for Comet Interceptor mission)
+
 #ifndef BLOCK_TRANSFORM_H
 #define BLOCK_TRANSFORM_H
 
