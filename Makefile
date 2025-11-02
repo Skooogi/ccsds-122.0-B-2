@@ -13,6 +13,7 @@ CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -g
 #-fprofile-arcs -ftest-coverage
 #Dependency information
 CFLAGS+= -MMD -MP -MF"$(@:%.o=%.d)"
+CFLAGS+= $(RTSW_WARNING_CFLAGS)
 
 LIBS = -lc -lm 
 #-lgcov
@@ -24,9 +25,9 @@ OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 all: $(BUILD_DIR)/$(PROJECT).bin 
 
-TEST_IN_FILE = "../res/noise/raw/test_image_noise_64.raw"
+TEST_IN_FILE = "../res/noise/raw/test_image_noise_1k.raw"
 TEST_OUT_FILE = "../python/output.cmp"
-TEST_SIZE = 64 64 16
+TEST_SIZE = 1024 1024 16
 RUN_BIN = ./$(PROJECT).bin $(TEST_IN_FILE) $(TEST_OUT_FILE) $(TEST_SIZE)
 
 run: all
@@ -59,3 +60,45 @@ clean:
 	@rm -fR $(BUILD_DIR)
 	@rm -fR $(BINARY_DIR)
 	@echo Project cleaned!
+
+RTSW_WARNING_CFLAGS = \
+  -Wall \
+  -Warith-conversion \
+  -Wcast-align=strict \
+  -Wcast-qual \
+  -Wconversion \
+  -Wdouble-promotion \
+  -Wduplicated-branches \
+  -Wduplicated-cond \
+  -Werror \
+  -Wextra \
+  -Wfloat-equal \
+  -Winit-self \
+  -Winline \
+  -Winvalid-pch \
+  -Wlogical-op \
+  -Wmissing-declarations \
+  -Wmissing-field-initializers \
+  -Wmissing-include-dirs \
+  -Wmissing-prototypes \
+  -Wnested-externs \
+  -Wold-style-definition \
+  -Wpacked \
+  -Wparentheses \
+  -Wredundant-decls \
+  -Wredundant-decls \
+  -Wreturn-type \
+  -Wshadow \
+  -Wstrict-prototypes \
+  -Wswitch-enum \
+  -Wtrampolines \
+  -Wundef \
+  -Wuninitialized \
+  -Wunsuffixed-float-constants \
+  -Wunused-function \
+  -Wunused-macros \
+  -Wunused-parameter \
+  -Wunused-value \
+  -Wunused-variable \
+  -Wvla \
+  -Wpedantic

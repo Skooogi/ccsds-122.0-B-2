@@ -65,7 +65,7 @@ void file_io_write_bits(uint64_t bits, size_t length) {
         return;
     }
 
-    bits_written += length;
+    bits_written += (uint32_t) length;
 
     for(int32_t i = ((int32_t) length) - 1; i > -1; --i) {
         cache = (uint8_t) (cache << 1);

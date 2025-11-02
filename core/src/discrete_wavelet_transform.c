@@ -25,7 +25,7 @@ static void forward_DWT(int32_t* data, size_t width) {
 	//cache line for in place operation
 	memcpy(&cache, data, width * sizeof(int32_t));
 
-	uint32_t n = width >> 1; //number of coefficients in pass
+	uint32_t n = (uint32_t) width >> 1; //number of coefficients in pass
 	int32_t* highpass = &data[n];
 	int32_t* lowpass = &data[0];
 
@@ -59,8 +59,8 @@ void discrete_wavelet_transform_2D(int32_t* data, size_t data_width, size_t data
 
 
 	for(uint8_t level = 0; level < transform_levels; ++level) {
-		uint32_t current_width = data_width >> level;
-		uint32_t current_height = data_height >> level;
+		uint32_t current_width = (uint32_t) data_width >> level;
+		uint32_t current_height = (uint32_t) data_height >> level;
 
 
 		//Horizontal
