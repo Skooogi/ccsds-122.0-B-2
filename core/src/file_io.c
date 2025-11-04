@@ -3,15 +3,15 @@
 // Project: EnVisS ASW (for Comet Interceptor mission)
 
 #include "file_io.h"
-//#include "FreeRTOS.h"
-#include "asw_types.h"
-#include <stdio.h>
-//#include "asw_assert.h"
-//#include "image_data.h"
+#include "ccsds.h"
 
 
 /// Buffer holding the compressed image data.
 static uint8_t *Compressed_Data_Array;
+
+/// Length of the buffer holding the compressed data array, in bytes. This is the
+/// maximum number of bytes that can be safely written into the buffer.
+static uint32_t Buffer_Length;
 
 /// The number of bytes that has been written to Compressed_Data_Array.
 static size_t Num_Written_Bytes = 0;
@@ -22,22 +22,16 @@ static uint8_t cache = 0;
 static uint8_t size = 0;
 
 
-void file_io_set_compressed_data_addr(uint8_t *Address)
+void file_io_set_compressed_data_addr(uint8_t *Address, uint32_t Length)
 {
     Compressed_Data_Array = Address;
+    Buffer_Length = Length;
 }
 
 
 void file_io_clear(void)
 {
-    // Clear the array (strictly speaking not needed, but this
-    // makes it easier to understand any issues).
-    for (size_t I = 0; I < Num_Written_Bytes; I++)
-    {
-        Compressed_Data_Array[I] = 0;
-    }
-
-    // Clear all variables, to allow starting from scratch.
+    // Clear all status variables, to allow starting from scratch.
     Num_Written_Bytes = 0;
     bits_written = 0;
     cache = 0;
@@ -74,11 +68,7 @@ void file_io_write_bits(uint64_t bits, size_t length) {
 
         if(size >= 8) {
 
-            // Check for out of memory of temporary buffer
-            if(Num_Written_Bytes >= MAX_COMPRESSED_DATA_SIZE) {
-                printf("FILE IO WROTE TOO MANY BYTES!\n");
-            }
-            //Assert(Num_Written_Bytes < MAX_COMPRESSED_DATA_SIZE);
+            Assert(Num_Written_Bytes < Buffer_Length);
 
             // Write the octet
             Compressed_Data_Array[Num_Written_Bytes] = cache;

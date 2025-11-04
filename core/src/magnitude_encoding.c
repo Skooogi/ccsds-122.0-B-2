@@ -5,9 +5,7 @@
 #include "magnitude_encoding.h"
 #include "common.h"
 #include "file_io.h"
-#include <stdio.h>
 #include <stdlib.h>
-#include "asw_types.h"
 
 
 static int32_t *differences_buf;

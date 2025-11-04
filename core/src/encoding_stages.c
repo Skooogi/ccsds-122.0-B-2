@@ -6,7 +6,6 @@
 #include "common.h"
 #include "file_io.h"
 #include "word_mapping.h"
-#include <stdio.h>
 
 static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane);
 

@@ -6,8 +6,8 @@
 #define SUBBAND_H
 
 #include "segment_header.h"
+#include <stddef.h>
 
-#include <stdio.h>
 #ifdef	__cplusplus
 extern "C" {
 #endif

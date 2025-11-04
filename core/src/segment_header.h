@@ -5,7 +5,6 @@
 #ifndef SEGMENT_HEADER_H
 #define SEGMENT_HEADER_H
 
-#include <stdio.h>
 #ifdef	__cplusplus
 extern "C" {
 #endif

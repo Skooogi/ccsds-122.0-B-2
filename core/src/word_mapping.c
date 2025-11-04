@@ -5,9 +5,8 @@
 #include "common.h"
 #include "file_io.h"
 #include "word_mapping.h"
-//#include "asw_assert.h"
+#include "ccsds.h"
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 //All tables used for symbol and code word mapping. (4.5.3.2.)
@@ -159,11 +158,9 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
         case 2:
             current->mapped_symbol = (uint8_t) (sym3bit[symbol_option][word] & 0xf);
 
-            //Impossible value.
-            if(word == 0 && symbol_option == 1) {
-                printf("Impossible value 2!\n");
-                //Assert(false);
-            }
+            // Check for impossible value.
+            Assert(!(word == 0 && symbol_option == 1));
+
             block_string->string_length_3_bit[0] += word_length_bit_3[0][current->mapped_symbol];
             block_string->string_length_3_bit[1] += word_length_bit_3[1][current->mapped_symbol];
             block_string->string_length_3_bit[2] += word_length;
@@ -172,11 +169,9 @@ void word_mapping_code(uint8_t word, uint8_t word_length, uint8_t symbol_option,
         case 3:
             current->mapped_symbol = (uint8_t) (sym4bit[symbol_option][word] & 0xf);
 
-            //Impossible value.
-            if(word == 0 && symbol_option == 1) {
-                printf("Impossible value 3!\n");
-                //Assert(false);
-            }
+            // Check for impossible value.
+            Assert(!(word == 0 && symbol_option == 1));
+
             block_string->string_length_4_bit[0] += word_length_bit_4[0][current->mapped_symbol];
             block_string->string_length_4_bit[1] += word_length_bit_4[1][current->mapped_symbol];
             block_string->string_length_4_bit[2] += word_length_bit_4[2][current->mapped_symbol];

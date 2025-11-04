@@ -2,17 +2,21 @@
 // Modifications copyright: Huld Ltd.
 // Project: EnVisS ASW (for Comet Interceptor mission)
 
+#include "ccsds.h"
 #include "discrete_wavelet_transform.h"
 #include <stdint.h>
 #include <string.h>
 
-#define MAX_WIDTH (2048)
+#define MAX_LENGTH ((MAX_WIDTH > MAX_HEIGHT) ? (MAX_WIDTH) : (MAX_HEIGHT))
 
-static int32_t cache[MAX_WIDTH];
+ALLOCATE_IN_DTCM_64_ALIGNED
+static int32_t cache[MAX_LENGTH];
 
-static int32_t temp_row[MAX_WIDTH];
+ALLOCATE_IN_DTCM_64_ALIGNED
+static int32_t temp_row[MAX_LENGTH];
 
-static int32_t temp_column[MAX_WIDTH];
+ALLOCATE_IN_DTCM_64_ALIGNED
+static int32_t temp_column[MAX_LENGTH];
 
 
 static void forward_DWT(int32_t* data, size_t width) {

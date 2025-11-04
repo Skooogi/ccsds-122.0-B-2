@@ -6,18 +6,12 @@
 #define BITPLANE_ENCODER_H
 
 #include "segment_header.h"
-//#include "image_data.h"
 #include "common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifndef LIMIT_COMPRESSION_TO_SMALL_IMAGES
-    #define BITPLANE_ENCODER_MAX_NUM_COEFFS (65536)
-#else
-    #define BITPLANE_ENCODER_MAX_NUM_COEFFS (1024)
-#endif
 
 void bitplane_encoder_encode(
     int32_t* data,
