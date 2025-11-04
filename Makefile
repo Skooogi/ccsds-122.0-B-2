@@ -8,7 +8,7 @@ C_INCLUDES = \
 
 CC=gcc
 
-C_DEFS =
+C_DEFS = -DDOXYGEN
 CFLAGS = $(C_DEFS) $(C_INCLUDES) -Wall -g
 #-fprofile-arcs -ftest-coverage
 #Dependency information
