@@ -3,7 +3,6 @@
 // Project: EnVisS ASW (for Comet Interceptor mission)
 
 #include "common.h"
-#include <stdio.h>
 
 uint32_t log2_32 (uint32_t value) {
     uint32_t result = 0;
