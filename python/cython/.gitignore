@@ -1,5 +1,0 @@
-*.so
-*.c
-core
-build
-__pycache__

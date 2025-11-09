@@ -2,5 +2,5 @@ res
 *.zip
 perf.*
 build
-devkit/python/__pycache__
+devkit/
 tests/results
