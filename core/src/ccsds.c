@@ -19,7 +19,7 @@
 // The maximum number of gaggles. This derives from the fact that
 // BLOCKS_PER_SEGMENT = 32 and BLOCKS_PER_GAGGLE = 16. If those are
 // modified then this would also need modification.
-#define MAX_NUM_GAGGLES  (MAX_NUM_BLOCKS_TOTAL/16)
+#define MAX_NUM_GAGGLES  (2)
 
 
 // Temporary data used for magnitude encoding
