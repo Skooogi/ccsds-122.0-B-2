@@ -62,8 +62,6 @@ bool subband_lim(uint8_t ac_index, uint8_t bitplane) {
 */
 
 static int8_t state_map[4] = { 0,1,2,-1 };
-static uint8_t state_map_inv_1[4] = { 0,0,1,1 };
-static uint8_t state_map_inv_2[4] = { 0,1,0,1 };
 static uint64_t b_mask = 0x7ffffbffffdffffe;
 static uint64_t d_mask = 0x1ffffe;
 static uint64_t g_mask = 0x1fffe0;
@@ -73,12 +71,6 @@ static uint64_t h_mask = 0x1e0;
 void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_status_bit) {
     block->high_status_bit = high_status_bit;
     block->low_status_bit = low_status_bit;
-}
-
-//Set a single ac status.
-void block_set_status(Block* block, uint8_t ac_index, int8_t value) {
-    block->high_status_bit = (uint64_t) ((block->high_status_bit & ~(1UL << ac_index)) | (uint64_t) (state_map_inv_1[value] << ac_index));
-    block->low_status_bit = (uint64_t) ((block->low_status_bit & ~(1UL << ac_index)) | (uint64_t) (state_map_inv_2[value] << ac_index));
 }
 
 //Transforms the status bits back to a value.

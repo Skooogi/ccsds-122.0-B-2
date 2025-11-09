@@ -73,7 +73,6 @@ typedef struct SegmentData {
 //Block operations
 bool subband_lim(uint8_t ac_index, uint8_t bitplane);
 void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_status_bit);
-void block_set_status(Block* block, uint8_t ac_index, int8_t value);
 int8_t block_get_status(Block* block, uint8_t ac_index);
 uint8_t block_get_bmax(Block* block);
 uint8_t block_get_dmax(Block* block, uint8_t family);
