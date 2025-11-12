@@ -31,13 +31,6 @@ bool subband_lim(uint8_t ac_index, uint8_t bitplane) {
         0x8000040000000000ULL
     };
 
-    // Checks whether or not ac coefficient scaling means bitplane is necessarily 0.
-    // If it is, it is not encoded.
-    // Figure 3-4
-    if(bitplane > 2) {
-        return false;
-    }
-
     return sub_map[bitplane] >> (63 - ac_index) & 1;
 }
 

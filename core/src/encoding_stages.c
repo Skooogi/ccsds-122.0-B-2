@@ -259,13 +259,15 @@ void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size
             }
         }
 
+        uint64_t high_bits = ~blocks[block_index].high_status_bit;
+
         //types_h and signs_h
         for(uint8_t hi = 0; hi < 3; ++hi) {
             if(!(blocks[block_index].tran.g & (1 << (2-hi)))) {
                 continue;
             }
 
-            if(hi < 2 && bitplane <= 0) {
+            if(hi < 2 && bitplane == 0) {
                 continue;
             }
 
@@ -282,8 +284,7 @@ void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size
                 uint8_t index = (uint8_t) (hi*21+5+hj*4);
 
                 for(uint8_t j = 0; j < 4; ++j) {
-                    int8_t status = block_get_status(&blocks[block_index], (uint8_t) (index+j));
-                    if(0 <= status && status <= 1) {
+                    if( (high_bits >> (index+j)) & 1) {
                         types_h = (uint8_t) (types_h << 1);
                         types_h |= ((blocks[block_index].ac[index+j] >> bitplane) & 1);
                         size_h++;
@@ -328,23 +329,62 @@ static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
     uint64_t bitplane_slice = 0;
     uint8_t slice_length = 0;
 
-    for(size_t unmapped_index = 0; unmapped_index < AC_COEFFICIENTS_PER_BLOCK; ++unmapped_index) {
-        size_t ac_index = indices[unmapped_index];
-        uint32_t ac_coefficient = (uint32_t)block->ac[ac_index] & ~(1U<<bitACMax);
+    uint32_t bitplane_bit = (1U<<(bitplane));
+    uint32_t bitplane_bit_1 = (1U<<(bitplane+1));
+    uint8_t low = 0;
+    uint8_t high = 0;
 
-        if(subband_lim((uint8_t) ac_index, bitplane)) {
-            new_high_status_bit |= (uint64_t) 1ll << ac_index;
-            new_low_status_bit |= (uint64_t) 1ll << ac_index;
-        }
-        else if((1U<<(bitplane+1)) <= ac_coefficient) {
-            new_high_status_bit |= (uint64_t) 1ll << ac_index;
+    // Checks whether or not ac coefficient scaling means bitplane is necessarily 0.
+    // If it is, it is not encoded.
+    // Figure 3-4
+    if(bitplane > 2) {
+        for(size_t unmapped_index = 0; unmapped_index < AC_COEFFICIENTS_PER_BLOCK; ++unmapped_index) {
+            size_t ac_index = indices[unmapped_index];
+            uint32_t ac_coefficient = (uint32_t)block->ac[ac_index] & ~(1U<<bitACMax);
+            high = 0;
+            low = 0;
 
-            bitplane_slice <<= 1;
-            bitplane_slice |= (uint64_t) ((ac_coefficient >> bitplane) & 1);
-            slice_length++;
+            if(bitplane_bit_1 <= ac_coefficient) {
+                high = 1;
+
+                bitplane_slice <<= 1;
+                bitplane_slice |= (uint32_t) ((ac_coefficient >> bitplane) & 1);
+                slice_length++;
+            }
+
+            else if(bitplane_bit <= ac_coefficient && ac_coefficient < bitplane_bit_1) {
+                low = 1;
+            }
+
+            new_high_status_bit |= (uint64_t) high << ac_index;
+            new_low_status_bit |= (uint64_t) low << ac_index;
         }
-        else if((1U<<(bitplane)) <= ac_coefficient && ac_coefficient < (1U<<(bitplane+1))) {
-            new_low_status_bit |= (uint64_t) 1ll << ac_index;
+    }
+
+    else {
+        for(size_t unmapped_index = 0; unmapped_index < AC_COEFFICIENTS_PER_BLOCK; ++unmapped_index) {
+            size_t ac_index = indices[unmapped_index];
+            uint32_t ac_coefficient = (uint32_t)block->ac[ac_index] & ~(1U<<bitACMax);
+            high = 0;
+            low = 0;
+
+            if(subband_lim((uint8_t) ac_index, bitplane)) {
+                high = 1;
+                low = 1;
+            }
+            else if(bitplane_bit_1 <= ac_coefficient) {
+                high = 1;
+
+                bitplane_slice <<= 1;
+                bitplane_slice |= (uint32_t) ((ac_coefficient >> bitplane) & 1);
+                slice_length++;
+            }
+            else if(bitplane_bit <= ac_coefficient && ac_coefficient < bitplane_bit_1) {
+                low = 1;
+            }
+
+            new_high_status_bit |= (uint64_t) high << ac_index;
+            new_low_status_bit |= (uint64_t) low << ac_index;
         }
     }
 
