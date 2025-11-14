@@ -6,3 +6,4 @@ __pycache__
 *.bin
 u16le
 u32le
+previous_versions

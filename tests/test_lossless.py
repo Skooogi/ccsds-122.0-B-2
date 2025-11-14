@@ -1,38 +1,4 @@
-import os, sys
-import numpy as np
-import matplotlib.pyplot as plt
-import pytest
-
-def generate_random_image(max_width, max_height, bitdepth, seed):
-    np.random.seed(seed)
-    #width = np.random.randint(32,max_width)
-    #width -= width % 8
-    #height = np.random.randint(32,max_height)
-    #height -= height % 8
-
-    width = max_width
-    height = max_height
-
-    assert width >= 32 and width % 8 == 0, "Width must be a multiple of eight"
-    assert height >= 32 and height % 8 == 0, "Height must be a multiple of eight"
-    assert bitdepth > 0 and bitdepth <= 25, "Bitdepth must be between 1 and 26"
-
-    data = np.random.rand(height,width)*2**bitdepth
-    return data.astype(np.uint32)
-
-def get_file_bitdepth(bitdepth):
-    file_type = np.uint8
-    match (bitdepth+7)//8:
-        case 1:
-            file_type = np.uint8
-        case 2:
-            file_type = np.uint16
-        case 3:
-            file_type = np.uint32
-        case _:
-            print(f'ERROR: Bitdepth {bitdepth} is larger than the max 32.')
-
-    return file_type
+from common_test_functions import *
 
 @pytest.mark.parametrize('seed', range(10))
 @pytest.mark.parametrize('bitdepth', range(1, 13))
@@ -76,3 +42,4 @@ def test_lossless_end_to_end(bitdepth, seed):
     print(data)
     assert (uncompressed_white_dwarf == data).all(), "Uncompressing losses detected"
     os.system(f'rm {file_raw} {file_compressed} {white_dwarf_type}')
+
