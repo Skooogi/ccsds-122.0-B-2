@@ -81,6 +81,13 @@ uint8_t block_get_dmax(Block* block, uint8_t family);
 uint8_t block_get_gmax(Block* block, uint8_t family);
 uint8_t block_get_hmax(Block* block, uint8_t family, uint8_t quadrant);
 
+void block_set_status_with2(Block* block, uint64_t high_status_bit, uint64_t low_status_bit);
+int8_t block_get_status2(Block* block, uint8_t ac_index);
+uint8_t block_get_bmax2(Block* block);
+uint8_t block_get_dmax2(Block* block, uint8_t family);
+uint8_t block_get_gmax2(Block* block, uint8_t family);
+uint8_t block_get_hmax2(Block* block, uint8_t family, uint8_t quadrant);
+
 //Math operations
 static inline int32_t max(int32_t a, int32_t b) {  return (a > b) ? a : b; }
 static inline int32_t min(int32_t a, int32_t b) {  return (a < b) ? a : b; }

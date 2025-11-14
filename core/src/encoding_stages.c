@@ -197,7 +197,6 @@ void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size
             uint8_t tran_d_hit = (uint8_t) (blocks[block_index].tran.d & (1 << (2-family)));
             uint8_t tran_g_hit = (uint8_t) (blocks[block_index].tran.g & (1 << (2-family)));
 
-            uint8_t status = block_get_gmax(&blocks[block_index], family);
             if(family < 2 && (bitplane == 0 || !tran_d_hit || tran_g_hit)) {
                 continue;
             }
@@ -205,6 +204,7 @@ void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size
                 continue;
             }
 
+            uint8_t status = block_get_gmax(&blocks[block_index], family);
             tran_g = (uint8_t) (tran_g << 1);
             tran_g |= status;
             size++;
@@ -275,7 +275,7 @@ void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size
                 uint8_t index = (uint8_t) (15+hi*16+hj*4);
 
                 for(uint8_t j = 0; j < 4; ++j) {
-                    if( (high_bits >> (index+j)) & 1) {
+                    if( (high_bits >> (62-(index+j))) & 1) {
                         types_h = (uint8_t) (types_h << 1);
                         types_h |= ((blocks[block_index].ac[index+j] >> bitplane) & 1);
                         size_h++;
@@ -330,8 +330,8 @@ static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
     // If it is, it is not encoded.
     // Figure 3-4
     if(bitplane > 2) {
-        for(size_t unmapped_index = 0; unmapped_index < AC_COEFFICIENTS_PER_BLOCK; ++unmapped_index) {
-            uint32_t ac_coefficient = (uint32_t)block->ac[unmapped_index] & bitmask;
+        for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
+            uint32_t ac_coefficient = (uint32_t)block->ac[ac_index] & bitmask;
             high = 0;
             low = 0;
 
@@ -347,18 +347,18 @@ static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
                 low = 1;
             }
 
-            new_high_status_bit |= (uint64_t) high << unmapped_index;
-            new_low_status_bit |= (uint64_t) low << unmapped_index;
+            new_high_status_bit |= (uint64_t) high << (62-ac_index);
+            new_low_status_bit |= (uint64_t) low << (62-ac_index);
         }
     }
 
     else {
-        for(size_t unmapped_index = 0; unmapped_index < AC_COEFFICIENTS_PER_BLOCK; ++unmapped_index) {
-            uint32_t ac_coefficient = (uint32_t)block->ac[unmapped_index] & bitmask;
+        for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
+            uint32_t ac_coefficient = (uint32_t)block->ac[ac_index] & bitmask;
             high = 0;
             low = 0;
 
-            if(subband_lim((uint8_t) unmapped_index, bitplane)) {
+            if(subband_lim((uint8_t) ac_index, bitplane)) {
                 high = 1;
                 low = 1;
             }
@@ -373,8 +373,8 @@ static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
                 low = 1;
             }
 
-            new_high_status_bit |= (uint64_t) high << unmapped_index;
-            new_low_status_bit |= (uint64_t) low << unmapped_index;
+            new_high_status_bit |= (uint64_t) high << (62-ac_index);
+            new_low_status_bit |= (uint64_t) low << (62-ac_index);
         }
     }
 

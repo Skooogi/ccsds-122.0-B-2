@@ -55,16 +55,11 @@ bool subband_lim(uint8_t ac_index, uint8_t bitplane) {
 */
 
 static int8_t state_map[4] = { 0,1,2,-1 };
-//static uint64_t b_mask = 0x7ffffbffffdffffe;
-static uint64_t b_mask =  0b111111111111111111111111111111111111111111111111111111111111000ULL;
-static uint64_t c_mask =  0b000000000000000000000000000000000000000000000000000000001111000ULL;
-static uint64_t g_mask = 0b000000000000000000000000000000001111111111111111000000000000000ULL;
-static uint64_t h_mask = 0b000000000000000000000000000000000000000000001111000000000000000ULL;
 
-//static uint64_t d_mask = 0x1ffffe;
-//static uint64_t g_mask = 0x1fffe0;
-//static uint64_t h_mask = 0x1e0;
-
+static uint64_t b_mask =  0b0000111111111111111111111111111111111111111111111111111111111111ULL;
+static uint64_t c_mask =  0b0000111100000000000000000000000000000000000000000000000000000000ULL;
+static uint64_t g_mask =  0b0000000000000000111111111111111100000000000000000000000000000000ULL;
+static uint64_t h_mask =  0b0000000000000000111100000000000000000000000000000000000000000000ULL;
 //Set the whole block status at a time.
 void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_status_bit) {
     block->high_status_bit = high_status_bit;
@@ -73,7 +68,7 @@ void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_
 
 //Transforms the status bits back to a value.
 int8_t block_get_status(Block* block, uint8_t ac_index) {
-    return state_map[((block->high_status_bit >> ac_index) & 1) * 2 + ((block->low_status_bit >> ac_index) & 1)];
+    return state_map[((block->high_status_bit >> (62-ac_index)) & 1) * 2 + ((block->low_status_bit >> (62-ac_index)) & 1)];
 }
 
 //All get_*max functions return:
@@ -90,17 +85,17 @@ uint8_t block_get_bmax(Block* block) {
 //Status of descendants of a single family. Descendants = Children + Grandchildren.
 uint8_t block_get_dmax(Block* block, uint8_t family) {
     uint64_t filtered = (~block->high_status_bit & block->low_status_bit);
-    return (filtered & ( (c_mask<<(4*family)) | ((g_mask)<<16*family)) ) > 0;
+    return (filtered & ( (c_mask >> (4*family)) | ((g_mask) >> 16*family)) ) > 0;
 }
 
 //Status of the grandchildren of a single family.
 uint8_t block_get_gmax(Block* block, uint8_t family) {
     uint64_t filtered = (~block->high_status_bit & block->low_status_bit);
-    return (filtered & (g_mask << (16*family))) > 0;
+    return (filtered & (g_mask >> (16*family))) > 0;
 }
 
 //Status of one quadrant of grandchildren of a single family.
 uint8_t block_get_hmax(Block* block, uint8_t family, uint8_t quadrant) {
     uint64_t filtered = (~block->high_status_bit & block->low_status_bit);
-    return (filtered & (h_mask << (16*family + quadrant*4))) > 0;
+    return (filtered & (h_mask >> (16*family + quadrant*4))) > 0;
 }
