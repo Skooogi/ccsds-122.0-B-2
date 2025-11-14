@@ -125,9 +125,12 @@ static void initialize_segment_data(SegmentData* segment_data) {
         //Transform ac coefficients to sign-magnitude representation
         for(size_t ac_index = 0; ac_index < AC_COEFFICIENTS_PER_BLOCK; ++ac_index) {
             int32_t ac_coefficient = blocks[block_index].ac[ac_index];
+            int32_t ac_coefficient2 = blocks[block_index].ac_new[ac_index];
 
             blocks[block_index].ac[ac_index] = (int32_t) twos_complement(ac_coefficient, (size_t) bitAC_max);
             blocks[block_index].ac[ac_index] |= ac_coefficient < 0 ? (1 << bitAC_max) : 0;
+            blocks[block_index].ac_new[ac_index] = (int32_t) twos_complement(ac_coefficient2, (size_t) bitAC_max);
+            blocks[block_index].ac_new[ac_index] |= ac_coefficient2 < 0 ? (1 << bitAC_max) : 0;
         }
     }
 
