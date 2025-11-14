@@ -47,14 +47,11 @@ void block_transform_pack(Block* blocks, int32_t* dc_coefficients, size_t num_bl
             dc_coefficients[block_index] = data[row*data_width+column];
 
             //Parents for F0 F1 F2
-            blocks[block_index].ac_new[0] = data[row*data_width + column + block_width];
             blocks[block_index].ac[0] = data[row*data_width + column + block_width];
             family(blocks, block_index, data, data_width, row, column + block_width, 1);
-            blocks[block_index].ac_new[1] = data[(row+block_height)*data_width + column];
-            blocks[block_index].ac[21] = data[(row+block_height)*data_width + column];
+            blocks[block_index].ac[1] = data[(row+block_height)*data_width + column];
             family(blocks, block_index, data, data_width, row+block_height, column, 22);
-            blocks[block_index].ac_new[2] = data[(row+block_height)*data_width + column+block_width];
-            blocks[block_index].ac[42] = data[(row+block_height)*data_width + column+block_width];
+            blocks[block_index].ac[2] = data[(row+block_height)*data_width + column+block_width];
             family(blocks, block_index, data, data_width, row+block_height, column+block_width, 43);
         }
     }
@@ -65,58 +62,33 @@ static void family(Block* blocks, size_t block_index, int32_t* data, size_t widt
     //(Table 4-1)
 
     //Children C_i;
-    blocks[block_index].ac[ac_index+0]  = data[(2*row)   * width + 2*column];
-    blocks[block_index].ac[ac_index+1]  = data[(2*row)   * width + 2*column+1];
-    blocks[block_index].ac[ac_index+2]  = data[(2*row+1) * width + 2*column];
-    blocks[block_index].ac[ac_index+3]  = data[(2*row+1) * width + 2*column+1];
-
-    blocks[block_index].ac_new[reverse[ac_index+0]]  = data[(2*row)   * width + 2*column];
-    blocks[block_index].ac_new[reverse[ac_index+1]]  = data[(2*row)   * width + 2*column+1];
-    blocks[block_index].ac_new[reverse[ac_index+2]]  = data[(2*row+1) * width + 2*column];
-    blocks[block_index].ac_new[reverse[ac_index+3]]  = data[(2*row+1) * width + 2*column+1];
+    blocks[block_index].ac[reverse[ac_index+0]]  = data[(2*row)   * width + 2*column];
+    blocks[block_index].ac[reverse[ac_index+1]]  = data[(2*row)   * width + 2*column+1];
+    blocks[block_index].ac[reverse[ac_index+2]]  = data[(2*row+1) * width + 2*column];
+    blocks[block_index].ac[reverse[ac_index+3]]  = data[(2*row+1) * width + 2*column+1];
 
     //Grandchildren H_i0
-    blocks[block_index].ac[ac_index+4]  = data[(4*row)   * width + 4*column];
-    blocks[block_index].ac[ac_index+5]  = data[(4*row)   * width + 4*column+1];
-    blocks[block_index].ac[ac_index+6]  = data[(4*row+1) * width + 4*column];
-    blocks[block_index].ac[ac_index+7]  = data[(4*row+1) * width + 4*column+1];
-
-    blocks[block_index].ac_new[reverse[ac_index+4]]  = data[(4*row)   * width + 4*column];
-    blocks[block_index].ac_new[reverse[ac_index+5]]  = data[(4*row)   * width + 4*column+1];
-    blocks[block_index].ac_new[reverse[ac_index+6]]  = data[(4*row+1) * width + 4*column];
-    blocks[block_index].ac_new[reverse[ac_index+7]]  = data[(4*row+1) * width + 4*column+1];
+    blocks[block_index].ac[reverse[ac_index+4]]  = data[(4*row)   * width + 4*column];
+    blocks[block_index].ac[reverse[ac_index+5]]  = data[(4*row)   * width + 4*column+1];
+    blocks[block_index].ac[reverse[ac_index+6]]  = data[(4*row+1) * width + 4*column];
+    blocks[block_index].ac[reverse[ac_index+7]]  = data[(4*row+1) * width + 4*column+1];
 
     //Grandchildren H_i1
-    blocks[block_index].ac[ac_index+8]  = data[(4*row)   * width + 4*column+2];
-    blocks[block_index].ac[ac_index+9]  = data[(4*row)   * width + 4*column+3];
-    blocks[block_index].ac[ac_index+10] = data[(4*row+1) * width + 4*column+2];
-    blocks[block_index].ac[ac_index+11] = data[(4*row+1) * width + 4*column+3];
-
-    blocks[block_index].ac_new[reverse[ac_index+8]]  = data[(4*row)   * width + 4*column+2];
-    blocks[block_index].ac_new[reverse[ac_index+9]]  = data[(4*row)   * width + 4*column+3];
-    blocks[block_index].ac_new[reverse[ac_index+10]] = data[(4*row+1) * width + 4*column+2];
-    blocks[block_index].ac_new[reverse[ac_index+11]] = data[(4*row+1) * width + 4*column+3];
+    blocks[block_index].ac[reverse[ac_index+8]]  = data[(4*row)   * width + 4*column+2];
+    blocks[block_index].ac[reverse[ac_index+9]]  = data[(4*row)   * width + 4*column+3];
+    blocks[block_index].ac[reverse[ac_index+10]] = data[(4*row+1) * width + 4*column+2];
+    blocks[block_index].ac[reverse[ac_index+11]] = data[(4*row+1) * width + 4*column+3];
 
     //Grandchildren H_i2
-    blocks[block_index].ac[ac_index+12] = data[(4*row+2) * width + 4*column];
-    blocks[block_index].ac[ac_index+13] = data[(4*row+2) * width + 4*column+1];
-    blocks[block_index].ac[ac_index+14] = data[(4*row+3) * width + 4*column];
-    blocks[block_index].ac[ac_index+15] = data[(4*row+3) * width + 4*column+1];
-
-    blocks[block_index].ac_new[reverse[ac_index+12]] = data[(4*row+2) * width + 4*column];
-    blocks[block_index].ac_new[reverse[ac_index+13]] = data[(4*row+2) * width + 4*column+1];
-    blocks[block_index].ac_new[reverse[ac_index+14]] = data[(4*row+3) * width + 4*column];
-    blocks[block_index].ac_new[reverse[ac_index+15]] = data[(4*row+3) * width + 4*column+1];
+    blocks[block_index].ac[reverse[ac_index+12]] = data[(4*row+2) * width + 4*column];
+    blocks[block_index].ac[reverse[ac_index+13]] = data[(4*row+2) * width + 4*column+1];
+    blocks[block_index].ac[reverse[ac_index+14]] = data[(4*row+3) * width + 4*column];
+    blocks[block_index].ac[reverse[ac_index+15]] = data[(4*row+3) * width + 4*column+1];
 
     //Grandchildren H_i3
-    blocks[block_index].ac[ac_index+16] = data[(4*row+2) * width + 4*column+2];
-    blocks[block_index].ac[ac_index+17] = data[(4*row+2) * width + 4*column+3];
-    blocks[block_index].ac[ac_index+18] = data[(4*row+3) * width + 4*column+2];
-    blocks[block_index].ac[ac_index+19] = data[(4*row+3) * width + 4*column+3];
-
-    blocks[block_index].ac_new[reverse[ac_index+16]] = data[(4*row+2) * width + 4*column+2];
-    blocks[block_index].ac_new[reverse[ac_index+17]] = data[(4*row+2) * width + 4*column+3];
-    blocks[block_index].ac_new[reverse[ac_index+18]] = data[(4*row+3) * width + 4*column+2];
-    blocks[block_index].ac_new[reverse[ac_index+19]] = data[(4*row+3) * width + 4*column+3];
+    blocks[block_index].ac[reverse[ac_index+16]] = data[(4*row+2) * width + 4*column+2];
+    blocks[block_index].ac[reverse[ac_index+17]] = data[(4*row+2) * width + 4*column+3];
+    blocks[block_index].ac[reverse[ac_index+18]] = data[(4*row+3) * width + 4*column+2];
+    blocks[block_index].ac[reverse[ac_index+19]] = data[(4*row+3) * width + 4*column+3];
 }
 

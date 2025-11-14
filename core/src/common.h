@@ -33,13 +33,10 @@ typedef struct Block {
     uint8_t bitAC;
     Tran tran;
     int32_t ac[AC_COEFFICIENTS_PER_BLOCK];
-    int32_t ac_new[AC_COEFFICIENTS_PER_BLOCK];
     uint64_t bitplane_slice;
     uint8_t slice_length;
     uint64_t high_status_bit;
     uint64_t low_status_bit;
-    uint64_t high_status_bit2;
-    uint64_t low_status_bit2;
 } Block;
 
 typedef struct MappedWord {
@@ -77,19 +74,12 @@ typedef struct SegmentData {
 
 //Block operations
 bool subband_lim(uint8_t ac_index, uint8_t bitplane);
-bool subband_lim2(uint8_t ac_index, uint8_t bitplane);
 void block_set_status_with(Block* block, uint64_t high_status_bit, uint64_t low_status_bit);
-void block_set_status_with2(Block* block, uint64_t high_status_bit, uint64_t low_status_bit);
 int8_t block_get_status(Block* block, uint8_t ac_index);
-int8_t block_get_status2(Block* block, uint8_t ac_index);
 uint8_t block_get_bmax(Block* block);
-uint8_t block_get_bmax2(Block* block);
 uint8_t block_get_dmax(Block* block, uint8_t family);
-uint8_t block_get_dmax2(Block* block, uint8_t family);
 uint8_t block_get_gmax(Block* block, uint8_t family);
-uint8_t block_get_gmax2(Block* block, uint8_t family);
 uint8_t block_get_hmax(Block* block, uint8_t family, uint8_t quadrant);
-uint8_t block_get_hmax2(Block* block, uint8_t family, uint8_t quadrant);
 
 //Math operations
 static inline int32_t max(int32_t a, int32_t b) {  return (a > b) ? a : b; }
