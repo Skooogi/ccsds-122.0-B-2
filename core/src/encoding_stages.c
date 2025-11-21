@@ -217,12 +217,9 @@ void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size
         }
 
         //TRANH
-        for(uint8_t hi = 0; hi < 3; ++hi) {
+        for(uint8_t hi = 2*(bitplane==0); hi < 3; ++hi) {
 
             if(!(blocks[block_index].tran.g & (1 << (2-hi)))) {
-                continue;
-            }
-            if(hi < 2 && bitplane <= 0) {
                 continue;
             }
 
@@ -232,11 +229,11 @@ void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size
 
                 uint8_t tran_h_hit = (uint8_t) (blocks[block_index].tran.h[hi] & (1 << (3-quadrant)));
 
-                uint8_t status = block_get_hmax(&blocks[block_index], hi, quadrant);
                 if(tran_h_hit) {
                     continue;
                 }
 
+                uint8_t status = block_get_hmax(&blocks[block_index], hi, quadrant);
                 tran_h = (uint8_t) (tran_h << 1);
                 tran_h |= status;
                 inner_size++;
@@ -253,18 +250,14 @@ void stage_3(SegmentData* segment_data, size_t gaggle_offset, size_t gaggle_size
         uint64_t high_bits = ~blocks[block_index].high_status_bit;
 
         //types_h and signs_h
-        for(uint8_t hi = 0; hi < 3; ++hi) {
+        for(uint8_t hi = 2*(bitplane==0); hi < 3; ++hi) {
             if(!(blocks[block_index].tran.g & (1 << (2-hi)))) {
-                continue;
-            }
-
-            if(hi < 2 && bitplane == 0) {
                 continue;
             }
 
             for(uint8_t hj = 0; hj < 4; ++hj) {
 
-                if(!(blocks[block_index].tran.h[hi] & (1 << (3-hj)))) {
+                if(!(blocks[block_index].tran.h[hi]>>(3-hj) & 1)) {
                     continue;
                 }
 
@@ -334,6 +327,8 @@ static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
             uint32_t ac_coefficient = (uint32_t)block->ac[ac_index] & bitmask;
             high = 0;
             low = 0;
+            new_high_status_bit <<= 1;
+            new_low_status_bit <<= 1;
 
             if(bitplane_bit_1 <= ac_coefficient) {
                 high = 1;
@@ -347,8 +342,8 @@ static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
                 low = 1;
             }
 
-            new_high_status_bit |= (uint64_t) high << (62-ac_index);
-            new_low_status_bit |= (uint64_t) low << (62-ac_index);
+            new_high_status_bit |= (uint64_t) high;
+            new_low_status_bit |= (uint64_t) low;
         }
     }
 
@@ -357,6 +352,8 @@ static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
             uint32_t ac_coefficient = (uint32_t)block->ac[ac_index] & bitmask;
             high = 0;
             low = 0;
+            new_high_status_bit <<= 1;
+            new_low_status_bit <<= 1;
 
             if(subband_lim((uint8_t) ac_index, bitplane)) {
                 high = 1;
@@ -373,8 +370,8 @@ static void set_block_status(Block* block, uint8_t bitACMax, uint8_t bitplane) {
                 low = 1;
             }
 
-            new_high_status_bit |= (uint64_t) high << (62-ac_index);
-            new_low_status_bit |= (uint64_t) low << (62-ac_index);
+            new_high_status_bit |= (uint64_t) high;
+            new_low_status_bit |= (uint64_t) low;
         }
     }
 
